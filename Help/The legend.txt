@@ -1,0 +1,26 @@
+The Plot>Set Legend... command brings up a dialog into which you can type a
+legend (the large text displayed at the top of the picture).  
+Certain character sequences in this
+string will be automatically replaced by other information when the legend is
+displayed:
+
+%T    Time, e.g. "250.25 hours"
+
+%q    Name of the quantity currently being plotted.
+
+%m    A list of all factors currently at mutant levels, or "WILDTYPE" if
+the wild type is being run.  If no factors have mutant levels defined,
+this is replaced by the empty string.
+
+%c for any other character c: the character c is inserted.
+
+\n    A newline character.
+
+\c for any other character c: the character c is inserted.
+
+The default string can be restored with the "Get default" button in the dialog.
+
+The command-line equivalent is
+
+    m = leaf_setproperty( m, 'legendTemplate', ... );
+

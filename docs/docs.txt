@@ -1,0 +1,787 @@
+=GFTwindow=Tfigure=P=U=D
+
+=help=Tuimenu=PGFTwindow=UHelp=D
+
+=openManual=Tuimenu=Phelp=UOpen manual=D
+
+=miscMenu=Tuimenu=PGFTwindow=UMisc=D
+
+=GUIformat=Tuimenu=PmiscMenu=UGUI format=D
+
+=multiplotItem=Tuimenu=PmiscMenu=UMultiplot=D
+
+=thumbnailItem=Tuimenu=PmiscMenu=UMake Thumbnail=D
+
+=stagesMenu=Tuimenu=PGFTwindow=UStages=D
+This menu lists all stages of the mesh that have been saved. Selecting any stage
+will reload it.  The "Recompute Stages" item will recompute every stage, starting
+from the first one at or after the current state of the mesh.
+
+=movieMenu=Tuimenu=PGFTwindow=UMovie=D
+
+=RecordMeshes=Tuimenu=PmovieMenu=UAlso record meshes=D
+
+=gyrateItem=Tuimenu=PmovieMenu=UGyrate...=D
+Simultaneously tilt and spin.
+
+=tiltItem=Tuimenu=PmovieMenu=UTilt...=D
+Tilt the view up and down, taking a specified number of steps.
+If a movie is being recorded, each step will add a frame to the movie.
+
+=spinItem=Tuimenu=PmovieMenu=USpin...=D
+Spin the viewpoint once around the Z axis, taking a specified number of steps.
+If a movie is being recorded, each step will add a frame to the movie.
+
+=codecMenu=Tuimenu=PmovieMenu=UCodec=D
+Specify which type of compression to use for movies.  This does not affect any
+movie currently in progress.  Not all compressors are available on all platforms.
+In particular, on Windows 64, none of the compressors work and movies must be saved
+in uncompressed form.
+
+=RLEItem=Tuimenu=PcodecMenu=URLE=D
+RLE compression.
+
+=MSVCItem=Tuimenu=PcodecMenu=UMSVC=D
+MSVC compression.
+
+=index5Item=Tuimenu=PcodecMenu=UIndeo5=D
+Indeo5 compression.
+
+=indeo3Item=Tuimenu=PcodecMenu=UIndeo3=D
+Indeo3 compression.
+
+=cinepakItem=Tuimenu=PcodecMenu=UCinepak=D
+Cinepak compression.
+
+=nocompressionItem=Tuimenu=PcodecMenu=UNone=D
+Do not use compression for movies.
+
+=frameRateItem=Tuimenu=PmovieMenu=UFrame rate...=D
+Set the frame rate of movies.  Does not affect any movie in progress.
+
+=addFrameItem=Tuimenu=PmovieMenu=UAdd frame=D
+If a movie is in progress, add a new frame of the current plot.
+
+=plotMenu=Tuimenu=PGFTwindow=UPlot=D
+Options affecting how the mesh is plotted.
+
+=lightMenuItem=Tuimenu=PplotMenu=UTurn Light On=D
+Turn lighting on.  When lighting is on, the menu item changes to "Turn Light Off".
+
+=normalsMenuItem=Tuimenu=PplotMenu=UShow/Hide normals=D
+Show or hide the normal vector to each finite element.
+
+=displacementsMenuItem=Tuimenu=PplotMenu=UShow/Hide displacements=D
+Show or hide the displacement vector for every vertex in the last FE computation.
+
+=axesMenuItem=Tuimenu=PplotMenu=UShow/Hide axes=D
+Show or hide the axes.
+
+=thicknessMenuItem=Tuimenu=PplotMenu=UShow/Hide thickness=D
+Draw the thickness of the mesh or draw it as a two-dimensional surface.
+
+=legendMenuItem=Tuimenu=PplotMenu=UShow/Hide legend=D
+Show or hide the legend in the picture area.
+
+=whiteMenuItem=Tuimenu=PplotMenu=UWhite bgnd=D
+Make the background white.
+
+=blackMenuItem=Tuimenu=PplotMenu=UBlack bgnd=D
+Make the background black.
+
+=WizardsOnly1=Tuipanel=PGFTwindow=UIgnore these=D
+
+=initialisePanel=Tuipanel=PWizardsOnly1=UInitialisation function=D
+
+=text79=Ttext=PinitialisePanel=U(none)=D
+
+=editMgenInitfnButton=Tpushbutton=PinitialisePanel=UEdit=D
+
+=axisFromFigureButton=Tpushbutton=PWizardsOnly1=USet from figure=D
+
+=strainDecayEnabled=Tcheckbox=PWizardsOnly1=U=D
+
+=validateMesh=Tcheckbox=PWizardsOnly1=UValidate mesh=D
+
+=frontCellsCheckbox=Tcheckbox=PWizardsOnly1=UFront=D
+
+=showThirdLayer=Tcheckbox=PWizardsOnly1=UBio-B=D
+
+=bio2=Tradiobutton=PWizardsOnly1=UBio-B=D
+
+=frob1button=Tpushbutton=PWizardsOnly1=USplit cells=D
+
+=commandsPanel=Tuipanel=PWizardsOnly1=UCommands=D
+
+=commandBox=Tedit=PcommandsPanel=U=D
+
+=splitThirdButton=Tpushbutton=PWizardsOnly1=USplit cells=D
+
+=attachPictureButton=Tpushbutton=PWizardsOnly1=UAttach picture...=D
+
+=runFlag=Tcheckbox=PWizardsOnly1=URun flag=D
+
+=stopFlag=Tcheckbox=PWizardsOnly1=UStop flag=D
+
+=plotFlag=Tcheckbox=PWizardsOnly1=UPlot flag=D
+
+=commandFlag=Tcheckbox=PWizardsOnly1=UCommand flag=D
+
+=frob4button=Tpushbutton=PWizardsOnly1=UNudge L2=D
+
+=showGrowthSurface=Tcheckbox=PWizardsOnly1=UDraw growth=Draw growth
+
+=bulkmodulus=Tedit=PWizardsOnly1=U3000=D
+
+=text24=Ttext=PWizardsOnly1=UBulk modulus=D
+
+=specheat=Tedit=PWizardsOnly1=U1=D
+
+=text14=Ttext=PWizardsOnly1=USpec. heat=D
+
+=flipTCPanel=Tuipanel=PWizardsOnly1=U=D
+
+=growingText=Ttext=PflipTCPanel=U=D
+
+=flipTCbutton=Tpushbutton=PflipTCPanel=UFlip T.C.=D
+
+=bio1panel=Tuipanel=PGFTwindow=UCells=D
+
+=shockbioPanel=Tuipanel=Pbio1panel=U=D
+
+=unshockBioA=Tpushbutton=PshockbioPanel=UUnshock all cells=D
+
+=shockAtext=Tedit=PshockbioPanel=U0.1=D
+
+=shockAslider=Tslider=PshockbioPanel=USlider=D
+
+=bioAshockbutton=Tpushbutton=PshockbioPanel=UShock cells=D
+
+=bioAgridbutton=Tpushbutton=Pbio1panel=UGrid=D
+
+=scatterAtext=Tedit=Pbio1panel=U0.6=D
+
+=scatterAslider=Tslider=Pbio1panel=USlider=D
+
+=bioAscatterbutton=Tpushbutton=Pbio1panel=UScatter cells=D
+
+=cellColorIndicator2=Tuipanel=Pbio1panel=U=D
+
+=colorVariationText=Tedit=Pbio1panel=U0.1=D
+
+=text88=Ttext=Pbio1panel=UColor variation=D
+
+=text87=Ttext=Pbio1panel=UCell color=D
+
+=cellColorIndicator1=Tuipanel=Pbio1panel=U=D
+
+=text86=Ttext=Pbio1panel=UMax cells=D
+
+=maxBioAtext=Tedit=Pbio1panel=U0=D
+
+=graphicbioPanel=Tuipanel=Pbio1panel=UGraphic properties=D
+
+=bioAuniformButton=Tpushbutton=PgraphicbioPanel=UUniform colours=D
+
+=bioAcolorsButton=Tpushbutton=PgraphicbioPanel=URandomize colours=D
+
+=bioApointsizeText=Tedit=PgraphicbioPanel=U1=D
+
+=text85=Ttext=PgraphicbioPanel=UVertex size=D
+
+=bioAlinesizeText=Tedit=PgraphicbioPanel=U1=D
+
+=text83=Ttext=PgraphicbioPanel=ULine width=D
+
+=bioArelsizetext=Tedit=Pbio1panel=U0.002=D
+
+=text82=Ttext=Pbio1panel=URel. area=D
+
+=bioAsplitTypeSelect=Tuipanel=Pbio1panel=USplit:=D
+
+=bioAsplitEdgesButton=Tradiobutton=PbioAsplitTypeSelect=UEdges=D
+
+=bioAsplitCellsButton=Tradiobutton=PbioAsplitTypeSelect=UCells=D
+
+=text77=Ttext=Pbio1panel=USides=D
+
+=cellSidesText=Tedit=Pbio1panel=U12=D
+
+=actualBioACellstext=Tedit=Pbio1panel=U0=D
+
+=bioAfillbutton=Tpushbutton=Pbio1panel=UFill with cells=D
+
+=bioAdeletebutton=Tpushbutton=Pbio1panel=UDelete all cells=Delete all cells
+
+=simplifySecondLayerButton=Tpushbutton=Pbio1panel=USimplify=D
+
+=text66=Ttext=Pbio1panel=UInit total cells=D
+
+=bioAsinglebutton=Tpushbutton=Pbio1panel=UMake one cell=D
+
+=totalCellsText=Tedit=Pbio1panel=U0=D
+
+=paramsMenu=Tuimenu=PGFTwindow=UParams=D
+
+=rescaleItem=Tuimenu=PparamsMenu=URescale...=D
+
+=distunititem=Tuimenu=PparamsMenu=UDistance unit...=Distance unit...
+
+=timeunitItem=Tuimenu=PparamsMenu=UTime unit...=D
+
+=mincolortext=Ttext=PGFTwindow=Umincolor=D
+
+=maxcolortext=Ttext=PGFTwindow=Umaxcolor=D
+
+=wizardMenu=Tuimenu=PGFTwindow=UWizard=D
+
+=elideEdgeItem=Tuimenu=PwizardMenu=UElide edge=D
+
+=validateItem=Tuimenu=PwizardMenu=UValidate=D
+
+=importMeshItem=Tuimenu=PwizardMenu=UImport Mesh=D
+
+=exportMeshItem=Tuimenu=PwizardMenu=UExport Mesh=D
+
+=meshMenu=Tuimenu=PGFTwindow=UMesh=D
+
+=savefigItem=Tuimenu=PmeshMenu=USave FIG...=D
+
+=saveobjItem=Tuimenu=PmeshMenu=USave OBJ...=D
+
+=savescriptItem=Tuimenu=PmeshMenu=USave script...=D
+
+=savematItem=Tuimenu=PmeshMenu=USave MAT...=D
+
+=loadobjItem=Tuimenu=PmeshMenu=ULoad OBJ...=D
+
+=loadscriptItem=Tuimenu=PmeshMenu=ULoad script...=D
+
+=loadmatItem=Tuimenu=PmeshMenu=ULoad MAT...=D
+
+=mgenUpgradeMenu=Tuimenu=PmeshMenu=UChange Morphogen Version=D
+
+=mgenVersionMenu=Tuimenu=PmeshMenu=UNew Mesh Morphogen Version=D
+
+=bio2panel=Tuipanel=PGFTwindow=UBio-B=D
+
+=maxbioBPanel=Tuipanel=Pbio2panel=UMax cells=D
+
+=maxBioBtext=Tedit=PmaxbioBPanel=U0=D
+
+=jigglePanel=Tuipanel=Pbio2panel=UJiggle=D
+
+=jiggle_text=Tedit=PjigglePanel=U1=D
+
+=jiggle_slider=Tslider=PjigglePanel=USlider=D
+
+=cvtPanel=Tuipanel=Pbio2panel=UCVT per iter=D
+
+=cvtperiter_text=Tedit=PcvtPanel=U0.2=D
+
+=cvtperiter_slider=Tslider=PcvtPanel=USlider=D
+
+=text48=Ttext=Pbio2panel=UCentroidality=D
+
+=deletethirdbutton=Tpushbutton=Pbio2panel=UDelete all cells=Delete all cells
+
+=centroidalityText=Tedit=Pbio2panel=U10=D
+
+=text47=Ttext=Pbio2panel=UBio per FE=D
+
+=shockbioBPanel=Tuipanel=Pbio2panel=U=D
+
+=shocktext=Tedit=PshockbioBPanel=U0.1=D
+
+=shockslider=Tslider=PshockbioBPanel=USlider=D
+
+=shockbutton=Tpushbutton=PshockbioBPanel=UShock cells=D
+
+=bioperfeText=Tedit=Pbio2panel=U10=D
+
+=makeThirdButton=Tpushbutton=Pbio2panel=UMake cells=D
+
+=mainpanel=Tuipanel=PGFTwindow=U=D
+
+=outputSelectButton=Tcheckbox=Pmainpanel=UPlot output value=D
+
+=inputSelectButton=Tcheckbox=Pmainpanel=UPlot current factor=D
+
+=displayedGrowthMenu=Tpopupmenu=Pmainpanel=U =D
+
+=tensorPropertyMenu=Tpopupmenu=Pmainpanel=UTotal=D
+
+=newplotQuantityMenu=Tpopupmenu=Pmainpanel=UActual growth=D
+
+=plotPanel=Tuipanel=Pmainpanel=UPlot options=D
+
+=clipCheckbox=Tcheckbox=PplotPanel=UClipping plane=D
+
+=dclipText=Tedit=PplotPanel=U0=D
+
+=elclipText=Tedit=PplotPanel=U0=D
+
+=text107=Ttext=PplotPanel=UD=D
+
+=text106=Ttext=PplotPanel=UEl=D
+
+=text105=Ttext=PplotPanel=UAz=D
+
+=azclipText=Tedit=PplotPanel=U0=D
+
+=showTensorAxes=Tcheckbox=PplotPanel=UTensor axes=D
+
+=setLegendButton=Tpushbutton=PplotPanel=USet legend...=D
+
+=showMutant=Tcheckbox=PplotPanel=UMutant level=D
+
+=showSecondLayer=Tcheckbox=PplotPanel=UCells=D
+
+=showPolariser=Tcheckbox=PplotPanel=UPolariser grad.=D
+
+=showEdges=Tcheckbox=PplotPanel=UFE edges=D
+
+=showLeafSurface=Tcheckbox=PplotPanel=UCanvas=D
+
+=mgenColorChooser=Tuipanel=PplotPanel=U=D
+
+=monoCheckbox=Tcheckbox=PplotPanel=UMonochrome=D
+
+=autoRangeMaxtext=Tedit=PplotPanel=U2=D
+
+=text81=Ttext=PplotPanel=UMax=D
+
+=text80=Ttext=PplotPanel=UMin=D
+
+=text62=Ttext=PplotPanel=UCells=D
+
+=rotateToggle=Ttogglebutton=PplotPanel=URot=D
+
+=zoomToggle=Ttogglebutton=PplotPanel=UZoom=D
+
+=panToggle=Ttogglebutton=PplotPanel=UPan=D
+
+=text54=Ttext=PplotPanel=Uz=D
+
+=text52=Ttext=PplotPanel=Uy=D
+
+=text50=Ttext=PplotPanel=Ux=D
+
+=zaxishi=Tedit=PplotPanel=U0=D
+
+=zaxislo=Tedit=PplotPanel=U0=D
+
+=yaxishi=Tedit=PplotPanel=U0=D
+
+=yaxislo=Tedit=PplotPanel=U0=D
+
+=xaxishi=Tedit=PplotPanel=U0=D
+
+=xaxislo=Tedit=PplotPanel=U0=D
+
+=autoScale=Tcheckbox=PplotPanel=UAuto axis range=D
+
+=autoRangeMintext=Tedit=PplotPanel=U0=D
+
+=autoRange=Tcheckbox=PplotPanel=UAuto color range=D
+
+=bsideRButton=Tradiobutton=PplotPanel=UB=D
+
+=asideRButton=Tradiobutton=PplotPanel=UA=D
+
+=busyPanel=Tuipanel=Pmainpanel=U=D
+
+=text92=Ttext=PbusyPanel=UBUSY=D
+
+=interactionPanel=Tuipanel=Pmainpanel=UInteraction function=D
+
+=notesButton=Tpushbutton=PinteractionPanel=UNotes=D
+
+=initialiseIFButton=Tpushbutton=PinteractionPanel=UCall=D
+
+=allowInteraction=Tcheckbox=PinteractionPanel=UEnable=D
+
+=editMgenInteractionButton=Tpushbutton=PinteractionPanel=UEdit=D
+
+=mgenInteractionName=Ttext=PinteractionPanel=U(none)=D
+
+=editorpanel=Tuipanel=Pmainpanel=UMesh editor=D
+
+=rotatemeshPanel=Tuipanel=Peditorpanel=U=D
+
+=rotateNegMeshButton=Tpushbutton=ProtatemeshPanel=U- rot.=D
+
+=rotatetext=Tedit=ProtatemeshPanel=U45.0=D
+
+=rotateslider=Tslider=ProtatemeshPanel=USlider=D
+
+=rotateZButton=Tradiobutton=ProtatemeshPanel=UZ=D
+
+=rotateYButton=Tradiobutton=ProtatemeshPanel=UY=D
+
+=rotateXButton=Tradiobutton=ProtatemeshPanel=UX=D
+
+=rotateMeshButton=Tpushbutton=ProtatemeshPanel=U+ rot.=D
+
+=thicknessPanel=Tuipanel=Peditorpanel=UThickness=D
+
+=physicalThicknessCheckbox=Tcheckbox=PthicknessPanel=UPhysical=D
+
+=text64=Ttext=PthicknessPanel=UPower=D
+
+=thicknesstext=Tedit=PthicknessPanel=U0=D
+
+=thicknessslider=Tslider=PthicknessPanel=USlider=D
+
+=text63=Ttext=PthicknessPanel=UScale=D
+
+=thicknessscaletext=Tedit=PthicknessPanel=U0.5=D
+
+=thicknessscaleslider=Tslider=PthicknessPanel=USlider=D
+
+=modifyZPanel=Tuipanel=Peditorpanel=UModify Z shape=D
+
+=numsaddle=Tedit=PmodifyZPanel=U2=D
+
+=saddlez=Tpushbutton=PmodifyZPanel=USaddle Z=D
+
+=bowlz=Tpushbutton=PmodifyZPanel=UBowl Z=D
+
+=zamount=Tedit=PmodifyZPanel=U0.1=D
+
+=perturbz=Tpushbutton=PmodifyZPanel=URandom=D
+
+=zeroz=Tpushbutton=PmodifyZPanel=UZero Z=D
+
+=newMeshPanel=Tuipanel=Peditorpanel=U=D
+
+=geomparam33=Tedit=PnewMeshPanel=U4=D
+
+=geomparam33Text=Ttext=PnewMeshPanel=Up33=D
+
+=geomparam23=Tedit=PnewMeshPanel=U4=D
+
+=geomparam23Text=Ttext=PnewMeshPanel=Up23=D
+
+=geomparam13=Tedit=PnewMeshPanel=U4=D
+
+=geomparam13Text=Ttext=PnewMeshPanel=Up13=D
+
+=geomparam32Text=Ttext=PnewMeshPanel=Up32=D
+
+=geomparam32=Tedit=PnewMeshPanel=U8=D
+
+=geomparam22=Tedit=PnewMeshPanel=U8=D
+
+=geomparam12=Tedit=PnewMeshPanel=U4=D
+
+=geomparam12Text=Ttext=PnewMeshPanel=Up12=D
+
+=geomparam22Text=Ttext=PnewMeshPanel=Up22=D
+
+=geomparam31Text=Ttext=PnewMeshPanel=Up31=D
+
+=geomparam31=Tedit=PnewMeshPanel=U2=D
+
+=geomparam21Text=Ttext=PnewMeshPanel=Up21=D
+
+=geomparam21=Tedit=PnewMeshPanel=U2=D
+
+=geomparam11Text=Ttext=PnewMeshPanel=Up11=D
+
+=geomparam11=Tedit=PnewMeshPanel=U2=D
+
+=generatetype=Tpopupmenu=PnewMeshPanel=UCircle=D
+
+=replacemeshbutton=Tpushbutton=PnewMeshPanel=UReplace=D
+
+=generatemesh=Tpushbutton=PnewMeshPanel=UNew=D
+
+=flipOrientationButton=Tpushbutton=Peditorpanel=UFlip orientation=D
+
+=unfixallButton=Tpushbutton=Peditorpanel=UUnfix All=D
+
+=fixZbox=Tcheckbox=Peditorpanel=Uz=D
+
+=fixYbox=Tcheckbox=Peditorpanel=Uy=D
+
+=fixXbox=Tcheckbox=Peditorpanel=Ux=D
+
+=mouseeditmodeMenu=Tpopupmenu=Peditorpanel=UFix nodes=D
+
+=alwaysFlat=Tcheckbox=Peditorpanel=UFlat=D
+
+=poissonsRatio=Tedit=Peditorpanel=U0.3=D
+
+=text25=Ttext=Peditorpanel=UPoisson=D
+
+=rotateXYZ=Tpushbutton=Peditorpanel=URot. xyz=D
+
+=refinemeshPanel=Tuipanel=Peditorpanel=U=D
+
+=refineproptext=Tedit=PrefinemeshPanel=U1.0=D
+
+=refinepropslider=Tslider=PrefinemeshPanel=USlider=D
+
+=refinemesh=Tpushbutton=PrefinemeshPanel=URefine mesh=D
+
+=text60=Ttext=Pmainpanel=UFrames/sec=D
+
+=showHistoryButton=Tpushbutton=Pmainpanel=UShow/Hide history=D
+
+=snapshot=Tpushbutton=Pmainpanel=UTake snapshot=D
+
+=fpsText=Tedit=Pmainpanel=U10=D
+
+=autonamemovie=Tcheckbox=Pmainpanel=UAuto-name=D
+
+=movieButton=Tpushbutton=Pmainpanel=URecord movie...=D
+
+=runPanel=Tuipanel=Pmainpanel=URun=D
+
+=stepsPerStaticText=Ttext=PrunPanel=USteps per render=D
+
+=stepsperrender=Tedit=PrunPanel=U1=D
+
+=numStepsStaticText=Ttext=PrunPanel=UNum. steps=D
+
+=areaTargetText=Tedit=PrunPanel=U1=D
+
+=runToButton=Tpushbutton=PrunPanel=URun To:=D
+
+=simsteps=Tedit=PrunPanel=U10=D
+
+=stopButton=Tpushbutton=PrunPanel=UStop=D
+
+=singlestep=Tpushbutton=PrunPanel=UStep=D
+
+=run=Tpushbutton=PrunPanel=URun=D
+
+=archiveButton=Tpushbutton=Pmainpanel=UArchive=D
+
+=resetButton=Tpushbutton=Pmainpanel=UReset=D
+
+=clearButton=Tpushbutton=Pmainpanel=UCLEAR=D
+
+=savemodelover=Tpushbutton=Pmainpanel=USave=D
+
+=reloadmodel=Tpushbutton=Pmainpanel=UReload=D
+
+=restartButton=Tpushbutton=Pmainpanel=URestart=D
+
+=toolSelect=Tuipanel=Pmainpanel=USelect  tool=D
+
+=growthtensors=Tradiobutton=PtoolSelect=UGrowth tensors=D
+
+=bio1=Tradiobutton=PtoolSelect=UCells=D
+
+=runsim=Tradiobutton=PtoolSelect=USimulation=D
+
+=morphdist=Tradiobutton=PtoolSelect=UFactors=D
+
+=editor=Tradiobutton=PtoolSelect=UMesh editor=D
+
+=savemodel=Tpushbutton=Pmainpanel=USave As...=D
+
+=loadmodel=Tpushbutton=Pmainpanel=ULoad...=D
+
+=report=Ttext=PGFTwindow=U=D
+
+=elevation=Tslider=PGFTwindow=USlider=D
+
+=azimuth=Tslider=PGFTwindow=USlider=D
+
+=runsimpanel=Tuipanel=PGFTwindow=USimulation=D
+
+=splitmargintext=Tedit=Prunsimpanel=U0=D
+
+=text109=Ttext=Prunsimpanel=USplit margin=D
+
+=text94=Ttext=Prunsimpanel=UFlatten ratio=D
+
+=flattenratio=Tedit=Prunsimpanel=U1=D
+
+=text93=Ttext=Prunsimpanel=UTime limit=D
+
+=maxsolvetime=Tedit=Prunsimpanel=U1000=D
+
+=text91=Ttext=Prunsimpanel=UTolerance=D
+
+=solvertolerance=Tedit=Prunsimpanel=U0.001=D
+
+=minpolgradText=Tedit=Prunsimpanel=U0=D
+
+=text90=Ttext=Prunsimpanel=UMin. pol. grad.=D
+
+=explodeButton=Tpushbutton=Prunsimpanel=UExplode=D
+
+=dissectButton=Tpushbutton=Prunsimpanel=UDissect=Dissect
+
+=edgesplitscaletext=Tedit=Prunsimpanel=U0=D
+
+=text76=Ttext=Prunsimpanel=UEdge scaling=D
+
+=maxBendtext=Tedit=Prunsimpanel=U0=D
+
+=text75=Ttext=Prunsimpanel=UMax bend=D
+
+=maxFEtext=Tedit=Prunsimpanel=U0=D
+
+=text65=Ttext=Prunsimpanel=UMax FEs=D
+
+=siminfoText=Ttext=Prunsimpanel=U=D
+
+=timescalePanel=Tuipanel=Prunsimpanel=UTimescale=D
+
+=timestep=Tedit=PtimescalePanel=U0.01=D
+
+=freezePanel=Tuipanel=Prunsimpanel=UFreeze=D
+
+=freezetext=Tedit=PfreezePanel=U0=D
+
+=freezeslider=Tslider=PfreezePanel=USlider=D
+
+=flatstrain=Tpushbutton=Prunsimpanel=UFlat strain=D
+
+=destrain=Tpushbutton=Prunsimpanel=UDe-strain=De-strain
+
+=uipanel26=Tuipanel=Prunsimpanel=UEnable features=D
+
+=allowNegativeGrowth=Tcheckbox=Puipanel26=UNegative growth=D
+
+=dointernalrotation=Tcheckbox=Puipanel26=UInternal rotation=D
+
+=allowRetriangulate=Tcheckbox=Puipanel26=URetriangulate=D
+
+=allowSplitBentFEM=Tcheckbox=Puipanel26=USplit bent edges=D
+
+=flatten=Tcheckbox=Puipanel26=UFlatten=D
+
+=allowFlipEdges=Tcheckbox=Puipanel26=UFlip edges=D
+
+=useGrowthTensors=Tcheckbox=Puipanel26=UUse tensors=D
+
+=allowSplitBio=Tcheckbox=Puipanel26=USplit bio cells=D
+
+=allowSplitLongFEM=Tcheckbox=Puipanel26=USplit long edges=D
+
+=diffusionEnabled=Tcheckbox=Puipanel26=UDiffusion=Diffusion
+
+=plasticGrowthEnabled=Tcheckbox=Puipanel26=UPlastic growth=D
+
+=growthEnabled=Tcheckbox=Puipanel26=UElastic growth=D
+
+=colorbar=Taxes=PGFTwindow=U=D
+
+=picturepanel=Tuipanel=PGFTwindow=U=D
+
+=legend=Ttext=Ppicturepanel=U=D
+
+=pictureBackground=Taxes=Ppicturepanel=U=D
+
+=picture=Taxes=Ppicturepanel=U=D
+
+=projectsMenu=Tuimenu=PGFTwindow=UProjects=D
+
+=userProjectsMenu=Tuimenu=PprojectsMenu=UMy Projects=D
+
+=systemProjectsMenu=Tuimenu=PprojectsMenu=UMotifs=D
+
+=refreshProjectsMenu=Tuimenu=PprojectsMenu=URefresh=D
+
+=projectsFolderItem=Tuimenu=PprojectsMenu=USet User Projects Folder...=D
+
+=morphdistpanel=Tuipanel=PGFTwindow=UGrowth factor editor=D
+
+=splitMgenButtonGroup=Tuipanel=Pmorphdistpanel=UOn split=D
+
+=splitMgenMaxButton=Tradiobutton=PsplitMgenButtonGroup=UMax=D
+
+=splitMgenMinButton=Tradiobutton=PsplitMgenButtonGroup=UMin=D
+
+=splitMgenAverageButton=Tradiobutton=PsplitMgenButtonGroup=UAverage=D
+
+=allfactorsPanel=Tuipanel=Pmorphdistpanel=UAll factors=D
+
+=text57=Ttext=PallfactorsPanel=UUse wild type=D
+
+=allWildcheckbox=Tcheckbox=PallfactorsPanel=U=D
+
+=zeroall=Tpushbutton=PallfactorsPanel=USet all zero=D
+
+=allowDilution=Tcheckbox=Pmorphdistpanel=UDilution=Dilution
+
+=text59=Ttext=Pmorphdistpanel=UDecay=Decay
+
+=text15=Ttext=Pmorphdistpanel=UDiffusion=Diffusion
+
+=absorptionText=Tedit=Pmorphdistpanel=U0=D
+
+=conductivityText=Tedit=Pmorphdistpanel=U0=D
+
+=morpheditmodemenu=Tpopupmenu=Pmorphdistpanel=UAdd=D
+
+=mutationPanel=Tuipanel=Pmorphdistpanel=UMutation=D
+
+=revertMutantButton=Tpushbutton=PmutationPanel=URevert=D
+
+=mutanttext=Tedit=PmutationPanel=U1=D
+
+=mutantslider=Tslider=PmutationPanel=USlider=D
+
+=invertGrowth=Tpushbutton=Pmorphdistpanel=UInvert=D
+
+=text45=Ttext=Pmorphdistpanel=Uz=D
+
+=text44=Ttext=Pmorphdistpanel=Uy=D
+
+=text43=Ttext=Pmorphdistpanel=Ux=D
+
+=text42=Ttext=Pmorphdistpanel=UDir.=Dir.
+
+=linearDirection=Tedit=Pmorphdistpanel=U0=D
+
+=linearGrowth=Tpushbutton=Pmorphdistpanel=UAdd linear=D
+
+=radialz=Tedit=Pmorphdistpanel=U0=D
+
+=radialy=Tedit=Pmorphdistpanel=U0=D
+
+=radialx=Tedit=Pmorphdistpanel=U0=D
+
+=gfradial=Tpushbutton=Pmorphdistpanel=UAdd radial=D
+
+=edgeGrowth=Tpushbutton=Pmorphdistpanel=UAdd to rim=D
+
+=randomGrowth=Tpushbutton=Pmorphdistpanel=UAdd random=D
+
+=constantGrowth=Tpushbutton=Pmorphdistpanel=UAdd constant=D
+
+=text39=Ttext=Pmorphdistpanel=UAmount=D
+
+=paintamount=Tedit=Pmorphdistpanel=U1=D
+
+=paintslider=Tslider=Pmorphdistpanel=USlider=D
+
+=zerogf=Tpushbutton=Pmorphdistpanel=USet zero=D
+
+=renameMgenButton=Tpushbutton=Pmorphdistpanel=URename=D
+
+=deleteMgenButton=Tpushbutton=Pmorphdistpanel=UDelete=Delete
+
+=newMgenButton=Tpushbutton=Pmorphdistpanel=UNew=D
+
+=deadcanary=Ttext=PGFTwindow=U =D
+
+=growthtensorspanel=Tuipanel=PGFTwindow=UGrowth tensors=D
+
+=loadGrowthButton=Tpushbutton=Pgrowthtensorspanel=ULoad growth map...=D
+
+=aboutMenu=Tuimenu=PGFTwindow=UAbout=D
+
+=dateItem=Tuimenu=PaboutMenu=UDate Unknown=D
+
+=revisionItem=Tuimenu=PaboutMenu=URevision Unknown=D
+
+=xyzzy=T=P=U=D
+

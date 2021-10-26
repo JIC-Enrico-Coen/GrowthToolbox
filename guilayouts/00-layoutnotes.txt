@@ -1,0 +1,418 @@
+This is a system for easy creation of well laid out dialog windows.  It supports
+both modal and modeless dialogs.  There are two basic procedures, which create
+the dialog from a text file that specifies its layout, and run it either modally
+or modelessly.
+
+To run a modal dialog, call:
+
+    v = performRSSSdialogFromFile( layoutfilename );
+
+This will display the dialog and return when the dialog is closed.  If the user
+cancelled the dialog, the return value will be empty.  If the user closes it by
+clicking its OK button, then v will be a structure storing the values of all
+editable items in the dialog: editable text fields, checkboxes, radio buttons,
+etc.
+
+To run a modeless dialog, call:
+
+    f = modelessRSSSdialogFromFile( layoutfilename );
+
+This will open a modeless dialog.  The return value is a handle to the dialog
+window.  Since a modeless dialog has no "result",
+but takes each user event and does something specific to the purpose of the
+dialog, it is up to the programmer to write callback routines for the items
+in the dialog that receive such events.
+
+A dialog layout file is a text file specifying how to lay out the dialog.
+Dialogs constructed in this way automatically have a regular layout, with
+items precisely spaced and aligned, without the user having to specify any
+positions or sizes in pixels.  They can automatically rearrange their controls
+when the window is resized.  Basic functionality such as OK/Cancel buttons is
+built-in.
+
+A simple modal dialog to ask the user to enter some information can be
+performed just by writing a layout file and calling performRSSSdialogFromFile.
+Dialogs requiring more complex behaviours, such as maintaining some consistency
+relationships among the different fields of the dialog, and modeless dialogs
+that require some application-specific actions to happen in response to user
+actions, will require writing callbacks for some of the elements and knowing
+how to access the elements of the dialog from within such a callback.
+
+
+
+Syntax of the layout file
+=========================
+
+The syntax is fairly rudimentary, being a representation of a tree, each of
+whose nodes has a type, a set of attribute-value pairs, and a list of children.
+The general syntax is:
+
+    NODE ::= NODETYPE '{' (ATTRIB VALUE)* NODE* '}'
+
+A layout file contains a single NODE, usually a "figure".
+
+NODETYPE is one of a fixed set of alphanumeric tokens naming the different
+sorts of element: figure, pushbutton, panel, menu, etc.
+
+ATTRIB is an alphanumeric token naming an attribute, e.g. string, callback,
+lines, margin.
+
+VALUE is an arbitrary token.  If it contains spaces or special characters it
+must be enclosed in double quotes (which are not considered part of the
+string).  The usual C-style escapes apply within double quotes.
+
+Note that the lexer and parser tend to be over-fussy and under-informative
+when things go wrong.  For example, tokens must be separated by spaces or
+newlines, even the tokens '{' and '}'.  This is wrong:
+
+    panel{}
+
+This is right:
+
+    panel { }
+
+Everything on a line from a # (outside of a string) onward is ignored as a
+comment.
+
+If a value contains a "^" character, the part before the "^" is the default
+value, and the part after is a token which must have the form of a valid
+Matlab field name.  If you supply as one of the arguments to
+performRSSSdialogFromFile or modelessRSSSdialogFromFile a structure which
+has a corresponding field, that value will be used as the initial value
+instead.  
+
+
+
+Types of object
+===============
+
+The following categories are not exclusive.
+
+1. Grouping nodes: figure, panel, radiogroup, group, hgroup, vgroup.
+
+These nodes can have children, which are laid out within them.
+
+2. Bordered grouping nodes: panel, radiogroup.
+
+These grouping nodes are the only ones which can have a visible border
+around them.  The visible border appears by default, but attributes can be
+given to specify that there should be no border.
+
+3. GUI widgets: figure, panel, colorchooser, radiogroup, text, edit, listbox,
+    pushbutton, togglebutton, radiobutton, checkbox, popupmenu, menu.
+
+Every node of any of these types will correspond to a GUI handle when the
+dialog is created.  'colorchooser' is actually implemented by a panel that
+has no children and whose background colour is the currently selected colour.
+
+4. Non-GUI items: group, hgroup, vgroup.
+
+These exist only to define the layout of their children.  They do not
+correspond to any GUI handle, nor to any part of the underlying structures
+that Matlab uses to represent user interface objects.
+
+Every node belongs to either category (3) or category (4), and no node
+belongs to both.
+
+
+
+Syntax of attribute values
+==========================
+
+Values are either strings, numbers, lists of strings, or lists of numbers.
+
+Strings containing spaces or other special characters must be enclosed in double quotes;
+otherwise, quotes are optional.
+
+Where a list of numbers is expected, the list must be enclosed in double quotes and the
+members separated by spaces.  For example:
+
+    margin "5 10 5 10"
+
+(Yes, this is ugly.  At some point I might revise the syntax to allow:
+
+    margin 5 10 5 10
+
+But that doesn't work right now.)
+
+A list of strings is written as a single string, enclosed in double quotes, with the
+component strings separated by the "|" character.
+
+Quotes or "|" within strings can be obtained by backslashing them, and all the usual
+C-style escapes apply, e.g. \n is a newline character.
+
+
+
+Attributes applying to more than one type of object
+===================================================
+
+string:
+    Applies only to GUI widgets.
+    In figures, this is the title bar string.
+    In text items, this is the text.
+    In edit items, this is the initial value of the text.
+    In panels, this is the title of the panel.
+    In checkboxes and buttons of all types, this is the name displayed beside
+        the checkbox or on the button.
+    In listboxes, this is the contents.  Multiple strings should be separated
+        by the "|" character.  Only listboxes can have multiple strings.
+
+teststring:
+    This is valid wherever string is valid.
+    teststring is a string used to find the default size of the GUI object.
+    The object is created with teststring as its string property.  Its size is
+    found, and then the specified string property is substituted.  Use this
+    especially in edit items so that they will be a convenient size even if
+    their string property is initially empty.
+
+tag:
+    Valid for GUI widgets.  This is the string which is the value of the "Tag"
+    property. This should be empty or absent if your code never needs to reference
+    the item nor return its value in the result of the dialog.  If you need
+    to reference the item but not return it in the result, use a value
+    beginning with "X_".  The default value is the item type followed by an
+    underscore and a sanitised version of the string property.  This default
+    is usually sensible, except for editable text items, which do not have any
+    property that can be understood as a name for what they do.  For these you will
+    usually have to define your own tag.
+    For internal reasons, neither "output" nor "exititem" should be used as a tag.
+    If these are found, they will be replaced by the empty string.
+    "output" is used for internal purposes, and "exititem" is a field in the result
+    that is set to the tag of whatever button the user pressed to end the dialog.
+
+visible:
+    Valid for GUI widgets.  Allowed values are true, false, yes, no, on, and off.
+    These set the 'Visible' property of the GUI item to on or off.
+
+callback:
+    Valid for GUI widgets.  The name of a procedure to be called when an event
+    happens in this item.  For modal dialogs, you only need to provide this
+    function if something must happen within the dialog in response to this
+    event, e.g. if checking a certain checkbox should cause other GUI items
+    to be made visible.  For modeless dialogs, you will need to provide this
+    for every item that is supposed to do something.  The callback procedure
+    will be called with one argument, a handle h to the GUI object that invoked it.
+    Calling guidata(h) will return a structure whose fields are the tags of all
+    the GUI objects and whose values are their handles
+
+inherit:
+    Valid for grouping nodes.
+    The argument is another field name or set of field names (enclosed in
+    double quotes and separated by spaces), and specifies that the value of
+    those fields for this node should be used, where applicable, as the
+    defaults for all nodes in the subtree based at that node.
+
+bordertype:
+    Valid for panel and radiogroup.  Equivalent to the Matlab handle property
+    'BorderType'.  The default value is 'etchedin'.  For no border, use
+    bordertype none.
+
+margin:
+    Valid for grouping nodes.  This specifies the margin, on all four sides,
+    between the boundary of this item and the boundaries of its child items.
+    The value can be a single number, which will be used for all four sides,
+    or a quoted string containing a list of four numbers, specifying the margins
+    on the left, bottom, right, and top respectively.  The unit is pixels.
+
+outermargin
+    Valid for every type that has a bordertype attribute.  This specifies the margin
+    between the border and the surroundings.
+
+innermargin
+    Valid for every grouping type.  This specifies the margin between children of
+    the node.  The value is either a single number or a pair of numbers.
+
+halign
+    Valid for all nodes.  Possible values are left, right, centre, and fill.
+    This specifies what to do when the space allocated to the item is wider than
+    the minimum size of the item: it should be respectively positioned at the left
+    edge, the right edge, in the middle, or stretched to span both left and right edges.
+
+innerhalign
+    Valid for grouping nodes.  Possible values are as for halign.
+    If the natural space taken up by the children is smaller than the space available
+    inside the group (allowing for its margin), this specifies how the whole group
+    should be arranged: as far to the left or right as possible, in the middle, or
+    spread out to touch the margins.
+
+valign
+    Valid for all nodes.  Possible values are top, bottom, centre, and fill.
+    Like halign for the vertical dimension.
+
+innervalign
+    Stands in the same relation to valign as innerhalign does to halign.
+
+contentalign
+    valid for text and edit nodes.  This specifies the horizontal alignment of the
+    text that these nodes display.
+
+minsize
+    Valid for all nodes except "menu".  A pair of numbers, specifying the minimum
+    width and height
+    that should be allocated to this item.  This can be useful for defining objects
+    which are empty but which take up space, e.g. group { minsize "30 30" } creates
+    an empty area at least 30 by 30 pixels.
+
+value
+    For radio buttons, toggle buttons, and checkboxes.  This is either 0 (off)
+    or 1 (on).  The default is 0.
+
+color, backgroundcolor, foregroundcolor, highlightcolor, shadowcolor
+    For figures, panels, colorchoosers, radiogroups.  Not all of these
+    attributes are available for all of these item types.  Their values are
+    colours expressed as RGB triples of numbers.
+    
+
+
+Types of object
+===============
+
+figure:
+    A Matlab figure window.
+    General attributes: tag, string, margin, innermargin.
+    Specific attributes:
+        focus: the tag of whichever GUI element should initially have the focus.
+        resize: boolean.  Specifies whether the dialog can be resized.
+
+panel:
+    A Matlab panel.
+    General attributes: tag, string, bordertype, margin, innermargin.
+
+radiogroup:
+    A Matlab radio button group.  This can contain any sort of object, not just
+    radio buttons.  The difference with an ordinary group is that Matlab will
+    automatically ensure that exactly one of the radio buttons within it is on
+    at any time.
+    Specific attributes:
+        SelectionChangeFcn: the Matlab attribute of that name.  This should be
+            the name of a function that expects a handle to the current callback
+            object as its only argument.  Matlab will call this function whenever
+            a new radio button is selected.  You only need to define this if you
+            need something to happen as soon as a radio button is clicked.
+
+colorchooser:
+    This is actually a Matlab panel with no children and a 1 pixel thick black
+    border. The color picking behaviour is not automatic, but must be programmed
+    in the callback.  Your callback can call:
+        c = bgColorPick( gcbo, title );
+    which will obtain a colour from the user and automaticallly recolor the
+    colorchooser object.  The title argument is a string which will appear in
+    the colour picker dialog as a prompt to the user.
+
+group:
+    A group of GUI elements,
+    This does not correspond to any Matlab GUI object, but just defines layout.
+    General attributes: tag, margin, innermargin.
+    Specific attributes:
+        rows: the number of rows of GUI elements.
+        columns: the number of columns of GUI elements.
+        Only one of rows and columns need be given.  The other is implied by the
+        number of children.
+        Items are assigned to positions in the grid starting from the top left and
+        proceeding down the leftmost column, then the next-to-leftmost column, and
+        so on.  The grid does not have to be completely filled.  By default, columns
+        is 1 and rows is the number of children, i.e. a vgroup.
+        equalsizes: a boolean (true, false, yes, no, on, or off).  When true, this
+        means that the children of this node will be allocated equal-sized bounding
+        rectangles.  (Whether the children fill those rectangles depends on their
+        own attributes.)  When false, the height of each row will be the height of
+        the tallest element in that row, and similarly for columns.
+        If you need an element of a group to be empty, use an empty group for that
+        element.
+
+hgroup:
+    Identical to a group with rows 1 and columns equal to the number of children.
+
+vgroup:
+    Identical to a group with columns 1 and rows equal to the number of children.
+
+pushbutton, togglebutton, radiobutton, checkbox, listbox
+    Standard Matlab GUI items.  All attributes which the dialog layout procedure
+    does not recognise will be set as attributes of the handles to the GUI elements.
+
+okbutton:
+    A pushbutton with a standard callback installed to terminate the dialog
+    successfully.  No attributes need be given, but all of its attributes can be
+    explicitly set.
+
+cancelbutton:
+    A pushbutton with a standard callback installed to cancel the dialog.
+    No attributes need be given, but all of its attributes can be explicitly set.
+
+menu
+    A menu to appear in the menubar.  This should only appear at the top level
+    within a figure, or within another menu.  The "string" attribute defines the
+    menu label.  The only children it can have are menus, which will be created
+    as its menu items.  Menu should not be used in a modal dialog.
+
+include:
+    Followed by a file name containing more layout data, it has the effect of
+    copying that file in at this point.  The file must contain a description of
+    a single, complete object.  Includes may be nested.  Cycles of files
+    including each other will be automatically broken and a warning given.
+
+
+
+Values returned
+===============
+
+modelessRSS
+
+On successful exit from a modal dialog, the result returned by performRSSSdialogFromFile
+will be a structure whose field names are the tags of selected GUI handles, and
+whose field values are the values of those elements.  Any element whose tag is empty
+or begins with 'X_', or which does not have a 'Value' attribute, will be ignored.
+
+GUI elements able to return values are:
+    togglebutton, radiobutton, checkbox: the 'Value' attribute, which is 0 (off) or
+        1 (on).
+    text, edit: the 'String' attribute.
+    listbox: a structure containing two fields: strings is a cell array of all the
+        strings in the list, and values is an array of the indexes of the selected
+        strings.
+    popupmenu: a structure containing two fields: strings is a cell array of all the
+        strings in the menu, and value is the index of the currently selected string.
+
+figure, panel, radiogroup, and menu do not return values, regardless of their tag.
+
+group, hgroup, and vgroup are not GUI elements and so are not present in the actual
+dialog, and cannot return values.
+
+
+
+The layout method
+=================
+
+Every node in the layout tree has two rectangular boxes associated with it.
+One, the content box, is the actual bounding box of its content.  The other, the
+allocation box, is the space allocated to it by its parent.  The latter is always as
+least as large as the former, but may be larger.  The halign and valign attributes
+specify how the content box should be placed or stretched within the allocated box.
+
+For grouping nodes with a visible border (panel and radiogroup), a margin of size
+given by "outermargin" is first trimmed off, followed by the thickness of the border,
+followed by the margin given by "margin".  The remaining box is then divided into a
+grid of boxes allocated to the children, separated by the amount given by the
+"innermargin" attribute.
+
+Grouping nodes without a visible border behave in the same way, except that there
+is no outer margin and border thickness to trim.
+
+The minimum size of a grouping node is the smallest it can be while giving each of
+its children an allocation box at least as large as its content box.  If the
+allocation box of the grouping node is larger than this, the innerhalign and innervalign
+attributes specify how to distribute the content.  For example, if they are both set to
+"fill", then the allocation boxes of the children will be expanded.  However, the
+amount by which they are expanded will not necessarily be equal, but will depend on
+the halign and valign properties of the children.  In general, if the content of a group
+is to be stretched horizontally, if any of the children have halign set to "fill",
+those that do will expand horizontally to take up the slack.  If none do, the extra
+space will be allocated equally.  Vertical slack is handled in the same way.
+
+For example, suppose one has a group containing two items, a static text on the left
+and an editable text on the right.  If the group has halign fill, the static text has
+halign left, and the editable text has halign fill, then all horizontal slack in the
+group will be allocated to the editable text.  So if the dialog is resized,
+the editable text will grow or shrink accordingly while the static text remains the
+same size.
+

@@ -1,0 +1,23 @@
+figure {
+    string "Movie from Stages"
+    margin 20
+    inherit margin
+    hgroup {
+        innermargin 5
+        halign center
+        text { halign right string "Start time" }
+        edit { string "" teststring "00000000" tag starttime halign fill }
+    }
+    hgroup {
+        innermargin 5
+        halign center
+        text { halign right string "End time" }
+        edit { string "" teststring "00000000" tag endtime halign fill }
+    }
+    hgroup {
+        innermargin 5
+        halign equal
+        okbutton { halign fill teststring "00000000" }
+        cancelbutton { halign fill teststring "00000000" }
+    }
+}

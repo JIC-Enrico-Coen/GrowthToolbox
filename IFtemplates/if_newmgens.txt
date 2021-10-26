@@ -1,0 +1,16 @@
+
+%%% END OF USER CODE: INITIALISATION
+
+%%% SECTION 1: ACCESSING MORPHOGENS AND TIME.
+%%% AUTOMATICALLY GENERATED CODE: DO NOT EDIT.
+
+% Each call of getMgenLevels below returns four results:
+% XXX_i is the index of the morphogen called XXX.
+% XXX_p is the vector of all of its values.
+% XXX_a is its mutation level.
+% XXX_l is the "effective" level of the morphogen, i.e. XXX_p*XXX_a.
+% In SECTION 3 of the automatically generated code, all of the XXX_p values
+% will be copied back into the mesh.
+
+    polariser_i = FindMorphogenRole( m, 'POLARISER' );
+    P = m.morphogens(:,polariser_i);

@@ -1,0 +1,110 @@
+panel {
+    string "Growth Factor"
+    fontweight bold
+    fontsize 14
+    valign top
+    vgroup {
+        vgroup {
+            halign center
+            hgroup {
+                equalwidths yes
+                pushbutton { string "New" halign fill }
+                pushbutton { string "Delete" halign fill }
+                pushbutton { string "Rename" halign fill }
+            }
+            hgroup {
+                equalwidths yes
+                pushbutton { string "Set zero" halign fill }
+                pushbutton { string "Invert" halign fill }
+            }
+        }
+        hgroup {
+            equalwidths yes
+            pushbutton { string "Add constant" halign fill }
+            pushbutton { string "Add random" halign fill }
+            pushbutton { string "Add to rim" halign fill }
+        }
+        hgroup {
+            text { string "Amount" }
+            slider { }
+            edit {
+                string "1" tag editamount
+                multiline no
+            }
+        }
+        hgroup {
+            halign center
+            pushbutton { string "Add radial" }
+            text { string "x" teststring x }
+            edit { string "0" tag editx }
+            text { string "y" teststring y }
+            edit { string "0" tag edity }
+            text { string "z" teststring z }
+            edit { string "0" tag editz }
+        }
+        hgroup {
+            halign center
+            pushbutton { string "Add linear" }
+            text { string "Direction" }
+            edit { string "0" tag editdir }
+            text { string "deg." }
+            text { string "Color: +" }
+            colorchooser {
+                minsize 16
+                tag poscolorchooser
+                color "1 0 0"
+                callback testercallback
+            }
+            text { string "?" }
+            colorchooser {
+                minsize 16
+                tag negcolorchooser
+                color "0 1 1"
+                callback testercallback
+            }
+        }
+        hgroup {
+            halign center
+            text { string "Mouse mode" }
+            popupmenu { string "----|Add|Set|Brush|Fix" teststring "mmmmm" }
+        }
+        hgroup {
+            text { string "Diffusion" }
+            edit { string "0" tag editdiffuse }
+            text { string "Decay" }
+            edit { string "0" tag editdecay }
+            checkbox { string "Dilution" callback testercallback }
+        }
+        hgroup {
+            radiogroup {
+                innerhalign center
+                string "On split"
+                innermargin 5
+                radiobutton { string "Average" value 1 }
+                radiobutton { string "Min" }
+                radiobutton { string "Max" }
+            }
+            panel {
+                string "Mutation"
+                innervalign center
+                vgroup {
+                    slider { }
+                    hgroup {
+                       # valign center
+                        edit { string "1" tag editmutate halign fill }
+                        pushbutton { string "Revert" halign right }
+                    }
+                }
+            }
+        }
+        panel {
+            string "All factors"
+            fontweight bold
+            innerhalign center
+            hgroup {
+                pushbutton { string "Set all zero" fontweight bold }
+                checkbox { string "Use wild type" }
+            }
+        }
+    }
+}

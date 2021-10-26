@@ -1,0 +1,23 @@
+function ok = makeProjectSubfolders( projectFolder )
+    ok = true;
+    subfolders = { 'meshes', ...
+                   'functions', ...
+                   'movies', ...
+                   'snapshots' };
+    for i=1:length(subfolders)
+        ok = makeProjectSubfolder( projectFolder, subfolders{i} );
+        if ~ok, return; end
+    end
+end
+    
+function ok = makeProjectSubfolder( projectFolder, folderName )
+    [ok, msg, msgid] = mkdir( projectFolder, folderName );
+    if ~ok
+        errordlg( ...
+            { [ 'Cannot create project ', folderName, ' folder:' ], ...
+              [ 'in ', projectFolder, ' .' ], ...
+              msg }, ...
+            '' );
+        return;
+    end
+end

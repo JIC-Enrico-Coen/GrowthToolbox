@@ -1,0 +1,102 @@
+figure {
+    resize on
+    group {
+        rows 2 columns 4 margin 0 innermargin 0
+        group {
+            outermargin 0 margin 0 innermargin 0
+            innerhalign fill halign fill valign fill
+            string ""
+            # picbackground, pic, legend, scalebar
+            axes { halign fill valign fill tag picture minsize "200 200" }
+        }
+        group {
+            outermargin 0 margin 0 innermargin 0
+            halign fill innerhalign fill
+            valign bottom innervalign fill
+            string ""
+            # azimuth
+            slider {
+                halign fill valign top
+                minsize "15 15"
+                direction horiz
+                tag azimuthSlider
+            }
+        }
+        hgroup {
+            halign left innerhalign left
+            valign fill innervalign fill
+            margin 0 innermargin 0
+            slider {
+                halign left valign fill
+                minsize "15 15"
+                direction vert
+                tag elevationSlider
+            } # elevation
+        }
+        panel {
+            margin 0 innermargin 0
+            halign left
+            valign top
+            minsize "15 15"
+            string ""
+            HighlightColor "0 0 0"
+            BackgroundColor "1 1 1"
+            BorderType line
+            color "1 1 1"
+            tag defaultView
+        }
+        hgroup {
+            halign left innerhalign left
+            valign fill innervalign fill
+            margin 0 innermargin 0
+            slider {
+                halign left valign fill
+                minsize "15 15"
+                direction vert
+                tag rollSlider
+            } # roll
+        }
+        panel {
+            halign left
+            valign top
+            margin 0 innermargin 0
+            minsize "15 15"
+            string ""
+            HighlightColor "0 0 0"
+            BackgroundColor "1 1 1"
+            BorderType line
+            color "1 1 1"
+            tag zeroRollPanel
+        }
+        hgroup {
+            halign left innerhalign left
+            valign fill innervalign fill
+            margin 0 innermargin 0
+            axes {
+                halign fill valign fill
+                minsize "15 15"
+                tag colorbarAxes
+            }
+            vgroup {
+                halign left innerhalign left
+                valign fill innervalign fill
+                text { string "max" tag maxText halign left valign top }
+                vgroup {
+                    halign left innerhalign left
+                    valign fill innervalign top
+                    innermargin 0
+                    text { string "azimuth" teststring "XX: -0.0000" }
+                    text { string "elevation" teststring "XX: -0.0000" }
+                    text { string "roll" teststring "XX: -0.0000" }
+                    group { valign fill minsize "0 1" }
+                    # az/el/roll values
+                }
+                text { string "min" tag minText halign left valign bottom }
+            }
+        }
+        group {
+            halign left innerhalign left
+            valign bottom innervalign fill
+        }
+    }
+}

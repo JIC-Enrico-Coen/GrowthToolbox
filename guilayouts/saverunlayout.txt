@@ -1,0 +1,24 @@
+figure {
+    margin 10
+    valign bottom
+    halign left
+    string "Save This Run As:"
+    focus name
+    color "0 1 0"
+    group {
+        rows 1
+        columns 2
+        text { string "Name of run:" valign center halign left }
+        edit {
+            string "" teststring "012345678901234567890123456789012345678901234567890123456789"
+            tag name valign center halign fill haligncontent left
+        }
+    }
+    hgroup {
+        halign center
+        equalwidths yes
+        equalheights yes
+        okbutton { halign fill }
+        cancelbutton { halign fill }
+    }
+}

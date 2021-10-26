@@ -1,0 +1,20 @@
+    if (Steps(m)==0) && m.globalDynamicProps.doinit
+        % Put any code here that should only be performed at the start of
+        % the simulation.
+
+        % Reset several fields of m to their default states.
+        % Give the command "help resetMeshValues" for details.
+        % You can delete this if you do not want this to happen.
+        m = resetMeshValues( m );
+
+        if m.globalProps.IFsetsoptions
+            m = setUpModelOptions( m, ...
+                'modelname', {'MODEL1','MODEL2'}, 'MODEL1' ... % Model version name
+                ... % Add further lines for all the options that you want.
+            );
+        end
+
+        % Any further initialisation here.
+    end
+    OPTIONS = getModelOptions( m );
+    printModelOptions( m );

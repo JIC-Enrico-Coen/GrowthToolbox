@@ -1,0 +1,109 @@
+figure {
+    string "Waypoints"
+    fontsize 10
+    focus editName
+    tag figure_waypoint
+    callback callbackWaypoints
+    inherit callback
+    handlevisibility on  # "callback" for production version.
+    vgroup {
+        name info
+        halign middle
+        group {
+            columns 3 rows 4
+            text { string "" }
+            text { string "Simulated time" }
+            text { string "Movie time (sec.)" }
+            text { string "Frames" }
+            text { string "This segment" }
+            text { tag textThisSimTime string "0" teststring "00:0000 - 00:0000" }
+            text { tag textThisMovieTime string "0" teststring "00:0000 - 00:0000" }
+            text { tag textThisFrames string "0" teststring "00:0000 - 00:0000" }
+            text { string "Whole movie" }
+            text { tag textTotalSimTime string "0" teststring "00:0000 - 00:0000" }
+            text { tag textTotalMovieTime string "0" teststring "00:0000 - 00:0000" }
+            text { tag textTotalFrames string "0" teststring "00:0000 - 00:0000" }
+        }
+    }
+    panel {
+        hgroup {
+            group {
+                columns 2 rows 5
+                text { string "Name" }
+                text { string "Frames" }
+                text { string "Movie duration (sec.)" }
+                text { string "Simulated duration" }
+                text { string "Time step" }
+                text { string "Frame rate (for whole movie)" }
+                edit { tag editName teststring "0000000000000000" }
+                edit { tag editFrames teststring "0000000000000000" }
+                edit { tag editMovieDuration teststring "0000000000000000" }
+                edit { tag editSimDuration teststring "0000000000000000" }
+                edit { tag editTimestep teststring "0000000000000000" }
+                edit { tag editFramerate teststring "0000000000000000" }
+            }
+            vgroup {
+                halign left
+                valign fill
+
+                hgroup {
+                    halign fill valign top
+                    text { string "Frames per gyration" }
+                    edit { halign right tag edit_FPG string "60" teststring "0000" }
+                }
+                hgroup {
+                    halign fill valign top
+                    text { halign left string "Spins" }
+                    edit { halign left tag edit_Spins string "0" teststring "0000" }
+                    text { halign right string "Tilts" }
+                    edit { halign right halign right tag edit_Tilts string "0" teststring "0000" }
+                }
+                hgroup {
+                    halign fill valign top
+                    text { string "Tilt angle (deg.)" }
+                    edit { halign right tag edit_TiltAngle string "60" teststring "0000" }
+                }
+                checkbox { valign top string "Crossfade" }
+                group {
+                    valign fill
+                    pushbutton { halign right valign bottom string "Delete waypoint" }
+                }
+            }
+        }
+    }
+    listbox {
+        tag listbox_Waypoints
+        valign fill
+        halign fill
+        multiline false
+        lines 5
+        teststring "a|b|c|d|e|f|g|h"
+    }
+    hgroup {
+        halign fill valign top
+        radiogroup {
+            halign left bordertype none borderwidth 0 outermargin 0 rows 2 columns 3
+            SelectionChangeFcn callbackWaypoints
+            pushbutton { string "Make Movie" }
+            pushbutton { string "Make Script" }
+            radiobutton { string "All waypoints" }
+            radiobutton { string "Selected waypoints" }
+        }
+        hgroup { halign right
+            vgroup {
+                margin 0
+                pushbutton { string "Save" teststring "00000000" }
+                pushbutton { string "Revert" teststring "00000000" }
+            }
+            pushbutton { string "Close" fontweight bold teststring "00000000" }
+        }
+    }
+    listbox {
+        tag listbox_Movies
+        valign fill
+        halign fill
+        multiline false
+        lines 5
+        teststring "a|b|c|d|e|f|g|h"
+    }
+}

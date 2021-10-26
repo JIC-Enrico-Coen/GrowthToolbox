@@ -1,0 +1,65 @@
+figure {
+    string "Create cellular morphogens"
+    margin 20
+    resize off
+    focus X_ed_mgenname
+    group {
+        rows 2 columns 2
+        hgroup {
+            valign top
+            radiogroup {
+                tag rbg_type
+                columns 1
+                margin 5
+                innermargin 5
+                outermargin 0
+                valign top
+                bordertype none
+                text { string "Morphogen type" halign center }
+                radiobutton { string "Cellular" tag X_rb_type_c }
+                radiobutton { string "Other" tag X_rb_type_other }
+                SelectionChangeFcn updateCreateCellularMorphogensDialog
+            }
+            vgroup {
+                margin 5
+                innermargin 5
+                bordertype none
+                valign top
+                text { string "Morphogen name" halign center }
+                hgroup {
+                    valign top
+                    innermargin 0
+                    halign left
+                    text {
+                        halign right haligncontent right string "c_" teststring "idx_"
+                        tag X_tx_mgenprefix
+                    }
+                    edit {
+                        halign left haligncontent center teststring "MMMMMMMMMMMM"
+                        tag X_ed_mgenname
+                        callback updateCreateCellularMorphogensDialog
+                    }
+                }
+                text { string "Hit enter to add to list." halign center }
+            }
+            group {
+                minsize "30 10"
+            }
+        }
+        hgroup {
+            halign right
+            cancelbutton { tag "" halign right teststring "Create & Exit" }
+            group {
+                minsize "30 10"
+            }
+        }
+        vgroup {
+            listbox { tag lb valign fill halign fill multiline true lines 10 string "" }
+            pushbutton {
+                string "Remove selected" tag X_pb_removeselection
+                callback updateCreateCellularMorphogensDialog
+            }
+        }
+        okbutton { tag "" halign centre string "Create & Exit" }
+    }
+}

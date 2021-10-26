@@ -1,0 +1,47 @@
+20211011
+2020-10-11 11:00
+
+GFtbox is a MATLAB program for interactive and off-line simulation of the
+biological growth of curved surfaces such as leaves and petals, and bulk
+tissues, and diffusion and interaction of substances over such tissues.
+
+GFtbox requires an installation of MATLAB, preferably 2019a or later. It
+should run on Windows, Mac OS, or Linux. As I always use the latest version
+of Matlab, I recommend that users do the same, as I cannot guarantee
+that I have not depended on some Matlab feature not present in previous
+versions. I believe that all Matlab licences allow free upgrading to the
+current version.
+
+Users at the John Innes Centre can download GFtbox from our GitHub server
+at https://github.com/JIC-CSB/DArT_Toolshed (password required).
+You can either download it as a zip file, or, if you are familiar with the
+git source code management tool, then you can clone the repository. (If you
+are familiar with git, you will know what "cloning the repository" means,
+and why this method makes it simpler to keep your copy of GFtbox up to
+date.)  This distribution includes several other things besides GFtbox, but
+GFtbox is independent of them, and you can ignore them.
+
+Others can download it from Sourceforge, at
+http://sourceforge.net/projects/gftbox/files/
+The Sourceforge version is sometimes less up to date than the GitHub
+version.
+
+In either case, you will download a zip file. Decompressing this gives a
+directory called "GrowthToolbox".  You can place this anywhere you want.
+Open MATLAB and cd to this directory.  The command "GFtbox" should then
+open the program's GUI. It also adds the GFtbox source code directories
+to your MATLAB search path.  If you give the Matlab command "savepath",
+then on subsequent runs of Matlab the "GFtbox" command will start GFtbox
+without you having to first cd to its directory.
+
+Under GFtbox's Help menu are commands for displaying references to several
+published papers about the system.
+
+Further information and documentation (a work more in stasis than in
+progress) is available at
+https://labguide.rico-coen.jic.ac.uk/index.php/Growth_Toolbox
+and
+http://cmpdartsvr3.cmp.uea.ac.uk/wiki/BanghamLab/index.php/Software#Quantitative_understanding_of_growing_shapes:_GFtbox
+
+Bug reports, requests, and enquiries may be made to me, Richard Kennaway,
+at kennawar@nbi.ac.uk or richard@kennaway.org.uk.

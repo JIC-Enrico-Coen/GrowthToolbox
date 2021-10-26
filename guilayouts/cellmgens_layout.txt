@@ -1,0 +1,134 @@
+figure {
+    string "Cellular Factors"
+    fontweight bold
+    fontsize 14
+    valign top
+    vgroup {
+        hgroup {
+            text { string "Current factor:" fontsize 14 halign left }
+            popupmenu { string " " teststring "MMMMMMMM" tag cellmgenmenu }
+        }
+        panel {
+            string "Manage factors" fontweight bold
+            halign fill
+            hgroup {
+                equalwidths yes
+                pushbutton { string "New" halign fill tag new callback manageCellMgens_Callback }
+                pushbutton { string "Delete" halign fill tag del callback manageCellMgens_Callback }
+                pushbutton { string "Rename" halign fill tag ren callback manageCellMgens_Callback }
+            }
+        }
+        panel {
+            string "Edit current factor" fontweight bold
+            halign fill
+            hgroup {
+                equalwidths no
+                vgroup {
+                    halign center
+                    hgroup {
+                        equalwidths yes
+                        pushbutton { string "Set zero" halign fill tag zero callback editCurrentCellMgen_Callback }
+                        pushbutton { string "Invert" halign fill tag invert callback editCurrentCellMgen_Callback }
+                    }
+                    hgroup {
+                        equalwidths yes
+                        pushbutton { string "Add constant" halign fill tag const callback editCurrentCellMgen_Callback }
+                        pushbutton { string "Add random" halign fill tag random callback editCurrentCellMgen_Callback }
+            #            pushbutton { string "Add to rim" halign fill tag rim callback editCurrentCellMgen_Callback }
+                    }
+                }
+                hgroup {
+                    text { string "Role:" }
+                    popupmenu { string "|Area|Div. comp.|Div. area|Age" teststring "Div. comp." tag cfroleMenu callback cellroleHandler }
+                }
+            }
+            vgroup {
+                halign center
+                innerhalign left
+                hgroup {
+                    halign left
+                    pushbutton { string "Add radial" tag radial callback editCurrentCellMgen_Callback }
+                    text { string "x" teststring x }
+                    edit { string "0" tag editx }
+                    text { string "y" teststring y }
+                    edit { string "0" tag edity }
+                    text { string "z" teststring z }
+                    edit { string "0" tag editz }
+                }
+                hgroup {
+                    halign left
+                    pushbutton { string "Add linear" tag linear callback editCurrentCellMgen_Callback }
+                    text { string "Direction" }
+                    edit { string "0" tag editdir }
+                    text { string "deg." }
+                }
+            }
+            hgroup {
+                text { string "Amount" }
+                slider { min -2 max 2 value 1 tag slideramount link editamount }
+                edit {
+                    string "1" tag editamount
+                    multiline no
+                }
+            }
+        }
+        panel {
+            string "Plotting current factor" fontweight bold
+            vgroup {
+                hgroup {
+                    halign left
+                    vgroup {
+                        halign left
+                        checkbox { string "Auto range" value 1 tag cfrangeauto callback cellfactorHandler }
+                        checkbox { string "Include zero" value 0 tag cfrangezero callback cellfactorHandler }
+                    }
+                    text { string "Min" }
+                    edit { string "" teststring "-0.000" tag cfrangemin callback cellfactorHandler }
+                    text { string "Max" }
+                    edit { string "" teststring "-0.000" tag cfrangemax callback cellfactorHandler }
+                    pushbutton { string "From cells" tag boundsfromcells callback cellfactorHandler }
+                }
+                hgroup {
+                    halign left
+                    innerhalign left
+                    text { string "Scale" }
+                    popupmenu { string "Rainbow|Split Rainbow|Monochrome|Split Mono|Custom" teststring "Split Rainbow" tag cfcolormode callback cellfactorHandler }
+                    text { string "Color: pos" }
+                    colorchooser {
+                        minsize 16
+                        tag poscolorchooser
+                        color "1 0 0"
+                        callback cellColorPick
+                    }
+                    text { string "neg" }
+                    colorchooser {
+                        minsize 16
+                        tag negcolorchooser
+                        color "0 1 1"
+                        callback cellColorPick
+                    }
+                }
+                hgroup {
+                    halign left
+                    innerhalign left
+                    text { string "Edge color" }
+                    colorchooser {
+                        minsize 16
+                        tag edgecolorchooser
+                        color "0 0 0"
+                        callback cellColorPick
+                    }
+                }
+                pushbutton { string "Set for all factors" tag setallcf callback cellfactorHandler }
+            }
+        }
+        panel {
+            string "Edit all factors"
+            fontweight bold
+            hgroup {
+                pushbutton { string "Set all zero" fontweight bold tag zeroall callback editCurrentCellMgen_Callback }
+                checkbox { string "Use wild type" }
+            }
+        }
+    }
+}

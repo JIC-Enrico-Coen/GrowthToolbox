@@ -1,0 +1,92 @@
+panel {
+    string "Cells"
+    fontweight bold
+    fontsize 14
+    valign top
+    halign left
+    hgroup {
+        vgroup {
+            valign top
+            margin 0
+            inherit margin
+            hgroup {
+                text { string "Init virtual cells" }
+                edit { string 0 teststring "0.0000" halign right }
+            }
+            hgroup {
+                text { string "Cell sides" }
+                edit { string 12 teststring "0.0000" halign right }
+            }
+            hgroup {
+                text { string "Number of cells" }
+                edit { string 20 teststring "0.0000" halign right }
+            }
+            hgroup {
+                text { string "Rel. area" }
+                edit { string 0.002 teststring "0.0000" halign right }
+            }
+            hgroup {
+                text { string "Axis ratio" }
+                edit { string 1 teststring "0.0000" halign right }
+            }
+            checkbox { string "Allow overlap" value 1 }
+            checkbox { string "Allow over mesh edge" value 1 }
+            hgroup {
+                text { string "Max no. cells" }
+                edit { string 0 teststring "0.0000" halign right }
+            }
+            pushbutton { string Simplify }
+            group {
+                rows 2 columns 2
+                margin 0
+                halign center
+                # innerhalign center
+                text { string "Cell color" halign right }
+                text { string "Color variation" halign right }
+                hgroup {
+                    halign left
+                    valign center
+                    innermargin 0
+                    margin 0
+                    colorchooser { minsize 16 color "0 1 0" }
+                    colorchooser { minsize 16 color "1 0 0" }
+                }
+                edit { string "0.1" teststring "0.00" }
+            }
+        }
+        vgroup {
+            margin 0
+            valign fill
+            pushbutton { string "Delete all cells" fontweight bold halign fill }
+            pushbutton { string "Scatter cells" halign fill }
+            pushbutton { string "Fill with cells" halign fill }
+            pushbutton { string "Grid of cells" halign fill }
+            pushbutton { string "One cell" halign fill }
+            panel {
+                pushbutton { string "Shock cells" halign center }
+                slider { halign fill }
+                edit { string "0.1" teststring "0.000" halign center }
+                pushbutton { string "Unshock all" halign center }
+            }
+            radiogroup {
+                string Split
+                vgroup {
+                    halign center
+                    radiobutton { string Cells }
+                    radiobutton { string Edges }
+                }
+            }
+        }
+    }
+    panel {
+        string "Graphic properties"
+        fontweight bold
+        rows 2 columns 3
+        text { string "Edge width" }
+        text { string "Vertex size" }
+        edit { string 1 }
+        edit { string 0 }
+        pushbutton { string "Randomize colors" halign fill }
+        pushbutton { string "Uniform colors" halign fill }
+    }
+}

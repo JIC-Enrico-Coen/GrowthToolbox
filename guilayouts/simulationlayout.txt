@@ -1,0 +1,80 @@
+panel {
+    string "Simulation"
+    fontweight bold
+    fontsize 14
+    valign top
+    hgroup {
+        vgroup {
+            valign top
+            panel {
+                outermargin 2
+                innermargin 0
+                string "Enable features"
+                checkbox { string "Elastic growth" value 1 }
+                checkbox { string "Plastic growth" value 0 }
+                checkbox { string "Diffusion" value 1 }
+                checkbox { string "Retriangulate" value 1 }
+                checkbox { string "Split long edges" value 1 }
+                checkbox { string "Flip edges" value 1 }
+                checkbox { string "Split bent edges" value 0 }
+                checkbox { string "Split bio cells" value 0 }
+                checkbox { string "Use tensors" value 1 }
+                checkbox { string "Negative growth" value 1 }
+                checkbox { string "Frozen gradients" value 1 }
+            }
+            panel {
+                margin 1
+                valign top
+                string "Time step"
+                edit { string 0.01 teststring 000000 halign center }
+            }
+        }
+        vgroup {
+            margin 0
+            group {
+                margin 1
+                rows 3 columns 2
+                pushbutton { string "De-strain" halign fill }
+                pushbutton { string "Dissect" halign fill }
+                pushbutton { string "Flatten" halign fill }
+                pushbutton { string "Flat strain" halign fill }
+                pushbutton { string "Explode" halign fill }
+            }
+            group {
+                rows 5 columns 2
+                margin 0
+                text { string "Max FEs" }
+                text { string "Max bend" }
+                text { string "Edge scaling" }
+                text { string "Split margin" }
+                text { string "Min. pol. grad" }
+                edit { string 0 teststring 00000 halign right }
+                edit { string 0.3 teststring 00000 halign right }
+                edit { string 0 teststring 00000 halign right }
+                edit { string 1.4 teststring 00000 halign right }
+                edit { string 0 teststring 00000 halign right }
+            }
+            checkbox { string "Rel. pol. grad." value 0 }
+            group {
+                rows 3 columns 2
+                margin 0
+                text { string "Tol. diff." }
+                text { string "Tol. elast." }
+                text { string "Time limit" }
+                edit { string "1e-05" teststring 000000 halign right }
+                edit { string "1e-04" teststring 000000 halign right }
+                edit { string 1000 teststring 000000 halign right }
+            }
+            panel {
+                margin 1
+                rows 1
+                string Freeze
+                slider { halign fill minsize "100 20" }
+                edit { string 0 teststring 0000 }
+            }
+        }
+    }
+    panel {
+        text { string "" teststring "000000000" lines 4 halign fill valign fill }
+    }
+}

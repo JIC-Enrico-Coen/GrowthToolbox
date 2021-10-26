@@ -1,0 +1,61 @@
+Dialog layout notes
+===================
+
+Each node has these components:
+
+type        What sort of item this is.  Alternatives are:
+    panel
+    radiogroup
+    group
+    pushbutton
+    checkbox
+    radiobutton
+    text
+    edit
+    popupmenu
+handle      The GUI handle, if any, corresponding to this item.  Empty for items of type "group".
+children    A cell array of structures, one for each child.
+attribs     All other attributes of the item.
+
+
+attribs may contain:
+
+title S              The name of this item.
+minsize [W,H]        The minimum size required by this item.
+position [X,Y,W,H]   The position of this item, which will be relative to one of its ancestors.
+halign {left|center|right|fill}
+valign {top|center|bottom|fill}      How this item is aligned within the bounding box it is given
+                                     by its parent.
+innerhalign {left|center|right|fill}
+innervalign {top|center|bottom|fill} How the contents of this item are aligned within the item.
+
+
+For grouping items only:
+
+direction {horiz|vert}  Whether its children are arranged horizontally or vertically.
+outermargin N           The gap all around its interior between its boundary and its children.
+innermargin N           The gap between those items.
+interiorsize [W,H]      The size of the interior of this item.
+childpos {rel|abs}      Whether the children of this item are positioned relative to it,
+                        or relative to the same ancestor as this item is positioned relative to.
+
+For edit items only
+
+multiline {yes|no}      Whether the edit box allows multi-line text.
+
+
+Determining the necessary size of a control is problematic.
+Get pos and extent.
+For a checkbox:
+	pos = [pos([1 2]), extent(3)+20, extent(4)]
+For a radio button:
+	pos = [pos([1 2]), extent(3)+20, extent(4)]
+For a button:
+    pos = [pos([1 2]), extent(3)+3, extent(4)+3]  % 3 is a guess.  Without, the text looks cramped.
+For a popupmenu:
+    Extent yields the length of the first item (ignoring the selection).
+    pos = [pos([1 2]), extent(3)+45, extent(4)+3]
+
+
+Need to properly use the interior origin point for panels and radiogroups.
+In any horizontal group, the valign for each item should default to center.

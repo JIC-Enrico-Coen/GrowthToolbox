@@ -1,0 +1,9 @@
+function [x,ok] = getDoubleFromDialog( varargin )
+%[x,ok] = getDoubleFromDialog( varargin )
+%   
+    s = get( varargin{1}, 'String' );
+    [x,ok] = getDoubleFromString( ...
+        get( varargin{1}, 'UserData' ),...
+        s, ...
+        varargin{2:nargin} );
+end

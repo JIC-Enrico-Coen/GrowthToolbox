@@ -1,0 +1,123 @@
+figure {
+tag wholelayout
+vgroup {
+    margin 3
+    inherit margin
+    halign left
+    valign top
+    hgroup {
+        vgroup {
+            valign top
+            hgroup {
+                axes { minsize 50 halign left valign center  tag thumbnail }
+                group {
+                    rows 2 columns 3
+                    margin 1
+                    pushbutton { string "Restart" halign fill }
+                    group { }
+                    pushbutton { string "Save Stage." halign fill }
+                    pushbutton { string "Reload Stage" halign fill }
+                    text {
+                        string "BUSY" teststring "BUSYBUSY" fontweight bold
+                        halign center haligncontent center valign top
+                    }
+                    pushbutton { string "Reset" fontweight bold halign fill }
+                }
+            }
+            radiogroup {
+                string "Select Tool" fontweight bold fontsize 14
+                tag selectpanel
+                rows 2 columns 2
+                radiobutton { string "Mesh Editor" fontweight bold tag "subpanels_1" }
+                radiobutton { string "Factors" fontweight bold tag "subpanels_2" }
+                radiobutton { string "Simulation" fontweight bold tag "subpanels_3" }
+                radiobutton { string "Cells" fontweight bold tag "subpanels_4" }
+                #radiobutton { string "Growth Tensors" fontweight bold tag "subpanels_5" }
+                # group { }
+                SelectionChangeFcn testSelectPanel
+            }
+            group {
+                tag subpanels
+                margin 0
+                singlechild yes
+                selectedchild 1
+                innerhalign left
+                innervalign top
+                include "mesheditorlayout.txt"
+                include "factorslayout.txt"
+                include "simulationlayout.txt"
+                include "cellslayout.txt"
+              # include "growthtensorslayout.txt"
+            }
+            panel {
+                outermargin 1
+                innermargin 2
+                string "Interaction function" fontweight bold
+                hgroup {
+                    equalwidth true
+                    pushbutton { string Edit }
+                    pushbutton { string Call }
+                    pushbutton { string Rewrite }
+                    pushbutton { string Notes }
+                    text { string DISABLED }
+                }
+                text { string "" halign fill }
+            }
+            panel {
+                margin 0
+                string Run fontweight bold
+                rows 2 columns 5
+                pushbutton { string "Run for" halign fill }
+                pushbutton { string "Run until" halign fill }
+                edit { string 10 halign fill }
+                edit { string 0 halign fill }
+                text { string steps }
+                text { string time }
+                pushbutton { string Step halign fill }
+                pushbutton { string "Run to" halign fill }
+                pushbutton { string Stop fontweight bold halign right }
+                hgroup {
+                    hgroup {
+                        halign left
+                        edit { string 1 }
+                        text { string area halign left }
+                    }
+                }
+            }
+        }
+        vgroup {
+            valign top
+            # pulldown menus
+            vgroup {
+                hgroup {
+                    text { string "Plot morphogen" }
+                    checkbox { value 1 halign right }
+                }
+                popupmenu { string "KAPAR|KAPER" teststring "x" }
+                hgroup {
+                    text { string "Plot output value" }
+                    checkbox { value 0 halign right }
+                }
+                popupmenu { string "Actual growth|Spec. growth" teststring "x" }
+                hgroup {
+                    text { string "Plot tensor axes" }
+                    checkbox { value 0 halign right }
+                }
+                popupmenu { string "Total|Areal|Major|Minor|Parallel|Perpendicular|Normal" teststring "x" }
+            }
+            include "plotoptionslayout.txt"
+            vgroup {
+                pushbutton { string "Record movie..." halign center }
+                checkbox { value 1 string "Auto-name" halign center }
+                hgroup {
+                    halign center
+                    text { string "Frames/sec" } edit { string "10" teststring "000" }
+                }
+                pushbutton { string "Take snapshot" halign center }
+                pushbutton { string "Show hisrtory" halign center }
+            }
+            # record, snapshot, show history
+        }
+    }
+}
+}

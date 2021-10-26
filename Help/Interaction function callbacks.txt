@@ -1,0 +1,142 @@
+GFtbox supports the installation of callbacks by the interaction function, in
+order to execute user code at various points in the simulation cycle other than the main call to the interaction function:
+
+    * after the diffusion and growth calculations
+    * before splitting bio cells
+    * after splitting bio cells
+    * before plotting the mesh
+    * after plotting the mesh
+
+There is an old method and a new method of installing these.
+
+The old method of installation was by having the interaction function
+install function handles for the callbacks into certain fields in the mesh by
+means of leaf_setproperty. This had the disadvantage that function handles cannot be
+stored and reloaded from .mat files, and so when loading a propject, none of these
+callbacks would exist until they had been reinstalled by a call to the interaction function.
+
+The new method, which will be used for all new projects, has the interaction function take an arbitrary number of arguments.
+The first argument is always the mesh, and if this is the only argument, the
+i.f. runs as it normally does.  With more than one argument, the second must be the
+name of a callback function, preferably defined as a local function in the i.f. file.  In
+that case, the main body of the i.f. will not be called. Instead, the named function will
+be called, and its arguments will be the mesh and all of the arguments supplied to the i.f.
+after the function name.
+
+The names of callbacks are reserved. If you want to define a callback for, say, making
+modifications to the plot after the mesh has been drawn, the function for doing this
+must be called "GFtbox_Postplot_Callback".  (These rather long-winded names are chosen
+to avoid name clashes with anything that happens to exist already.)  The name that is
+passed to the interaction function omits the "GFtbox_" and "_Callback" parts, which get
+added automatically.
+
+A new interaction function automatically has a complete set of callbacks predefined with
+empty bodies. If you do not need some of them for your project, you can safely delete them.
+
+You do not need to do anything to install such callbacks.  Simply by existing in your
+interaction function file, they will be called at the right times.
+
+Each of these callbacks will take the same arguments, whether new-style or old-style.
+The results, however, are returned differently (because of limitations in
+Matlab's ability to deal with functions returning variable numbers of arguments).
+Eac new-style callback must return exactly two arguments.  The first is the
+mesh (which the function may have modified), and the second is a struct containing
+all of the other results that the old-style callback would have been expected to return.
+If a callback does not need to return any other results, then the result output should
+be set to []. If it needs to set some of the results but not others, it can simply not
+set those components of the results struct.
+
+The following callbacks are currently supported:
+
+    GFtbox_Postiterate_Callback
+    GFtbox_Precellsplit_Callback
+    GFtbox_Postcellsplit_Callback
+    GFtbox_Preplot_Callback
+    GFtbox_Postplot_Callback
+
+These would previously be stored as the respective properties:
+
+    userpostiterateproc (in m.globalProps)
+    bioApresplitproc (in m.globalProps)
+    bioApostsplitproc (in m.globalProps)
+    userpreplotproc (in m.plotdefaults)
+    userplotproc (in m.plotdefaults)
+
+Here are outlines of how they should be defined. Note that the pattern is
+the same for all of them except GFtbox_Precellsplit_Callback, which is
+currently the only callback that has to return a result besides the mesh
+itself. However, all of them must be defined to return a results output,
+and all of them must set it.  The comment "%#ok<DEFNU>" at the end of each
+function definition suppresses Matlab's warning that the function seems
+to never be called.
+
+    function [m,result] = GFtbox_Postiterate_Callback( m ) %#ok<DEFNU>
+        result = [];
+        % Your code here.
+    end
+    
+    function [m,result] = GFtbox_Precelldivision_Callback( m, ci ) %#ok<DEFNU>
+        result = [];
+        % Your code here.
+    
+        % The components expected in the result structure are
+        % result.divide: a boolean, saying whether this cell should divide
+        % If the user only wishes to specify whether the cell should divide,
+        % and not the placement of the division wall, then no other fields
+        % need be set.  Otherwise, set both of these:
+        % result.dividepoint: the coordinates of a point on the new cell wall.
+        % result.perpendicular: a vector perpendicular to the new cell wall.
+    end
+    
+    function [m,result] = GFtbox_Postcelldivision_Callback( m, ci, cei, newci, newcei, oe1, oe2, ne1, ne2, ne3 ) %#ok<DEFNU>
+        result = [];
+        % Your code here.
+    end
+    
+    function [m,result] = GFtbox_Preplot_Callback( m, theaxes ) %#ok<DEFNU>
+        result = [];
+        % Your code here.
+        % theaxes is the axes object into which the mesh is about to be plotted.
+    end
+    
+    function [m,result] = GFtbox_Postplot_Callback( m, theaxes ) %#ok<DEFNU>
+        result = [];
+        % Your code here.
+        % theaxes is the axes object into which the mesh has just been plotted.
+    end
+
+To maintain compatibility with old projects, the property m.globalProps.newcallbacks
+is present and true in meshes that use this style, and absent or false in those that
+use the old style.  Do not change this property yourself, unless you want to update
+an old project to use the new method.  To do that requires the following steps:
+
+1.  For safety, make a backup copy of your interaction function.
+
+2.  Load the initial stage of the project.
+
+3.  If you use any callbacks, you must edit the interaction function. Rename all of
+your callbacks to the new standard names, and change their output arguments to
+conform to the summaries above.  Delete all of your code that installs callbacks
+via leaf_setproperty or leaf_plotoptions.  Change the function header to add a second
+argument called "varargin", and a second output called "result".
+
+4.  Export the mesh.
+
+5.  At the Matlab console, execute the following commands:
+    global EXTERNMESH
+    EXTERNMESH = leaf_setproperty( EXTERNMESH, 'newcallbacks', true );
+
+6.  Import the mesh and save the stage.  You might get an error at this point
+if you have not edited the interaction function exactly as specified above.
+
+7.  Close the i.f. in the editor and then regenerate it (the "Rewrite" button).
+
+If for any reason you want to invoke an interaction function callback yourself,
+it can be done thus:
+
+    [m,results] = invokeIFcallback( m, callbackname, ... );
+
+callbackname should be the name of the callback without the "GFtbox_" and "_Callback"
+parts, e.g. 'Preplot'.  The remaining arguments should be whatever the callback expects.
+invokeIFcallback will automatically find the interaction function, and silently do
+nothing if there isn't one, or if the specified callback does not exist.

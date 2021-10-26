@@ -1,0 +1,26 @@
+figure {
+    margin 5
+    valign fill
+    halign fill
+    innerhalign right
+    columns 1
+    resize on
+    string "^Name"
+    text {
+        string ^PromptString
+    }
+    listbox {
+        focus true
+        tag choices
+        string ^ListString
+        lines 10
+        value 1^InitialValue
+        multiline ^SelectionMode
+        minsize "0 0^ListSize"
+        teststring "0000000000000000"
+    }
+    hgroup {
+        okbutton { string OK^OKString teststring "00000000" }
+        cancelbutton { string Cancel^CancelString teststring "00000000" }
+    }
+}

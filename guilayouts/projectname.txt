@@ -1,0 +1,20 @@
+figure {
+    string "Project name"
+    margin 20
+    inherit margin
+    precallback prepareProjectNameDialog
+    focus basename
+    text { string "Choose a name for your project:" halign left }
+    hgroup {
+        innermargin 0
+        halign center
+        edit { string "GPT_" teststring "0GPT_" tag prefix halign right }
+        edit { string "" teststring "0000000000000000" tag basename halign fill focus true }
+        edit { string "_00001122" tag suffix halign let }
+    }
+    hgroup {
+        equalwidths yes
+        okbutton { halign fill teststring "000000000000" minsize "100 10" }
+        cancelbutton { halign fill teststring "000000000000" minsize "100 10" }
+    }
+}

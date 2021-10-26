@@ -1,0 +1,58 @@
+
+% Here you may write any functions of your own, that you want to call from
+% the interaction function, but never need to call from outside it.
+% Remember that they do not have access to any variables except those
+% that you pass as parameters, and cannot change anything except by
+% returning new values as results.
+% Whichever section they are called from, they must respect the same
+% restrictions on what modifications they are allowed to make to the mesh.
+
+% The GFtbox_..._Callback routines can be deleted if you do not use them.
+% Those that you retain will be automatically called by GFtbox at certain
+% points in the simulation cycle.
+% If you retain them, their headers specifying their arguments and results
+% must not be altered.
+
+function [m,result] = GFtbox_Precelldivision_Callback( m, ci ) %#ok<DEFNU>
+    result = [];
+    % Your code here.
+
+    % If a nonempty result is to be returned, it should be a struct
+    % with fields result.divide, result.dividepoint, and result.perpendicular.
+end
+
+function [m,result] = GFtbox_Postcelldivision_Callback( m, ci, cei, newci, newcei, oe1, oe2, ne1, ne2, ne3 ) %#ok<DEFNU>
+    result = [];
+    % Your code here.
+end
+
+function [m,result] = GFtbox_Postiterate_Callback( m ) %#ok<DEFNU>
+    result = [];
+    % Your code here.
+end
+
+function [m,result] = GFtbox_Preplot_Callback( m, theaxes ) %#ok<DEFNU>
+    result = [];
+    % Your code here.
+end
+
+function [m,result] = GFtbox_Postplot_Callback( m, theaxes ) %#ok<DEFNU>
+    result = [];
+    % Your code here.
+end
+
+function s = GFtbox_modelOptions( m )
+    % Get the current model options and return them in a struct.
+    fprintf( 1, 'Model options:\n' );
+    s = struct();
+    fns = fieldnames( m.userdata.ranges );
+    for i=1:length(fns)
+        fn = fns{i};
+        s.(fn) = m.userdata.ranges.(fn).range{m.userdata.ranges.(fn).index};
+        if ischar( s.(fn) )
+            fprintf( 1, '    %s: %s\n', fn, s.(fn) );
+        else
+            fprintf( 1, '    %s: %f\n', fn, s.(fn) );
+        end
+    end
+end

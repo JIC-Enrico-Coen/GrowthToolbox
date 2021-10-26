@@ -1,0 +1,8 @@
+figure {
+    margin 0
+    resize on
+    valign fill
+    halign fill
+    string "Test"
+    include "plotoptionslayout.txt"
+}

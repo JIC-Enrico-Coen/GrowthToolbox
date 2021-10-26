@@ -1,0 +1,16 @@
+
+%%% END OF USER CODE: INITIALISATION
+
+%%% SECTION 1: ACCESSING MORPHOGENS AND TIME.
+%%% AUTOMATICALLY GENERATED CODE: DO NOT EDIT.
+
+    global gOLD_K_PAR gOLD_K_PER gOLD_K_POL
+    global gOLD_BEND_PAR gOLD_BEND_PER
+    global gOLD_ARREST
+    gpar_i = gOLD_K_PAR;
+    Gpar = m.morphogens(:,gpar_i);
+    gperp_i = gOLD_K_PER;
+    Gperp = m.morphogens(:,gperp_i);
+    polariser_i = gOLD_K_POL;
+    P = m.morphogens(:,polariser_i);
+

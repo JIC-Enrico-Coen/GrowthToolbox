@@ -1,0 +1,13 @@
+figure {
+    halign center
+    string "string"
+    margin 15
+	tag figure
+    text {
+        string "(no text here)"
+        tag msg
+        fontsize 10
+        teststring "000000000000000000000000000000000000\n0\n0\n0\n0"
+    }
+    okbutton { halign center valign top teststring "00000000" fontsize 10 }
+}

@@ -1,0 +1,20 @@
+figure {
+    string "VV layer params"
+    margin 20
+    inherit margin
+    group {
+        rows 2
+        columns 2
+        innermargin 5
+        halign center
+        text { string "Number of cells" }
+        text { string "Segments per edge" }
+        edit { string "" teststring "0000" tag numcells halign fill }
+        edit { string "" teststring "0000" tag edgedivisions halign fill }
+    }
+    hgroup {
+        equalwidths yes
+        okbutton { halign fill teststring "000000000000 " minsize "100 10" }
+        cancelbutton { halign fill teststring "000000000000" minsize "100 10" }
+    }
+}

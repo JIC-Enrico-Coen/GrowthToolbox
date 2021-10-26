@@ -1,0 +1,15 @@
+You should turn off screen blanking and screen savers while recording a movie.
+Also, make sure that the picture of the mesh is wholly on screen, and is not
+obscured by any other windows. This is because movies (and snapshots, for that matter)
+are recorded by copying the pixels directly from the screen, rather than plotting
+into an off-screen buffer. Whatever is on the screen (except for the mouse, which is
+ignored) is what goes into the movie or snapshot.
+
+On Windows, to turn off screen blanking, open Control Panel/Power Options.
+To turn off the screen saver, right-click the desktop background. This
+will bring up a menu, and on Windows Vista, the item to select is "Personalize".
+On other versions of Windows it may be called "Properties".
+
+On Mac OS, open System Preferences, and use the "Energy Saver" panel to turn
+off screen blanking, and the "Desktop & Screen Saver" panel to turn off the
+screen saver.

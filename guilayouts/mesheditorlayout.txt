@@ -1,0 +1,144 @@
+# mesheditorlayout.txt
+
+panel {
+    string "Mesh Editor"
+    fontweight bold
+    fontsize 14
+    valign top
+    hgroup {
+        panel {
+            string ""
+            direction vert
+            hgroup {
+                innermargin 2
+                hgroup {
+                    innermargin 2
+                    equalwidths true
+                    pushbutton { string New halign fill }
+                    pushbutton { string Replace halign fill }
+                }
+                popupmenu {
+                    string "Circle|Semicircle|Hemisphere|Lobes|Lune|Rectangle|One element|Cylinder|Cup|Cap|Capsule|Snapdragon|Icosahedron"
+                    halign fill
+                }
+            }
+            group {
+                innermargin 2
+                rows 3 columns 6
+                text { string "g11" halign right }
+                text { string "g21" halign right }
+                text { string "g31" halign right }
+                text { string "g41" halign right }
+                edit { string 2 teststring 000 tag param11 }
+                edit { string 2 teststring 000 tag param21 }
+                edit { string 2 teststring 000 tag param31 }
+                edit { string 2 teststring 000 tag param41 }
+                text { string "g12" halign right }
+                text { string "g22" halign right }
+                text { string "g32" halign right }
+                text { string "g42" halign right }
+                edit { string 2 teststring 000 tag param12 }
+                edit { string 2 teststring 000 tag param22 }
+                edit { string 2 teststring 000 tag param32 }
+                edit { string 2 teststring 000 tag param42 }
+                text { string "g13" halign right }
+                text { string "g23" halign right }
+                text { string "g33" halign right }
+                text { string "g43" halign right }
+                edit { string 2 teststring 000 tag param13 }
+                edit { string 2 teststring 000 tag param23 }
+                edit { string 2 teststring 000 tag param33 }
+                edit { string 2 teststring 000 tag param43 }
+            }
+        }
+        vgroup {
+            pushbutton { string "Rot. xyz" valign top }
+            vgroup {
+                valign center
+                margin 0
+                text { string "Poisson" halign center }
+                edit { string 0.3 halign fill }
+            }
+            checkbox { string Flat valign bottom }
+        }
+    }
+    hgroup {
+        popupmenu { string "----|Set|Add|Fix" }
+        checkbox { string x value 1 }
+        checkbox { string y value 1 }
+        checkbox { string z value 1 }
+        pushbutton { string "Unfix All" }
+    }
+    hgroup {
+        vgroup {
+            panel {
+                string ""
+                margin 2
+                halign fill
+                innerhalign center
+                pushbutton { string "Refine mesh" }
+                slider { }
+                edit { string 1.0 halign center }
+            }
+            pushbutton { string "Flip orientation" }
+            radiogroup {
+                string ""
+                margin 1
+                vgroup {
+                    hgroup {
+                        halign center
+                        pushbutton { string "+ rot." }
+                        pushbutton { string "- rot." }
+                    }
+                    hgroup {
+                        halign fill
+                        innermargin 0
+                        radiobutton { string x value 1 }
+                        radiobutton { string y }
+                        radiobutton { string z }
+                    }
+                    slider { }
+                    edit { string 45.0 teststring 00000 halign center minsize "60 15" }
+                }
+            }
+        }
+        vgroup {
+            panel {
+                string "Modify Z shape"
+                margin 2
+                group {
+                    rows 4
+                    columns 2
+                    margin 2
+                    pushbutton { string "Zero" halign fill }
+                    pushbutton { string "Random" halign fill }
+                    pushbutton { string "Bowl Z" halign fill }
+                    pushbutton { string "Saddle Z" halign fill }
+                    vgroup { }
+                    edit { string "0.1" halign fill }
+                    vgroup { }
+                    edit { string "2" halign fill }
+                }
+            }
+            radiogroup {
+                string Thickness
+                margin 1
+                vgroup {
+                    halign center
+                    hgroup {
+                        halign center
+                        innermargin 1
+                        radiobutton { string Physical }
+                        radiobutton { string Direct }
+                    }
+                    hgroup {
+                        halign center
+                        innermargin 10
+                        pushbutton { string Set }
+                        edit { string "" teststring 000000 }
+                    }
+                }
+            }
+        }
+    }
+}

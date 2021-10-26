@@ -1,0 +1,83 @@
+figure {
+    string "Create morphogens"
+    margin 20
+    resize off
+    focus X_ed_mgenname
+    group {
+        rows 2 columns 2
+        hgroup {
+            valign top
+            radiogroup {
+                tag X_rbg_type
+                columns 1
+                margin 5
+                innermargin 5
+                outermargin 0
+                valign top
+                bordertype none
+                text { string "Morphogen type" halign center }
+                radiobutton { string "Identity" tag X_rb_type_id value 1 }
+                radiobutton { string "Signalling" tag X_rb_type_s }
+                radiobutton { string "Visual" tag X_rb_type_v }
+                radiobutton { string "Local" tag X_rb_type_l }
+                # radiobutton { string "Cellular" tag X_rb_type_c }
+                radiobutton { string "Other" tag X_rb_type_other }
+                SelectionChangeFcn updateCreateMorphogensDialog
+            }
+            radiogroup {
+                tag X_rgb_side
+                columns 1
+                margin 5
+                innermargin 5
+                outermargin 0
+                bordertype none
+                valign top
+                text { string "Mesh side" halign center tag X_text_side }
+                radiobutton { string "Both sides" tag X_rb_side_both value 1 }
+                radiobutton { string "A side" tag X_rb_side_a }
+                radiobutton { string "B side" tag X_rb_side_b }
+                SelectionChangeFcn updateCreateMorphogensDialog
+            }
+            vgroup {
+                margin 5
+                innermargin 5
+                bordertype none
+                valign top
+                text { string "Morphogen name" halign center }
+                hgroup {
+                    valign top
+                    innermargin 0
+                    halign left
+                    text {
+                        halign right haligncontent right string "id_" teststring "idx_"
+                        tag X_tx_mgenprefix
+                    }
+                    edit {
+                        halign left haligncontent center teststring "MMMMMMMMMMMM"
+                        tag X_ed_mgenname
+                        callback updateCreateMorphogensDialog
+                    }
+                }
+                text { string "Hit enter to add to list." halign center }
+            }
+            group {
+                minsize "30 10"
+            }
+        }
+        hgroup {
+            halign right
+            cancelbutton { tag "" halign right teststring "Create & Exit" }
+            group {
+                minsize "30 10"
+            }
+        }
+        vgroup {
+            listbox { tag lb valign fill halign fill multiline true lines 10 string "" }
+            pushbutton {
+                string "Remove selected" tag X_pb_removeselection
+                callback updateCreateMorphogensDialog
+            }
+        }
+        okbutton { tag "" halign centre string "Create & Exit" }
+    }
+}

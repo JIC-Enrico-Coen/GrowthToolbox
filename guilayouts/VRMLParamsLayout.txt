@@ -1,0 +1,89 @@
+figure {
+    string "Set Size/Thickness"
+    margin 10
+    inherit margin
+    valign bottom
+    halign left
+    tag figure
+    hgroup {
+        halign left
+        valign top
+        radiogroup {
+            margin 5
+            inherit margin
+            halign left
+            valign fill
+            innervalign fill
+            string Size
+            fontweight bold
+            SelectionChangeFcn updateVRMLdialog
+            hgroup {
+                valign top
+                radiobutton { string "Scale by:" value 1 halign left tag do_size_scaleby }
+                edit { string 1 halign right tag size_scaleby
+                    callback updateVRMLdialog }
+            }
+            hgroup {
+                valign top
+                radiobutton { string "Scale to:" halign left tag do_size_scaleto }
+                edit { string 1 halign right tag size_scaleto
+                    callback updateVRMLdialog }
+            }
+            hgroup {
+                valign fill
+            }
+            hgroup {
+                valign bottom
+                text { string "Max diameter:" }
+                text { string "(bbdiam)" teststring "0000.00 mm" tag text_bbdiam }
+            }
+        }
+        radiogroup {
+            margin 5
+            inherit margin
+            halign left
+            valign top
+            string Thickness
+            fontweight bold
+            SelectionChangeFcn updateVRMLdialog
+            hgroup {
+                radiobutton { string "Scale by:" value 1 halign left tag do_thickness_scaleby }
+                edit { string 1 halign right tag thickness_scaleby
+                    callback updateVRMLdialog }
+            }
+            hgroup {
+                radiobutton { string "Scale to:" halign left tag do_thickness_scaleto }
+                edit { string 1 halign right tag thickness_scaleto
+                    callback updateVRMLdialog }
+            }
+            hgroup {
+                radiobutton { string "Set everywhere:" halign left tag do_thickness_setall }
+                edit { string 1 halign right tag thickness_setall
+                    callback updateVRMLdialog }
+            }
+            hgroup {
+                checkbox { string "Set minimum:" halign left tag do_thickness_setmin }
+                edit { string 0 halign right tag thickness_setmin
+                    callback updateVRMLdialog }
+            }
+            hgroup {
+                text { string "Range:" }
+                text { string "(thickness range)" teststring "0000.0 ... 0000.0 mm" tag text_thickrange }
+            }
+        }
+    }
+    panel {
+        text {
+            valign fill
+            halign fill
+            haligncontent left
+            string "Models for printing should be at least 1mm thick everywhere, and at least 2mm in most places. This will ensure that they are strong enough to survive the process."
+            teststring "Models for printing should be at least 1mm thick"
+            lines 4
+        }
+    }
+    hgroup {
+        okbutton { halign fill }
+        cancelbutton { halign fill }
+    }
+}

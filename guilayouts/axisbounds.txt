@@ -1,0 +1,33 @@
+figure {
+    string "Axis bounds"
+    margin 10
+    inherit margin
+    vgroup {
+        pushbutton { halign center string "Get current axis bounds" tag axisbounds callback getAxisBoundsFromPicture_Callback }
+        pushbutton { halign center string "Get mesh bounding box" tag meshbounds callback getAxisBoundsFromPicture_Callback }
+    }
+    group {
+        rows 4
+        columns 3
+        innermargin 5
+        halign fill
+        text { string "" halign left }
+        text { string "x" halign left }
+        text { string "y" halign left }
+        text { string "z" halign left }
+        text { string "min" halign center }
+        edit { string "" teststring "0000000" tag xmin halign fill }
+        edit { string "" teststring "0000000" tag ymin halign fill }
+        edit { string "" teststring "0000000" tag zmin halign fill }
+        text { string "max" halign center }
+        edit { string "" teststring "0000000" tag xmax halign fill }
+        edit { string "" teststring "0000000" tag ymax halign fill }
+        edit { string "" teststring "0000000" tag zmax halign fill }
+    }
+    hgroup {
+        halign fill
+        equalwidths yes
+        okbutton { halign fill teststring "000000 " minsize "70 10" }
+        cancelbutton { halign fill teststring "000000" minsize "70 10" }
+    }
+}

@@ -1,0 +1,11 @@
+The following rules should be observed in deciding on a time step:
+
+1. Time step * growth rate <= 0.1
+
+In other words, the amount of growth in one time step should be everywhere not more than 10%.
+
+2. The amount by which any part of the mesh rotates in one time step should be not more than about 10 degrees.
+
+3. The change in the concentration of any diffusible morphogen at any point should be not more than 10%.
+
+If the time step is much larger by any of these criteria, the computation may not be accurate, and may be unstable.

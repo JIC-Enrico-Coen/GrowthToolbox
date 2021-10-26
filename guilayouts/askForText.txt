@@ -1,0 +1,23 @@
+figure {
+    string "string^title"
+    margin 15
+    inherit margin
+	tag figure
+    focus text
+    text { string "^rubric"
+           halign left haligncontent left tag rubric }
+    edit { string "^init" teststring "00000000000000000000000000000000"
+           tag text
+           halign fill valign fill haligncontent left
+           multiline no^multi lines 1^lines }
+    hgroup {
+        valign top
+        halign center
+        hgroup {
+            equalwidths yes
+            halign center
+            okbutton { halign fill valign top teststring "000000000000" }
+            cancelbutton { halign fill teststring "000000000000" }
+        }
+    }
+}

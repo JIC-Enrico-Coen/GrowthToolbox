@@ -1,0 +1,12 @@
+
+function m = local_setproperties( m )
+% This function is called at time zero in the INITIALISATION section of the
+% interaction function.  It provides commands to set each of the properties
+% that are contained in m.globalProps.  Uncomment whichever ones you would
+% like to set yourself, and put in whatever value you want.
+%
+% Some of these properties are for internal use only and should never be
+% set by the user.  At some point these will be moved into a different
+% component of m, but for the present, just don't change anything unless
+% you know what it is you're changing.
+

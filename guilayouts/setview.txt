@@ -1,0 +1,23 @@
+figure {
+    string "Set View Direction"
+    margin 20
+    hgroup {
+        vgroup {
+            halign right
+            text { halign right string "Azimuth" }
+            text { halign right string "Elevation" }
+            text { halign right string "Roll" }
+        }
+        vgroup {
+            halign left
+            edit { string "" teststring "00000000" tag azimuth halign fill }
+            edit { string "" teststring "00000000" tag elevation halign fill }
+            edit { string "" teststring "00000000" tag roll halign fill }
+        }
+    }
+    hgroup {
+        equalwidths yes
+        okbutton { halign fill teststring "000000000000 " minsize "100 10" }
+        cancelbutton { halign fill teststring "000000000000" minsize "100 10" }
+    }
+}

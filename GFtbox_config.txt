@@ -1,0 +1,13 @@
+revnum 5508
+revdate 2017-09-13 14:30
+compressor Motion JPEG AVI
+FontName Helvetica
+FontUnits pixels
+FontSize 10.018109
+FontWeight normal
+FontAngle normal
+bioedgethickness 1
+biovertexsize 1
+Renderer OpenGL
+usegraphicscard false
+catchIFExceptions true

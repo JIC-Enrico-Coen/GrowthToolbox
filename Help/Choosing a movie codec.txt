@@ -1,0 +1,14 @@
+The Movie/Codec menu lists all of the compressors that Matlab offers for generating movies.
+Not all of these compressors are supported on all platforms. In particular,
+on Mac OS and 64-bit Windows Vista some older versions of Matlab do not support ANY
+of these compressors, and more recent versions of Matlab (R2011a onwards) only
+support Motion JPEG.
+
+Therefore, on some Matlab installations movies must be generated uncompressed, and so may
+be very large. They should be compressed with external video processing software before
+being uploaded anywhere or used in PowerPoint presentations, because their size will
+not only take up excessive space, it will hinder real-time playback.
+
+A suitable program for compressing movies is VirtualDub, a free download from
+www.virtualdub.org. Of the compression methods it offers, the one most likely to
+generate movies that play everywhere is Cinepak.

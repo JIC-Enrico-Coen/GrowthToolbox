@@ -1,0 +1,70 @@
+figure {
+    string "Gyrate view"
+    margin 10
+    inherit margin
+    vgroup {
+        radiogroup {
+            bordertype none
+            rows 2
+            columns 2
+            equalwidths true
+            tag oscButtonGroup
+            text { string "Frames" halign left }
+            text { string "Cycles" halign left }
+            radiobutton { string "Oscillate" halign left tag oscButton }
+            text { string "Oscillation angle" halign left }
+            text { string "Tilt angle" halign left }
+            edit { string "60^frames" teststring "000000"
+                   tag numFramesText
+                   halign fill valign fill haligncontent left
+                   multiline no lines 1 }
+            edit { string "1^cycles" teststring "000000"
+                   tag cyclesText
+                   halign fill valign fill haligncontent left
+                   multiline no lines 1 }
+            radiobutton { string "Spin" halign left tag spinButton }
+            edit { string "0^waveangle" teststring "000000"
+                   tag waveangleText
+                   halign fill valign fill haligncontent left
+                   multiline no lines 1 }
+            edit { string "0^tiltangle" teststring "000000"
+                   tag tiltangleText
+                   halign fill valign fill haligncontent left
+                   multiline no lines 1 }
+        }
+        panel {
+            margin 0
+            string Axis
+            vgroup {
+                innermargin 5
+                radiogroup {
+                    tag axisButtonGroup
+                    equalwidths true
+                    bordertype none
+                    rows 3
+                    columns 3
+                    innermargin 5
+                    halign fill
+                    text { string "Global" halign center margin 0 }
+                    radiobutton { string "X" tag xaxis }
+                    radiobutton { string "Y" tag yaxis }
+                    radiobutton { string "Z" tag zaxis value 1 }
+                    text { string "Mesh" halign center margin 0 }
+                    radiobutton { string "Major" tag majoraxis }
+                    radiobutton { string "Middle" tag middleaxis }
+                    radiobutton { string "Minor" tag minoraxis }
+                    text { string "Camera" halign center margin 0 }
+                    radiobutton { string "Right" tag camerasightaxis }
+                    radiobutton { string "Up" tag camerarightaxis }
+                    radiobutton { string "Look" tag cameraupaxis }
+                }
+            }
+        }
+        hgroup {
+            halign fill
+            equalwidths yes
+            okbutton { halign fill teststring "000000" minsize "70 10" }
+            cancelbutton { halign fill teststring "000000" minsize "70 10" }
+        }
+    }
+}

@@ -1,0 +1,23 @@
+function m = ${ifname}( m )
+%m = $[ifname$]( m )
+%   Morphogen interaction function.
+${coderevinfo}
+${modelrevinfo}
+% The user may edit any part of this function between delimiters
+% of the form "USER CODE..." and "END OF USER CODE...".  The
+% delimiters themselves must not be moved, edited, deleted, or added.
+
+% There are many prompt comments (green). Delete them as they become redundant
+% A full list of system parameters is given at the end of this interaction function file
+% see function m = local_setproperties( m )
+% Most of these can be controlled from the GUI.
+% However, it is good practice to impose changes within this interaction file
+% To impose a system parameter, uncomment the appropriate line and change the value.
+
+    if isempty(m), return; end
+    	
+    fprintf( 1, ''%s found in %s\n'', mfilename(), which(mfilename()) );
+
+    realtime = m.globalDynamicProps.currenttime;
+    	
+%%% USER CODE: INITIALISATION

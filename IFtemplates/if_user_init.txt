@@ -1,0 +1,21 @@
+
+% In this section you may modify the mesh in any way whatsoever.
+
+    if (Steps(m)==0) && m.globalDynamicProps.doinit
+        % Put any code here that should only be performed at the start of
+        % the simulation.
+
+        % Reset several fields of m to their default states.
+        % Give the command "help resetMeshValues" for details.
+        % You can delete this if you do not want this to happen.
+        m = resetMeshValues( m );
+
+        if m.globalProps.IFsetsoptions
+            % Set up names for variant models.
+            m.userdata.ranges.modelname.range = { 'MODEL1', 'MODEL2' };
+            m.userdata.ranges.modelname.index = 1;
+        end
+    end
+    modelname = m.userdata.ranges.modelname.range{m.userdata.ranges.modelname.index};
+    fprintf('\nRunning %s model %s\n',mfilename, modelname);
+

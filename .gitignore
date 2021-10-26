@@ -1,0 +1,16 @@
+.DS_Store
+**/.DS_Store
+.DS_Store?
+GrowthToolbox/.DS_Store
+*.zip
+**/*~
+GrowthToolbox/matlab.mat
+**/*copy
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows generated files
+ehthumbs.db
+Thumbs.db
+*.asv

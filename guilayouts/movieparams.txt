@@ -1,0 +1,40 @@
+# movieparams.txt
+
+figure {
+    string "Movie Params"
+    fontweight bold
+    fontsize 14
+    valign top
+    vgroup {
+        vgroup {
+            innermargin 5
+            halign fill
+            text { string "These settings apply to:" }
+            checkbox { string "User snapshots" value 1 tag usersnaps }
+            checkbox { string "Stage snapshots" value 1 tag stagesnaps }
+            checkbox { string "Movies" value 1 tag movies }
+        }
+        # checkbox { string "Preserve aspect ratio" value 1 tag preserveaspect callback movieparamsHandler }
+        checkbox { string "Include color bar" value 1 tag includecolorbar callback movieparamsHandler }
+        group {
+            rows 3
+            columns 3
+            innermargin 5
+            halign fill
+            text { string "Width" halign left }
+            text { string "Height" halign left }
+            text { string "Magnification" halign left }
+            edit { string "" teststring "00000" tag width halign fill callback movieparamsHandler }
+            edit { string "" teststring "00000" tag height halign fill callback movieparamsHandler }
+            edit { string "" teststring "00000" tag magnification halign fill callback movieparamsHandler }
+            text { string "pixels" halign left }
+            text { string "pixels" halign left }
+        }
+        checkbox { string "Anti-alias" value 1 tag antialias callback movieparamsHandler }
+        text { halign left tag X_toobigwarning string "Warning: saving images this size may cause memory problems." }
+        hgroup {
+            okbutton { halign fill teststring "00000000" }
+            cancelbutton { halign fill teststring "00000000" }
+        }
+    }
+}

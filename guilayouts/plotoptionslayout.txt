@@ -1,0 +1,105 @@
+#plotoptionslayout.txt
+panel {
+    margin 1
+    inherit margin
+    string "Plot Options"
+    fontweight bold
+    checkbox { tag pd_enable string "Enable" value 1 callback updatePlotOptionsDialog }
+    checkbox { tag pd_allowsnaps halign right string "Allow snaps" value 1 callback updatePlotOptionsDialog }
+    checkbox { tag pd_show_fe_edges string "FE Edges" value 1 callback updatePlotOptionsDialog }
+    checkbox { tag pd_show_polgrad string "Pol. grad." value 1 callback updatePlotOptionsDialog }
+    checkbox { tag pd_show_cells string Cells value 1 callback updatePlotOptionsDialog }
+    hgroup {
+        halign left
+        innermargin 4
+        checkbox { string Multiplot value 0 valign top }
+        edit { tag pd_edit_margin string "0" teststring "000" valign top halign left callback updatePlotOptionsDialog }
+    }
+    radiogroup {
+        tag pd_rbg_side
+        bordertype none
+        rows 1
+        halign center
+        text { string Decor }
+        radiobutton { tag pd_rb_A string A callback updatePlotOptionsDialog }
+        radiobutton { tag pd_rb_B string B callback updatePlotOptionsDialog }
+        SelectionChangeFcn updatePlotOptionsDialog
+    }
+    hgroup {
+        text { string Sparsity halign right }
+        edit { tag pd_edit_sparsity string "0" teststring "000" halign left callback updatePlotOptionsDialog }
+    }
+    panel {
+        string Axes
+        fontweight bold
+        checkbox { tag pd_check_autoaxis string "Auto axis range" value 1 callback updatePlotOptionsDialog }
+        group {
+            rows 1
+            columns 2
+            halign center
+            text { string Margin }
+            edit { tag pd_edit_margin string "0" teststring "000" callback updatePlotOptionsDialog }
+        }
+        group {
+            rows 3
+            columns 3
+            halign center
+            text { string x }
+            text { string y }
+            text { string z }
+            edit { tag pd_edit_xmin string "0" teststring "000" callback updatePlotOptionsDialog }
+            edit { tag pd_edit_ymin string "0" teststring "000" callback updatePlotOptionsDialog }
+            edit { tag pd_edit_zmin string "0" teststring "000" callback updatePlotOptionsDialog }
+            edit { tag pd_edit_xmax string "0" teststring "000" callback updatePlotOptionsDialog }
+            edit { tag pd_edit_ymax string "0" teststring "000" callback updatePlotOptionsDialog }
+            edit { tag pd_edit_zmax string "0" teststring "000" callback updatePlotOptionsDialog }
+        }
+    }
+    panel {
+        string Colors
+        fontweight bold
+        hgroup {
+            halign left
+            checkbox { tag pd_check_mono string Monochrome callback updatePlotOptionsDialog }
+        }
+        checkbox { tag pd_check_autocolor string "Auto color range" value 1 callback updatePlotOptionsDialog }
+        checkbox { tag pd_check_extendzero string "Include zero" value 1 callback updatePlotOptionsDialog }
+        pushbutton { tag pd_button_frompicture string "From picture" callback updatePlotOptionsDialog }
+        hgroup {
+            halign center
+            text { string Min haligncontent center }
+            edit { tag pd_edit_mincolor string "0" teststring "000" callback updatePlotOptionsDialog }
+            text { string Max haligncontent center }
+            edit { tag pd_edit_maxcolor string "0" teststring "000" callback updatePlotOptionsDialog }
+        }
+    }
+    panel {
+        string "View and Clip"
+        fontweight bold
+        hgroup {
+            halign center
+            togglebutton { tag pd_button_pan string Pan callback updatePlotOptionsDialog }
+            togglebutton { tag pd_button_zm string Zm callback updatePlotOptionsDialog }
+            togglebutton { tag pd_button_rot string Rot callback updatePlotOptionsDialog }
+            togglebutton { tag pd_button_ru string RU callback updatePlotOptionsDialog }
+        }
+        hgroup {
+            halign left
+            checkbox { tag pd_check_clip string Clip callback updatePlotOptionsDialog }
+            pushbutton { tag pd_button_clipmgen string Mgens callback updatePlotOptionsDialog }
+        }
+        checkbox { tag pd_check_clipplane string "Clipping plane" callback updatePlotOptionsDialog }
+        group {
+            halign center
+            rows 2
+            columns 3
+            equalwidths true
+            text { string Az halign fill haligncontent center }
+            edit { tag pd_edit_clipaz string "0" teststring "000" halign fill callback updatePlotOptionsDialog }
+            text { string El halign fill haligncontent center }
+            edit { tag pd_edit_clipel string "0" teststring "000" halign fill callback updatePlotOptionsDialog }
+            text { string D halign fill haligncontent center }
+            edit { tag pd_edit_clipdisplacement string "0" teststring "000" halign fill callback updatePlotOptionsDialog }
+        }
+    }
+}

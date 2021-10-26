@@ -1,0 +1,48 @@
+type article
+id GFtbox2011
+author Richard Kennaway and Enrico Coen and Amelia Green and Andrew Bangham
+title Generation of diverse biological forms through combinatorial interactions between tissue polarity and growth
+journal {PLoS} Comp Biol
+year 2011
+volume 7
+number 6
+pages e1002071
+url http://www.ploscompbiol.org/article/info%3Adoi%2F10.1371%2Fjournal.pcbi.1002071
+note Presents the technical fundamentals of the method of modelling growth and polarisation
+
+type article
+id Snapdragon_2010
+title Genetic Control of Organ Shape and Tissue Polarity
+volume 8
+url http://dx.doi.org/10.1371/journal.pbio.1000537
+doi 10.1371/journal.pbio.1000537
+number 11
+journal {PLoS} Biol
+author Amelia A. Green and J. Richard Kennaway and Andrew I. Hanna and J. Andrew Bangham and Enrico Coen
+month Nov
+year 2010
+pages e1000537
+note  Application of the modelling method to the snapdragon (Antirrhinum) flower
+
+type article
+id OrganShape_2010
+title Quantitative Control of Organ Shape by Combinatorial Gene Activity 
+volume 8 
+url http://dx.doi.org/10.1371/journal.pbio.1000538 
+doi 10.1371/journal.pbio.1000538 
+number 11 
+journal {PLoS} Biol 
+author {Min-Long} Cui and Lucy Copsey and Amelia A. Green and J. Andrew Bangham and Enrico Coen 
+month Nov
+year 2010 
+pages e1000538
+note Evidence that the model snapdragon flower captures an understanding of the behaviour of new mutants
+
+type article
+id LeafShape_2012
+title Generation of Leaf Shape through Early Patterns of Growth and Tissue Polarity
+author Erika E. Kuchen and Samantha Fox and Pierre Barbier de Reuille and Richard Kennaway and Sandra Bensmihen and Jerome Avondo and Grant M. Calder and Paul Southam and Sarah Robinson and Andrew Bangham and Enrico Coen
+journal Science
+year 2012
+note (In press.)
+

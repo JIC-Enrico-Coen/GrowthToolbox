@@ -1,0 +1,1045 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage{bettera4}
+\usepackage{url}
+\usepackage{graphicx}
+
+\newcommand{\gui}{\textsf}
+\newcommand{\ignore}[1]{}
+\newcommand{\filename}{\textit}
+\newcommand{\progname}{GFtbox}
+\newcommand{\mgen}{\textit}
+\newcommand{\code}{\texttt}
+\newcommand{\notes}[1]{\textsc{\small #1}}
+
+% \picturefigure takes three arguments:
+%   The name of the picture file (without the .png extension).
+%   The width of the picture in cm.
+%   The caption.
+%   The figure name will also be used to create the label.
+\newcommand{\picturefigure}[3]{\begin{figure}
+\centering
+\resizebox{#2cm}{!}{\includegraphics{#1.png}}
+\caption{#3}\label{figure-#1}
+\end{figure}}
+
+\title{\progname: a tool for modelling and visualising leaf and petal development}
+\author{Richard Kennaway\\School of Computing Sciences, University of East Anglia\\\texttt{jrk@cmp.uea.ac.uk}}
+\date{3 March 2009}
+
+\begin{document}
+
+\maketitle
+
+\section{User guide}
+
+\subsection{What \progname{} is}
+
+\progname{} is a Matlab tool for modelling the growth and three-dimensional deformation of biological surfaces such as leaves and petals (hereafter called ``leaves'').  The name is short for ``Growth factor toolbox''.
+
+Growth is modelled by specifying a distribution of substances called \textit{growth factors} or \textit{morphogens} over the surface of the leaf. The concentrations or concentration gradients of these substances at a point determine the rate at which the surface grows or bends in the neighbourhood of that point.
+
+
+\subsection{Installation and startup}
+
+Locally at UEA and JIC, \progname{} is best installed over SVN.
+Instructions are on the JIC/UEA wiki.
+
+Other users will receive it as a zip file called \filename{Growth\_Toolbox.zip}.
+This unzips to give a folder called \filename{Growth\_Toolbox}.
+Place this anywhere convenient.
+
+However you obtain \progname{}, to use it for the first time, run Matlab and go to the \filename{Growth\_Toolbox$\backslash$growth} subdirectory.
+Give the command \code{\progname{}}. The GUI for \progname{} should appear, looking like Figure~\ref{figure-startupscreen}.
+
+\picturefigure{startupscreen}{14}{\progname{} on startup}
+
+\progname{} automatically puts all subdirectories of the \filename{Growth\_Toolbox} directory onto the Matlab command path. You may wish to give the \code{savepath} command at the Matlab command prompt in order to keep \progname{} on the command path, so that you can use its command-line facilities without running the GUI.
+
+This document is
+\filename{Growth\_Toolbox$\backslash$docs$\backslash$gftbox.pdf}.
+It can also be opened by the \gui{Open manual} command on the \gui{Help} menu.
+The manual is updated less frequently than the program itself.
+
+The \progname{} window contains a control panel on the left and a graphic area on the right, where the leaf will be drawn.
+Because there are too many controls to display at once,
+the \gui{Select Tool} subpanel contains a set of radio buttons which select different subpanels to be displayed immediately below.
+
+
+\subsection{Workflow}
+
+To create a new mesh from scratch, select \gui{Mesh editor} in the \gui{Select Tool} panel, to make the mesh editor panel visible.
+You can either make a new leaf from scratch, or load an existing leaf.
+
+To make a new leaf, click the \gui{New} button.  This will create a
+leaf of one of a predefined set of shapes, selected from the menu to
+the right of the buttons.
+
+To load an existing leaf, you can use the \gui{Load\dots} button near the top of the window. In the
+resulting dialog, select a directory containing a previously saved
+model. However, it is usually more convenient to load projects from the Projects menu.  The \gui{Set User Projects Folder...} command lets you nominate a folder within which to store all of your projects.  All \progname{} projects found within that folder will be made available through the Projects menu, allowing to to 
+
+To save a leaf, use the \gui{Save As\dots} button.
+A leaf is always saved as a directory, containing all the files relevant to that leaf. Such a directory is called a \textit{model}.
+To save a leaf again, after having modified it, use the \gui{Save} button.  This will overwrite the previously saved version.  \gui{Restart} reloads the previously loaded version, discarding any changes made.
+
+To apply morphogens to a leaf, use the \gui{Growth factors} panel.
+
+Biological cells can be added to the mesh by the \gui{Cells} panel.
+
+In some specialised situations, you may have growth tensor data available for a leaf.  Such data can be loaded via the \gui{Growth tensors} panel. (Warning: this is a little-used feature that nobody has used for a long time. It may not work.)
+
+The \gui{Simulation} panel allows some parameters of the simulation to be set.
+
+Having created or loaded a leaf and set its morphogens, biological layer, and simulation options as desired, its development can be simulated by the controls in the \gui{Run} panel at the foot. (This panel is always visible.) The simulation can be run for a specified number of time steps, a single step, or until the area of the leaf reaches a specified multiple of its initial area.  The \gui{Stop} button will terminate the run (but it may take an iteration or two before the program notices).
+
+What is plotted in the picture area depends on the settings in the \gui{Plot options} panel.
+
+The group of buttons at the top left are responsible for loading and saving projects.
+
+
+\subsection{Model structure}
+
+A \textit{model} or \textit{project} is a folder containing files that all relate to a single leaf model.
+If the folder is called \textit{amodel},
+then it will contain a MAT-file called \textit{amodel.mat}.
+This is a binary Matlab file which contains the Matlab representation of a leaf.
+This is the only file that must exist; the existence of this file, with the same base name as the containing folder, is what tells \progname{} that this is a project directory.
+
+The following other files and folders may also be present.
+\begin{enumerate}
+\item
+Files with names of the form \textit{amodel\_sNNNdNNN.mat}, where the N's are digits.  These are files saved at stages of the simulation later than the initial state.  The suffix \textit{NNNdNNN} represents a simulation time of NNN.NNN.
+\item
+A MAT-file called \textit{amodel\_static.mat}.  This contains those parts of the leaf structure which apply to every saved file within the project.  This is almost everything except the geometry of the mesh, the current distribution of growth factors, and the current time.
+\item
+An M-file called \textit{amodel.m}.
+This is a text file containing a user-written Matlab function which specifies how morphogens interact. (See section~\ref{interaction}.)
+\item
+The subfolder \textit{movies} will contain any movies recorded from the program.
+\item
+The subfolder \textit{snapshots} will contain still pictures capturing moments in development.
+\end{enumerate}
+
+The \gui{Load\dots} menu command invites the user to select a model directory, within which subsequent files will be saved.
+
+All dialogs for loading or saving files should automatically open in the appropriate model subfolder, if there is a current model.
+
+
+\section{Creating, loading and saving projects}
+
+\progname{} is distributed with a set of ready-made demonstration projects.
+These can be accessed through the \gui{Projects/Motifs} menu.  This menu displays all of the projects within the directory \textit{Growth\_Toolbox/Motifs}.  Whenever one of these projects is opened, it is automatically saved as a copy into the default directory for your own projects, to avoid corrupting the originals.
+
+To create a new project, select the \gui{Mesh editor} button in the \gui{Select Tool} panel.  This makes the \gui{Mesh editor} panel visible.
+From the pull-down menu near the top of the panel, select a mesh type and click the \gui{New} button.  A new mesh of the required type will be created.
+Having made a mesh, clicking the \gui{Save As...} button will let you save it as a project.
+In the resulting dialog, create a new directory whose name is the name you want to give the project.  With that directory selected in the dialog, click the OK button.  You can open the resulting folder in Windows Explorer with the menu command \gui{Projects/Open Current Project Folder}. (This is not implemented on Linux. I will implement it when I discover (a) how to tell from within Matlab that I'm running on Linux, and (b) how to open a Linux folder from Matlab.)
+
+If you have saved the new project somewhere within your user projects folder, you should find that it then appears on the Projects menu.
+
+
+\section{Mesh creation and editing}
+
+In the \gui{Select Tool} panel at the top, select the
+\gui{Mesh editor} button.
+This will make the \gui{Mesh editor} panel visible.
+(Figure~\ref{figure-mesheditor}.)
+This panel contains all the tools for creating a mesh and modifying its geometry.
+\picturefigure{mesheditor}{7}{The mesh editor panel}
+
+
+\subsection{Mesh creation}
+
+Mesh creation is performed by the \gui{Mesh editor} panel,
+As mentioned in the previous section, a mesh is created by the \gui{New} button.
+The mesh will be of the type selected in the pull-down menu to the right of that button, and various parameters can be set by the text boxes just below it.
+The new mesh will be drawn in the picture area.
+Below the picture is a text area containing summary details about the mesh, relating to its size and the progress of the simulation.
+
+These are the available shapes and their parameters:
+\begin{description}
+\item[\gui{Circle}]
+\gui{Radius} sets the radius (in arbitrary units).
+\gui{Rings} sets the number of rings of triangles that the circle is divided into.
+\gui{Circum} sets the number of vertexes around the circumference of the circle.
+A value of 0 will give the default, which is 6 times the number of rings.
+The value must be at least 4, and for best results should be at least 4 times the number of rings.
+\gui{Inner ring} specifies the number of triangles in the innermost ring.
+A value of zero will give the default, which is the maximum of 4 or
+the circumference divided by the number orf rings.
+If a value is specified, it must be at least 4.
+
+\item[\gui{Semicircle}]
+\gui{Radius} sets the radius (in arbitrary units).
+\gui{Rings} sets the number of rings of triangles that the semicircle is divided into.
+Unlike \gui{Circle}, there are no \gui{Circum} or \gui{Inner ring} parameters.
+
+\item[\gui{Hemisphere}]
+The parameters are the same as for a circle.
+
+\item[\gui{Lobes}]
+A lobe is a semicircle on top of a rectangle.
+\gui{Radius} and \gui{Refinement} specify the semicircle.
+(\gui{Refinement} is the equivalent of \gui{Rings}.)
+\gui{Height} specifies the height of the rectangular part, as a proportion of the diameter of the semicircle.
+\gui{Lobes} specifies the number of lobes.
+They are joined together in a strip, edge to edge.
+
+\item[\gui{Lune}]
+(Not implemented yet. A lune is a pointed ellipse.)
+
+\item[\gui{Rectangle}]
+Width and height are specified by \gui{X width} and \gui{Y width}.
+The number of divisions of the mesh in each direction are specified by \gui{X cells} and \gui{Y cells}.
+
+\item[\gui{One element}]
+This makes a mesh consisting of a single triangular finite element.
+This exists primarily for testing the Finite Element code.
+
+\item[\gui{Cylinder}]
+This makes a cylinder with a specified radius, height, and number of subdivisions around and vertically.
+
+\item[\gui{Cup}]
+This makes a cylinder with a hemispherical cap on the lower end.
+The parameters are as for a cylinder, plus two extra ones.
+\gui{Base ht} specifies the height of the cap as a proportion of the cylinder radius (so 1 gives a hemisphere and 0 a flat end).
+\gui{Base rg} gives the number of rings of triangular finite elements that the cap is divided into.
+
+\item[\gui{Cap}]
+This is like \gui{Cup}, but the end cap is on the top end.
+The parameters are the same, replacing \gui{Base} by \gui{Top}.
+
+\item[\gui{Capsule}]
+This combines \gui{Cup} and \gui{Cap} to give a cylinder with a cap on both ends. It has all the parameters of \gui{Cup} and \gui{Cap}.
+
+\item[\gui{Snapdragon}]
+This makes a flower consisting of a number of lobe-shaped petals joined together into a tube closed at the foot by a hemispherical cap. The parameters are the same as for \gui{Lobes}, except that \gui{Radius} now refers to the radius of the cylinder, not the radius of the individual lobes.  The lobe radius will be half the circumference of the cylinder, divided by the number of lobes. In addition, it has the same \gui{Base ht} and \gui{Base rg} parameters of \gui{Cup}.
+\end{description}
+
+Instead of creating a mesh of one of these predefined shapes, you can import a mesh defined in an external file.
+There are several file formats that may be used to describe a mesh.
+These formats are created when saving a mesh to a file, described in section~\ref{section-savemesh}.
+\begin{description}
+\item[MAT files.]
+These are Matlab binary files containing the current state of the mesh (including morphogens, command history, everything).  Such files are created by saving the mesh to a MAT file.
+\item[M files.]
+These are Matlab text files containing Matlab commands that will create or modify a mesh. For more information on the Matlab commands that create and modify meshes, see sections~\ref{section-commands} and~\ref{section-commandreference}.
+\item[OBJ files.]
+These are text files specifying the coordinates of all the mesh vertexes and the sets of vertexes that are the triangles of the mesh.
+Each line of an OBJ file begins with either \code{v} or \code{f}.
+All of the former should precede all of the latter.
+\code{v} is followed by three floating point numbers, the $x$, $y$, and $z$ coordinates of a vertex of the mesh.
+\code{f} is followed by three positive integers, which are the indexes of the three vertexes of a triangle. The number $n$ references the vertex defined in the $n$th line beginning with \code{v}.
+The triangles do not have to be consistently oriented, but the surface as a whole must be orientable. No Klein bottles or Moebius bands!
+\end{description}
+
+
+\subsection{Modifying meshes}
+
+There are several ways to modify the geometry of a mesh.
+
+The \gui{Zero Z} button will flatten the mesh by setting the Z coordinate of every node to zero.
+
+The \gui{Random} button will displace every vertex by a random amount perpendicular to the surface.
+The amplitude of the random perturbation is given by the value in the box to the right of the button.
+
+The \gui{Bowl Z} button will add to the z coordinate an amount proportional to the square of the distance from the centre, giving a bowl shape.  The amplitude is specified in the same way as the the \gui{Random Z} button.
+
+The \gui{Saddle Z} button adds a saddle-shaped deformation to the z coordinates. The amplitude is specified as before, and the number of waves is given by the value in the lower text box.
+
+The \gui{Thickness} subpanel determines how the thickness of the mesh is modelled. If the \gui{Physical} checkbox is unchecked, then the thickness of the mesh will be determined by the \gui{Initial} and \gui{Scaling} controls.
+The thickness of the mesh will be uniform, and equal to $K \sqrt(A_0) (A/A_0)^{P/2}$, where $K$ is the value of the \gui{Initial} slider, $P$ is the value of the \gui{Scaling} slider, $A_0$ is the initial area of the leaf, and $A$ is its current area. So a scaling value of zero will cause the leaf to have a constant absolute thickness throughout the simulation, while a scaling of 1 will make the thickness grow proportionally to the linear size of the leaf.
+
+If \gui{Physical} is checked, then the initial thickness of the mesh is set by the \gui{Initial} slider to $K \sqrt(A_0)$, but its subsequent growth is determined by the KNOR growth factor.
+
+If one wants a mesh to remain flat and deform only in the xy plane, click the \gui{Always flat} checkbox.  The z coordinate of every mesh point will be set to zero, and will be forced to remain zero throughout every computation.  If a deformation is applied to a mesh marked as always flat, you will be asked for confirmation that you want to allow the operation, whereupon it will be allowed to deform in three dimensions..
+
+The \gui{Refine mesh} button causes a proportion of the edges of the mesh to be split, giving a finer mesh. The slider and text box below the button specify the proportion of edges to be split.
+
+The \gui{Rotate xyz} button will rotate the mesh so that what was its $x$ axis now points along the $y$ axis, $y$ along $z$, and $z$ along $x$.  Clicking again will rotate $x$ to $z$, $z$ to $y$, and $y$ to $x$.  Clicking a third time will rotate the mesh back to its original orientation.  This can be useful if you want to establish a vertical gradient of a morphogen.
+
+The \gui{Poisson's ratio} text box specifies the degree to which the mesh can withstand shearing forces.  The value must be greater than 0 and less than $0.5$. As it approaches $0.5$, the resistance to shearing drops towards zero. The default value is $0.35$, which is typical of many materials.  In practice, the behaviour of the simulation is not much affected by the value.  Values very close to $0$ or $0.5$ may result in poor performance, as the equations of elasticity become ill-conditioned and approach singularities.
+
+It is possible to constrain individual vertexes so that they will not move in either the $x$, $y$, or $z$ directions.  Select \gui{Fix} on the menu just below the panel containing the mesh generation controls, and three checkboxes will appear alongside, labelled \gui{x}, \gui{y}, and \gui{z}.  Use the checkboxes to select the directions in which you want to constrain some vertexes, and then click on the mesh to select the vertexes you want to constrain.  With all the checkboxes checked, the selected vertexes will be completely immobilised.  The vertexes whose contraints are exactly those specified by the checkboxes are highlighted. Clicking a highlighted vertex will remove all of its constraints; clicking an unhighlighted vertex will apply the selected constraints.
+
+Clicking the \gui{Unfix All} button will remove all constraints (but if \gui{Always flat} is checked, the mesh will still be constrained to be flat).
+
+To delete parts of the mesh, select \gui{Delete element} on the same menu, and then click on the mesh.  Finite elements clicked on will be deleted.  Be careful with this: there is no undo for this operation, and no way to add elements to the mesh.
+
+The \gui{Flip orientation} button does almost nothing visible and can be ignored.
+It actually inverts the orientation of every triangle in the mesh, and swaps the A and B sides.
+
+
+\subsection{Saving models}
+
+To save a mesh as a new project, click the \gui{Save As\dots} buttons.
+The first time you save a mesh, you will be asked to say where to create a new model folder. The mesh will be saved there as a \filename{.mat} file.
+
+A model folder holds all of the files associated with a mesh. Initially, this is just the \filename{.mat} file, but it may also contain a \filename{movies} subfolder where recorded movies will be stored, and a \filename{snapshorts} subfolder for image snapshots.  These subfolders will be automatically created when necessary.  There may also be an interaction function (see section~\ref{interaction}) defined in a \filename{.m} file.
+
+When a mesh has been saved as a model folder, the \gui{Save} button will save the current stage of the mesh.  If no simulation step have been performed, this overwrites the initial mesh, but otherwise, a new file is saved in the project folder whose name has a suffix of the form ``\texttt{\_s}\textit{NNN}\texttt{d}\textit{NNN}'' added, where the current simulation time is NNN.NNN. These files, called \textit{stage files}, are listed in the \gui{Stages} menu, from where they can be reloaded.
+
+If you have a current prokect open, the \gui{Save As\dots} button will save its initial state as a new project.
+
+
+
+\subsection{Saving meshes to files}\label{section-savemesh}
+
+A mesh can also be saved to a file instead of a model directory, using the various \gui{Save\dots} commands on the \gui{Mesh} menu.
+They can be saved in a number of different formats.
+
+\begin{description}
+\item[M files.]
+These are Matlab script commands.
+For every action in the GUI, there is a corresponding Matlab command.
+The history of all the actions the user takes in the GUI is recorded as a series of these Matlab commands.
+When the mesh is saved as an M-file, the file will contain these commands.
+For further information about the Matlab command equivalents of the GUI actions, see sections~\ref{section-commands} and~\ref{section-commandreference}.
+\item[MAT files]
+These are Matlab binary files containing the current state of the mesh.
+\item[OBJ files.]
+These are text files which contain a description of the current state of the mesh.  Although they are text files, the format is for practical purposes not human-readable.
+\item[FIG files.]
+A FIG-file contains, not the mesh, but a graphical plot of the mesh.
+A FIG-file can be opened in Matlab, and the figure zoomed and rotated, but it does not contain the mesh itself, only a 3D graphical representation of it.
+Unlike the other formats, a FIG-file cannot be loaded into \progname{} with the \gui{Load} button.
+\end{description}
+
+
+
+\section{Morphogen distribution and interaction}\label{interaction}
+
+Morphogens are edited by the \gui{Growth factors} panel shown in figure~\ref{figure-morphogens}
+
+\picturefigure{morphogens}{7}{The \gui{Growth factors} panel}
+
+A morphogen is a substance whose concentration may vary over the mesh. In the finite approximation we make to a continuous surface, morphogen values are stored at each vertex, and should be imagined to be linearly interpolated over each triangular element.
+
+A mesh may have any number of morphogens.  Seven are predefined, and have specific effects on growth.  The user may add any number of others, and define ways in which morphogens locally interact.
+
+These are the seven standard morphogens and their effects on growth:
+\begin{description}
+\item[\mgen{KAPAR, KBPAR}:]
+These determine the local rate of linear growth on the A and B sides of the mesh in the direction of the gradient of \mgen{polariser}.
+\item[\mgen{KAPER, KBPER}:]
+These determine the local rate of linear growth on the A and B sides of the mesh perpendicular to the direction of the gradient of \mgen{polariser}.
+\item[\mgen{KNOR}:]
+These determine the local rate of linear growth perpendicular to the surface of the mesh.
+\item[\mgen{POLARISER}:]
+The gradient of this morphogen determines the directions of maximum and minumum linear growth as just described.
+
+When the gradient of \mgen{polariser} is zero, growth in all directions parallel to the surface is the average of \mgen{gpar} and \mgen{gperp}.
+\item[\mgen{STRAINRET}:]
+This determines how much of the residual strain is retained from one time step to the next. For most purposes this should be left at zero.
+\item[\mgen{ARREST}:]
+This determines whether biological cells are allowed to split.
+Where the \mgen{ARREST} morphogen has a value of 1 or more, no splitting of biological cells is allowed.
+\end{description}
+
+The KAPAR, KBPAR, KAPER, and KBPER factors can be specified in an alternative way, accessed by the \gui{Mesh/Change Morphogen Version} menu. The \gui{A/B} menu item corresponds to the growth factors just described.  The \gui{K/BEND} menu item replaces those factors by these:
+\begin{description}
+\item[\mgen{KPAR}:]
+The average growth of the A and B sides of the mesh parallel to the polariser gradient.
+\item[\mgen{KPER}:]
+The average growth of the A and B sides of the mesh perpendicular to the polariser gradient.
+\item[\mgen{BENDPAR}:]
+Half the difference between the growth on the B side and A side, parallel to the polariser gradient. Positive means the B side is growing faster.
+\item[\mgen{BENDPER}:]
+Similarly, perpendicular to the polariser gradient.
+\end{description}
+For historical reasons, another standard morphogen appears in K/BEND mode, called NOTUSED. This growth factor is not used. KNOR is also called THICKNESS instead but has the same effect, and some of the factor appears in a different order.
+
+Any mesh can be converted back and forth between these two versions. The formulas relating them are:
+\begin{eqnarray*}
+\mbox{KPAR} & = & (\mbox{KAPAR} + \mbox{KBPAR})/2 \\
+\mbox{KPER} & = & (\mbox{KAPER} + \mbox{KBPER})/2 \\
+\mbox{BENDPAR} & = & (\mbox{KBPAR} - \mbox{KAPAR})/2 \\
+\mbox{BENDPER} & = & (\mbox{KBPER} - \mbox{KAPER})/2 \\
+\mbox{KAPAR} & = & \mbox{KPAR} - \mbox{BENDPAR} \\
+\mbox{KAPER} & = & \mbox{KPER} - \mbox{BENDPER} \\
+\mbox{KBPAR} & = & \mbox{KPAR} + \mbox{BENDPAR} \\
+\mbox{KBPER} & = & \mbox{KPER} + \mbox{BENDPER}
+\end{eqnarray*}
+
+When a mesh is created, the standard morphogens are set to have a concentration of zero everywhere.  The distribution of each morphogen can be modified through the \gui{Growth factors} panel.
+
+At the top right of the main control panel there is
+a pull-down menu of morphogen names.
+(The menu will be empty until a mesh has been created.)
+This selects which of the morphogens the other controls operate on.  The standard morphogens are prefixed by a $*$.
+In the picture of the mesh, the concentration of the current morphogen is colour-coded.
+Zero is white, increasing positive values are blue, green, yellow, orange, and red, and increasing negative values are violet.
+If the \gui{Auto-range} checkbox in the \gui{Plot options} panel is ticked, the colour scale is fitted to the range of the current morphogen.  Otherwise, the user can specify the maximum and minimum values of the scale.
+The maximum absolute value on the colour bar is represented by deep red (if positive) or deep violet (if negative), and the rest of the colour bar is scaled to fit.
+
+In K/BEND mode, the colour-coding of BENDPAR and BENDPER is different, since these, unlike the other morphogens can legitimately take either sign. Gren, cyan, and blue represent negative values, and yellow, oragen, and red positive values.
+
+There are two ways of modifying the level of a morphogen.
+One is to click on the mesh to add an amount of the morphogen at a single vertex. The amount added is specified by the \gui{Amount} slider and text box.  Holding down the shift key while clicking will subtract instead of adding.  Note that morphogens can be negative.
+The other method is to add a predefined distribution of the morphogen over the whole mesh, by means of the buttons.  The amplitude of the distribution is the \gui{Amount} value.
+
+\begin{description}
+\item[\gui{Add constant:}]
+Add the specified amount to every vertex of the mesh.
+\item[\gui{Add radial:}]
+Add an amount to each vertex, proportional to the square of the distance of that vertex from the position indicated by the \gui{x}, \gui{y}, and \gui{z} boxes.
+The maximum amount is the specified amplitude.
+\item[\gui{Add linear:}]
+Add a linear gradient of morphogen.  The range will be from zero to the specified amplitude.  The direction of the gradient is given by the \gui{Direction} text box in degrees. (0 degrees is the positive $x$ axis, 90 degrees is the positive $y$ axis.)
+The gradient is always in the $xy$ plane.
+If you want a gradient in the $xz$ plane, click the \gui{Rotate xyz} button in the \gui{Mesh editor} panel to rotate the mesh so that what was the $xz$ plane is now the $xy$ plane. Then add the gradient you want, then click the \gui{Rotate xyz} button twice more to restore the original orientation.
+\item[\gui{Add to rim:}]
+Add the specified amount to every vertex on the rim of the mesh (including vertexes bordering internal holes).
+\item[\gui{Add random:}]
+Add a random amount to every vertex of the mesh.
+The random amount is uniformly distributed between zero and the specified amplitude, and is chosen independently for every node of the mesh.
+\item[\gui{Set zero:}]
+Set the morphogen to zero everywhere.
+\item[\gui{Set zero all:}]
+Set \textit{all} morphogens to zero everywhere, as well as  their diffusion and decay constants (see below).
+\end{description}
+
+Each morphogen may have the capability of diffusing through the mesh.
+The diffusion coefficient is specified in the \gui{Diffusion} text box.
+A value of zero means that it does not diffuse.
+This is the initial default.
+%The units of diffusion are relative to the initial diameter of the mesh
+%\notes{or perhaps something else.  Check.}.
+%Thus if the initial size of a mesh is doubled, it will take the same time for a
+%morphogen to diffuse across it.
+%A value of 1 is reasonable.
+
+Each morphogen may also decay with time, at a rate set by the value in the \gui{Decay} text box.  The result is an exponential decay to zero. The higher the value, the faster it decays.
+
+The \gui{Dilution} checkbox causes the current growth factor to behave as a conserved substance: expansion of the mesh will reduce its concentration in proprtion.  The default is off: expansion has no effect on concentration.
+
+The \gui{On split} radio buttons specify how to determine the new value of a morphogen at the midpoint of an edge that has been split. Either the average value of the two ends, the minimum, or the maximum can be chosen.  The average value is generally the most physically meaningful, but where a growth factor is being used to define the identity of vertexes, the minimum may be more suitable.
+
+The \gui{Set all zero} button sets all growth factors everywhere to zero.
+
+The \gui{Use wild type} button causes all mutant levels to be ignored.
+
+To cause the value of a morphogen at a vertex to remain fixed at its current value, regardless of diffusion and decay, control-click the vertex.  Control-click the same vertex again to let the value vary.  A vertex fixed at a high value will thus act as a source, and a vertex fixed at zero will act as a sink.  A combination of a source, diffusion, and decay can be used to create a morphogen localised to a region around its source, which remains of fixed size even while the leaf grows.
+
+To create a new morphogen, click the \gui{New} button in the morphogens panel.
+A dialog will appear asking for the name of the new morphogen.
+The name of the new morphogen, e.g.~\gui{foo}, will be added to the \gui{Displayed m'gen} menu. Its initial value is zero everywhere, with zero diffusion and decay rate.
+
+To delete the currently selected morphogen, click the \gui{Delete} button. The user will be asked for confirmation.
+The built-in morphogens cannot be deleted.
+
+To rename the currently selected morphogen, click the \gui{Rename} button. The user will be asked for confirmation.
+The built-in morphogens cannot be renamed, nor can a morphogen be renamed to have the same name as another morphogen.
+
+
+\section{The Interaction Function}
+
+To specify interactions between morphogens, click the \gui{Edit} button on the \gui{Interaction function} panel.
+An M-file will be created in the model directory. Its name will be the name of the model. A standard outline of a morphogen interaction function will be written to the file, which will then be opened in the editor.
+
+Clicking the \gui{Edit} button later will reopen the file in the editor.
+
+When you add, delete, or rename morphogens, the interaction function will automatically be rewritten, so that the boilerplate code at the top and bottom will refer to the new set of morphogen names.  Any code of your own which accesses renamed or deleted morphogens will have to be manually edited as necessary. You must save your changes to disk before doing anything that causes the file to be regenerated, otherwise your changes will be lost. Besides adding, deleting, and renaming morphogens, the file is also regenerated every time you load or reload the project, or use the \gui{Edit} or \gui{Rewrite} button.
+
+Here is a typical interaction function. We asume there are two user-defined morphogens, called \textit{foo} and \textit{rad}.
+\begin{verbatim}
+function m = snapdragon( m )
+%m = snapdragon( m )
+%   Morphogen interaction function.
+
+%%% AUTOMATICALLY GENERATED CODE: DO NOT EDIT.
+    if isempty(m), return; end
+
+    growth_i = FindMorphogenIndex( m, 'growth' );
+    G = m.morphogens(:,growth_i);
+    polariser_i = FindMorphogenIndex( m, 'polariser' );
+    P = m.morphogens(:,polariser_i);
+    anisotropy_i = FindMorphogenIndex( m, 'anisotropy' );
+    A = m.morphogens(:,anisotropy_i);
+
+    curl_i = FindMorphogenIndex( m, 'curl' );
+    curl = m.morphogens(:,curl_i);
+    curlpolariser_i = FindMorphogenIndex( m, 'curlpolariser' );
+    curlpolariser = m.morphogens(:,curlpolariser_i);
+    curlanisotropy_i = FindMorphogenIndex( m, 'curlanisotropy' );
+    curlanisotropy = m.morphogens(:,curlanisotropy_i);
+    arrest_i = FindMorphogenIndex( m, 'arrest' );
+    arrest = m.morphogens(:,arrest_i);
+    foo_i = FindMorphogenIndex( m, 'foo' );
+    foo = m.morphogens(:,foo_i);
+    rad_i = FindMorphogenIndex( m, 'rad' );
+    rad = m.morphogens(:,rad_i);
+%%% END OF AUTOMATICALLY GENERATED CODE.
+
+%%% YOUR CODE BEGINS HERE.
+
+...
+
+%%% END OF YOUR CODE.
+
+%%% AUTOMATICALLY GENERATED CODE: DO NOT EDIT.
+    m.morphogens(:,growth_i) = G;
+    m.morphogens(:,polariser_i) = P;
+    m.morphogens(:,anisotropy_i) = A;
+    m.morphogens(:,curl_i) = curl;
+    m.morphogens(:,curlpolariser_i) = curlpolariser;
+    m.morphogens(:,curlanisotropy_i) = curlanisotropy;
+    m.morphogens(:,arrest_i) = arrest;
+    m.morphogens(:,foo_i) = foo;
+    m.morphogens(:,rad_i) = rad;
+end
+\end{verbatim}
+All of the above code is automatically generated.  To make this function do something useful, you need to add code in the section marked \code{YOUR CODE BEGINS HERE}.
+
+The first line declares a Matlab function called \textit{snapdragon}.
+It takes one argument and returns one result.
+The argument is a structure containing the current state of the mesh.
+The result of the function is the new state of the mesh.
+
+The subsequent lines down to the beginning of your code define one variable for each morphogen, holding the values of that morhpogen at every node of the mesh.
+
+Your code can then modify the values of these variables.
+
+The final boilerplate section copies the variables back into the appropriate place in the mesh structure.
+
+Here are some examples of what might appear in your code.
+\begin{enumerate}
+\item
+\begin{verbatim}
+        G(:) = 0;
+\end{verbatim}
+This will set the growth morphogen to zero everywhere, on every iteration.
+\item
+\begin{verbatim}
+        G = foo_p .* 2;
+\end{verbatim}
+This will set the concentration of the growth morphogen to twice that of the \textit{foo} morphogen, on every iteration.
+This overrides whatever distribution of growth morphogen may have been set through the GUI.
+\item
+\begin{verbatim}
+        G = foo_p .* rad_p;
+\end{verbatim}
+This will set the concentration of the growth morphogen to the product of those of the foo and bar morphogens.
+\item
+\begin{verbatim}
+        G = G .* 1.1;
+\end{verbatim}
+This increases the concentration of growth morphogen by $10\%$ on every iteration.
+\item
+\begin{verbatim}
+        if Steps(mesh) < 40
+            G = G .* 1.1;
+        end
+\end{verbatim}
+This gives the same exponential increase of growth morphogen, but stops after 40 steps.
+\item
+\begin{verbatim}
+        if Steps(mesh) > 40
+            arrest = 1;
+        end
+\end{verbatim}
+This will prevent all biological cell division after 40 steps.
+\notes{(\gui{arrest} is not yet implemented.)}
+\end{enumerate}
+The interaction function can in principle change the mesh in any way whatsoever: it is not limited to changing the morphogens.  However, one must understand what one is doing before changing any other part of the mesh data structure.
+
+If the interaction function sets \code{m.stop} to $1$, then this will cause the simulation to stop after the current iteration. (The toolbox will automatically then set \code{m.stop} back to 0.)
+
+The \gui{Enable} checkbox turns the interaction function on and off.
+
+If the interaction function causes an error, it will be automatically disabled and the controls on the \gui{Interaction function} panel will turn red. Normal operation can be resumed by clicking the \gui{Edit} button (\progname{} assumes that you will fix the error) or the \gui{Reset} button.
+
+
+\section{The notes file}
+
+The \gui{Interaction function} panel also contains a button called \gui{Notes}. This creates a text file in the project directory whose name is the model name, and opens it in the editor.  In this file you can keep a record for your self of the work that you do on a model.  You can type anything you like into it; \progname{} never does anything with it except open it when you click the button.
+
+When you save a project as a new project, the notes file is copied across and automatically opened in the editor.
+
+\section{Growth tensors}
+
+Instead of driving growth by morphogens, it is possible to specify growth tensors directly.  This is only supported for flat meshes.
+
+WARNING: Nobody has used this for a long time, and it may not work.
+
+Growth tensors are imported through the \gui{Growth tensors} panel shown in figure~\ref{figure-growthtensors}.
+
+\picturefigure{growthtensors}{4}{The \gui{Growth tensors} panel}
+
+A growth tensor describes the way a small region of the mesh (a single Finite Element) is growing at a single point in time.  There are several different ways of representing this numerically, but they all require three numbers.
+Two representations are supported.
+\begin{enumerate}
+\item The three numbers are:
+\begin{itemize}
+\item The number of time steps that it would take the region to double its area.
+\item The ratio of the rate of growth in the fastest growing direction to the rate of growth in the slowest growing direction.
+\item The angle of the fastest growing direction from the positive X axis. (A positive angle turns towards the positive Y axis.)
+\end{itemize}
+\item The three numbers are:
+\begin{itemize}
+\item The rate of growth in the fastest growing direction.
+(E.g. a value of 0.1 would mean a growth of $10\%$ over some standard time interval.)
+\item The rate of growth in the slowest growing direction.
+\item The angle of the fastest growing direction from the positive X axis.
+\end{itemize}
+\end{enumerate}
+\progname{} attempts to guess from the data which interpretation of the three numbers is more likely.
+
+A mesh with growth tensors can be loaded from an OBJ file.
+Such a file specifies the locations of all the vertexes, the triples of vertexes that make the finite element triangles, and for each finite element, a growth tensor.
+
+A new set of growth tensors for the current mesh can be loaded by the
+\gui{Load growth\dots} button on the \gui{Growth tensors} panel.
+This loads an OBJ file just like the one loaded by the \gui{Load\dots} button, but ignores all information except the growth tensors.
+For this to work, the topology of the mesh must be identical to that contained in the OBJ file.
+
+When a new set of growth tensors is loaded, although the mesh geometry in the file is discarded, the total area of the mesh is calculated.
+The ratio of that area to the original area of the currently loaded mesh is calculated, and that value is inserted into the text box beside the \gui{Run To\dots} button on the \gui{Simulation} panel.
+
+This allows \progname{} to perform regrowth of ungrowth data, by means of the following steps.  We assume that we are given a series of files which represent the mesh and its growth tensors at successive stages of growth.
+\begin{enumerate}
+\item
+For convenience, put all of the OBJ files into the \filename{meshes} directory of a new model.
+\item
+Load the file that represents the first stage (i.e.~the earliest stage).
+\item\label{item-loadgrowth}
+Load the growth tensors from the file that represents the second stage.
+\item
+In the \gui{Simulation} panel, make sure that the checkbox for \gui{Use tensors} is on, and that for \gui{Split edges} is off.
+Check that the value in the box beside the \gui{Run To\dots} button is greater than 1. (If it is less than 1, that means that you are handling the files in the wrong order. Typically, the files are named \filename{stage\_1.obj}, \filename{stage\_2.obj}, etc., but sometimes
+\filename{stage\_1.obj} is the earliest stage and sometimes it is the final stage.)
+\item\label{item-runto}
+Click the \gui{Run To\dots} button. The mesh should grow until its area has increased by the specified amount.
+\item
+Repeat stages \ref{item-loadgrowth} to \ref{item-runto} for each of the remaining OBJ files.
+\end{enumerate}
+When you are done, you can save the mesh as a script file
+(use the \gui{Save mesh\dots} button and select ``M files'' in the dialog).
+Running this script file will rerun the entire process automatically.
+If you look at the script file with a text editor, it should be clear how to modify it for other data sets, instead of having to go through the manual process every time.
+
+
+\section{Biological cells}
+
+Biological cells are simulated by adding a layer of cells painted onto the underlying finite element mesh and growing and moving with it. The biological layer can be created or modified through the \gui{Cells} panel shown in figure~\ref{figure-cells}.
+
+\picturefigure{cells}{7}{The \gui{Cells} panel}
+
+The \gui{Fill with cells} button will completely cover the surface with cells, rendered in shades of dark green, When this has been done, the \gui{Shock cells} button will randomly turn a specified proportion of them light green, simulating the effect of a randomly distributed genetic change, such as the initiation of expression of GFP (green fluorescent protein).  \gui{Unshock all cells} reverts them all to dark green.
+
+Alternatively, the \gui{Scatter cells} button will randomly scatter a number of cells over the surface. One cell will be created in the middle of each randomly selected element of the finite element mesh.  These cells are all coloured red, and the \gui{Shock cell} button has no effect on them: they are intended to model some randomly chosen set of real cells, while avoiding the computational load of simulating an entire layer of cells.
+
+The \gui{One cell} button adds a randomly chosen cell to the current set of cells.
+
+\gui{Delete all cells} deletes the biological layer.
+
+If splitting of cells during growth is enabled (by a checkbox on on the \gui{Simulation} panel), then as the biological cells grow with the mesh, they will divide according to the following rules.
+A cell splits when it has grown to more than $\sqrt{2}$ times the average area of the cells when they were initially created.
+The direction of the new cell wall depends on both the shape of the cell and the presence of a polarising morphogen.
+
+If there is no polarising gradient, the shape of the cell is estimated by mathematically approximating the cell by an ellipse (using PCA). The new cell wall is then chosen to be perpendicular to the major axis of the ellipse, and pass through its centre. A small random perturbation is made to the direction
+\notes{(...which the user should be able to specify)}.
+
+If there is a polarising gradient, the new cell wall will be either perpendicular to or parallel to that gradient, depending on the length of the projection of the cell onto each of those directions.  If the cell is longer along the gradient, the new wall will be perpendicular to the gradient, and vice versa.  There is again a small random perturbation to the direction.
+
+Cell division can be disabled by turning off the \gui{Split bio cells} checkbox in the \gui{Simulation} panel.
+
+Cell division can also be enabled or disabled by the \gui{arrest} morphogen. Where this is 1 or more, cell splitting is disabled.
+\notes{(This is not implemented yet.)}
+
+
+\ignore{
+\subsection{Second biological layer}
+
+To work on the second biological layer select the \gui{Bio-B} button in the \gui{Select tool} panel.
+
+The second layer represents each biological cell by a single point, called its \textit{generator}.
+It then generates the network of cell walls and vertexes by calculating the Voronoi tesselation of these points.
+
+The Voronoi tessellation is defined by the following rule: a general point on the surface of the mesh belongs to the same cell as the nearest generator point. This implies that the cell walls are segments of the perpendicular bisectors of the lines joining neighbouring generator points.
+
+N.B. \textit{A current limitation of this simulation of biological cells is that the program can apply it only to flat meshes.}
+
+Because this layer is quite computationally expensive, one can limit it to a subset of the whole leaf.  Click on the mesh to designate the patch that is to be covered with cells.  Finite elements that are to be covered with biological cells are drawn in pale yellow; the rest are drawn in blue.  Clicking toggles the state.  When one has selected the patch, click the \gui{make cells} button to generate biological cells.
+
+The number of biological cells to cover each finite element with is specified in the \gui{Bio per FE} text item.
+
+The centroidal transformation described below is then applied so as to produce a layer of random cells all of roughly the same size.
+The number of cells created is displayed in the data summary below the picture, prefixed by \gui{Bio-B}.
+
+The \gui{Delete cells} button deletes the entire Bio-B layer.
+
+
+The \gui{Shock cells} item allows a randomly selected group of cells within the patch to be given random colours. The proportion of selected cells is given by the slider and text item.
+When they split, their descendants will have the same colours as their parents. This simulates experiments in which clones are induced at specific stages of growth.
+
+There are two transformations that may be applied to the Bio-B layer on each step.
+\begin{description}
+\item[\gui{Jiggle}.]
+When the mesh grows, the generator points move with the mesh.
+There is provision for random noise to be added to their positions on each iteration. The amplitude of this noise is set by the \gui{Jiggle} value.
+The Voronoi tessellation is then recomputed after every growth step.
+\item[\gui{CVT per iter}.]
+The positions of the generators can also be systematically mutated on each iteration, so as to make the cells tend to all be the same size and to arrange themselves into approximately hexagonal arrays.  Technically, the tessellation mutates towards \textit{centroidality}.
+A Centroidal Voronoi Tessellation is one in which every generating point is also the centre of gravity of its own cell.
+The \gui{CVT per iter} setting determines how much of this transformation is performed on each simulation step.
+\end{description}
+}
+
+
+
+\section{Running a simulation}
+
+Once a mesh has been created and morphogens added to it, its development can be simulated, using the controls in the \gui{Run} panel. These controls are always visible. Additional parameters of the simulation are accessible through the \gui{Simulation} panel. These are shown in figure~\ref{figure-simulation-run}.
+
+\picturefigure{simulation-run}{7}{The \gui{Simulation} and \gui{Run} panels}
+
+The \gui{Run for}, \gui{Run until}, \gui{Run to}, and \gui{Step} buttons,
+respectively
+do a specified number of steps,
+run to a certain time,
+run until the area has expanded by a certain multiple,
+and do a single step.
+
+The \gui{Run} panel turns red when the simulation is running.
+
+As a rough guide to the meaning of a single step, if the concentration of growth morphogen is equal to 1 everywhere, then in one time step, the mesh will grow linearly by about $1\%$.
+
+\gui{Run for}, \gui{Run until} and \gui{Run yo} are interruptible with the \gui{Stop} button.
+
+Most of the GUI controls can still be used during the simulation,
+although it may take one or two steps before they have a visible effect.
+E.g.~enabling or disabling cell splitting, changing the plot options,
+etc. Operations which are not allowed during simulation will sound a beep or write a message to the Matlab command window.
+
+Currently, the simulation runs tolerably fast for meshes of a few thousand
+finite elements and biological cells, gradually degrading with increasing numbers.
+
+
+
+\section{Simulation options}
+
+Several different computations take place during each simuation step. The controls in the \gui{Simulation} panel allow some of these to be turned on and off.
+
+\begin{description}
+\item[Elastic growth, Plastic growth:]
+At most one of these is active at once.
+These determine whether the effect of growth on the shape of the leaf is calculated using the equations for a compressible solid or for a compressible two-dimensional fluid.  Elastic growth is generally more realistic.  The main difference is that fluids do not buckle.
+If both checkboxes are turned off, no growth computations are performed.  The default is elastic growth.
+
+\item[Diffusion:]
+When turned on, this enables the calculation of diffusion and decay,
+for morphogens having positive values for either of these.
+
+The default is on.
+\item[Retriangulate:]
+This allow certain transformations of the mesh to be made in order to maintain numerical quality by avoiding long thin triangles.
+
+\item[Split long edges:]
+This determines whether edges of the finite element mesh should be split when they become too long.
+The default is on.
+
+\item[Split bent edges:]
+If the finite elements on either side of an edge of the mesh make too great an angle with each other, enabling this checkbox allows them to be split, so as to better approximate the shape of the underlying smooth surface in regions where its curvature is increasing.
+The threshold angle for splitting is set in the \gui{Max bend} text box in radians.
+The default is off, as under some circumstances its behaviour is unstable.
+
+\item[Split bio cells:]
+This determines whether biological cells are allowed to be split when they becone too large.
+The default is on.
+
+\item[Use tensors:]
+If on, use externally specified growth tensors instead of morphogens to determine the growth.
+The default is off.
+
+\item[Flip edges:]
+When on, this can improve the subdivision of the mesh by detecting when the edge between two finite elements should be replaced by the edge joining those elements' opposite corners..
+The default is off.
+
+\item[Internal rotation:]
+Rotate the mesh by N radians before computing the Nth oteration, and rotate it back before displaying it. This helps to smooth out some numerical artefacts.
+
+\item[Negative growth:]
+Allow the rate of growth specified by the growth factors to be negative.
+Negative growth might be considered biologically unrealistic.
+\end{description}
+
+The other controls in the \gui{Simulation} panel are:
+
+\begin{description}
+\item[De-strain:]
+Clicking this button will remove all residual elastic strain from the mesh.
+
+\item[Flat strain:]
+Clicking this button will set the residual elastic strain to what it would be if the unstrained state of the mesh was flat.
+
+\item[Dissect:]
+Clicking this button will cut the mesh along all its seams.
+
+\item[Explode:]
+Clicking this button will move all the connecte components of the mesh away from each other.
+
+\item[Flatten:]
+Clicking this button will deform every connected component of the mesh until it is flat, while trying to minimise the distortion.
+
+\item[\gui{Freeze:}]
+Ths slider and text box set the proportion of computed growth that is not actually applied to the mesh. The normal value os zero; a value of 1 would prevent the mesh moving at all.
+
+\item[Max FEs:]
+If positive, splitting of finite elements will be disabled when the number of elements reaches this figure. If zero, there is no limit on the number of FEs.
+
+\item[Max bend:]
+This is the threshold angle for splitting the cells on either side of an edge, if \gui{Split bent edges} is turned on.
+
+\item[Edge scaling:]
+This specifies how the length threshold for splitting edges increases as a power of the size of the mesh.  Zero means that the threshold does not change, whie 1 means that is scales as the square root of the area.
+
+\item[Split margin:]
+Mesh quality is better maintained if edges are not split one by one as they reach the threshold length, but are split in batches. If the value of split margin is $m$ and the current edge length threshold is $d$, then no edge will be split unless some edge is above length $d\times\sqrt{m}$, and when that happens, every edge will be split at once, whose length is above $d/\sqrt{m})$. A value of 1.5 is suitable.  In a uniformly growing mesh, any value above 2 will tend
+to split nothing until all of the edges have doubled in length, then split all of them at once.
+
+\item[Min. pol. grad.:]
+Where the magnitude of the polariser gradient is below this value, growth is instead directed by the gradient which existed the last time it was above this value. If the gradient has never been above the threshold, growth is unpolarised. The areal growth rate is the same as it would be if there was an effective gradient, but the growth is isotropic.
+
+When polariser gradient arrows are plotted, where the magnitude is above the threshold the arrows are drawn in dark blue. Where it is below, the ``frozen-in'' gradient is drawn in red.
+
+\item[Tol. diff.:]
+Sets the tolerance for solving the diffusion equations.  Default is 0.00001.
+
+\item[Tol. elast.:]
+Sets the tolerance for solving the elasticity equations.  Default is 0.001.
+
+\item[Time limit:]
+Sets the maximum number of iterations allowed in the \code{cgs} solver.
+\end{description}
+
+
+
+
+\section{Display of the mesh}
+
+The scrollbars on the picture vary the direction of the viewpoint.
+
+Just to the left of the picture is the \gui{Plot options} panel.
+The settings determine what information is plotted.
+
+The three pull-down menus above the \gui{Plot options} panel and the checkboxes next to them
+choose what quantity is to be represented by the colour of the mesh.
+\begin{description}
+\item[\gui{Plot current factor}:]
+The value of the current morphogen.
+\item[\gui{Plot output value}:]
+The quantity specified by the two menus just below the checkbox is plotted.
+The upper menu specifies a tensor quantity, and the lower menu specifies which attribute of that tensor to plot.
+\end{description}
+If both checkboxes are off, no quantity is plotted and the mesh is drawn in white.
+
+The tensor quantities are:
+\begin{description}
+\item[\gui{Actual growth}]
+The amount of growth occurring in the last time step.
+\item[\gui{Actual bend}]
+The amount of bending occurring in the last time step.
+\item[\gui{Residual growth}]
+The difference between the amount of growth specified by the growth factors and the actual growth in the last time step.
+\item[\gui{Residual bend}]
+The difference between the amount of bend specified by the growth factors and the actual bend in the last time step.
+\item[\gui{Rotation}]
+The rotational velocity of each element.
+\end{description}
+The tensor properties are:
+\begin{description}
+\item[\gui{Total}]
+The total of the three principal components of the tensor.
+
+\item[\gui{Areal}]
+The total of the two principal components of the tensor corresponding to the two principal axes most nearly parallel to the surface.
+
+\item[\gui{Major}]
+The larger of the two principal components most nearly parallel to the surface.
+
+\item[\gui{Minor}]
+The smaller of the two principal components most nearly parallel to the surface.
+
+\item[\gui{Parallel}]
+The principal component most nearly parallel to the polariser gradient.
+
+\item[\gui{Perpendicular}]
+The principal component most nearly perpendicular to the polariser gradient and 
+parallel to the surface.
+
+\item[\gui{Normal}]
+The principal component most nearly perpendicular to the surface.
+\end{description}
+
+Tensor values are defined per finite element, while growth factor values are defined per vertex and interpolated across each finite element.  Thus tensor value appear as a flat colour on each FE, while growth factors apear as more continuous colour fields.
+
+The checkboxes in the \gui{Plot options} panel select various other things to plot.
+
+\begin{description}
+\item[\gui{Canvas}]
+Plot the finite elements, colour-coded to represent the value of the property selected in the pull-down menu described above.
+
+\item[\gui{FE edges}]
+Draw the edges that separate the finite elements.
+
+\item[\gui{Polariser gradient}]
+Draw an arrow in each FE to show the direction of the polarisation gradient.
+FEs in which there is no gradient have no arrow drawn.
+
+\item[\gui{Tensor axes}]
+If a tensor quantity is being plotted, draw its axes in each FE.
+
+\item[\gui{Cells}]
+Draw the biological cells.
+
+\item[\gui{Mutant level}]
+If a growth factor is being plotted, and it has a mutation level, draw the mutated level (the default). If this is off, the unmutated level is drawn.
+\end{description}
+
+Some less frequently used options are on the \gui{Plot} menu.
+\begin{description}
+
+\item[\gui{Black/White Background}]
+Set the background colour of the picture area.
+
+\item[\gui{Show/Hide Legend}]
+Show or hide the large text at the top of the picture.
+
+\item[\gui{Show/Hide Thickness}]
+Draw the mesh as a surface of finite or zero thickness.
+
+\item[\gui{Show/Hide Seams}]
+Highlight the seam edges in red.
+
+\item[\gui{Show/Hide Axes}]
+Show or hide the axes.
+
+\item[\gui{Show/Hide Displacements}]
+Draw an arrow at each vertex to indicate its displacement during the previous time step. The relative lengths of the arrows are accurate, but the absolute lengths are scaled to fit the scale of the picture.
+
+\item[\gui{Show/Hide Normals}]
+Draw the surface normal to each finite element.
+
+\item[\gui{Turn Light On/Off}]
+Turn a light on or off, to enhance the appearance of the surface.
+
+\item[\gui{Set Legend...}]
+Specify additional text to draw at the top of the picture.
+
+\item[Decor]
+The \gui{A/B} radio buttons determine which side of the mesh some of the ``decorations'' are drawn: the polariser gradient arrows and the FE normals.  Biological cells are always drawn on both sides.
+
+When there are very many FEs, the decorations can be difficult to see if they are drawn in every one.  The \gui{Sparsity} value can be used to draw these decorations larger, and in fewer FEs.  No FE will be decorated if any other FE has a decoration within a distance equal to the sparsity value times the maximum diameter of the mesh along any of the axes.
+
+\item[\gui{Auto axis range}]
+If this checkbox is on, then the axis range is automatically scaled to fill the picture. If off, the specified values are used for the axis bounds.
+
+\item[\gui{Monochrome}]
+If checked, then a monochrome colour scale of a user-specified colour will be used to represent plotte values, instead of the default rainbow style.
+
+\item[\gui{Auto color range}]
+If on, then plotting a morphogen, scale the colours so as to go from blue=0 to red=the maximum value.
+If off, the color bar spans the user-specified range.
+
+\item[\gui{Pan, Zoom, Rot, RU}:]
+When clicked, these allow the mouse to be used to change the picture viewpoint accordingly: panning, zooming, rotating arbitrarily, and rotating while holding the camera up vector aligned with the vertical.
+
+\item[\gui{Clip}]
+This allows clipping by morphogen value. Clicking the \gui{Mgen} button brings up a dialog in which you can select any set of growth factors, together with a criterion for clipping. The part of the mesh that will be visible will be the set of vertexes where either all or any of the selected factors is either below or above a user-specified threshold.
+
+\item[\gui{Clipping plane}]
+The \gui{Az}, \gui{El}, and \gui{D} boxes specify the direction and distance of a clipping plane.
+The clipping plane and clipping by morphogen value can be used together.
+\end{description}
+
+
+\section{Movies and snapshots}
+
+To start recording a movie, click the \gui{Record movie\dots} button.
+If the \gui{Auto-name} checkbox is on, a name for the movie will be generated automatically, otherwise th user is asked to choose a name.
+The movie will begin with an image of the current state of the mesh, as displayed on screen, and an image will be added after every simulation step.  To close the movie, click the same button again (its name will have changed to \gui{Stop movie}).
+
+To capture a single image, click the \gui{Take snapshot} button. The \gui{Auto-name} setting applies in the same way to snapshot.
+
+Movies and snapshots are just two-dimensional images.  They contain none of the structure of the mesh and show whatever the picture area showed at the time, including the legend.
+
+
+
+\section{Scripting and non-interactive use}\label{section-commands}
+
+Most of the GUI controls are equivalent to Matlab commands.
+Each of these Matlab commands can be executed at the command prompt, without running \progname{}.  Most of the available commands are equivalent to GUI operations.
+
+\progname{} maintains a history of the GUI operations as a Matlab script, which can be saved to a file or written to the Matlab command window.
+When a script file is loaded (by the \gui{Load\dots} button), the commands in it are executed.
+
+A script file can be executed at the Matlab prompt without running \progname{}.
+If it does not ever draw the mesh, it can be run even on a machine without graphics, such as a remote cluster.
+
+Every command has a name beginning ``\code{leaf\_}''.
+A command may take a number of required arguments,
+identified by their position in the argument list,
+followed by a number
+of optional arguments identified by keyword.
+The optional arguments can be given in any order, and usually
+default values will be assumed for optional arguments not specified.
+
+If a command modifies an existing canvas, the current canvas is always
+the first required argument.
+
+The result of every command is the new canvas.
+If a command which creates a new canvas fails
+(for example, because of invalid arguments)
+then it returns the empty structure.
+If a command which modifies an existing canvas fails,
+it returns the old canvas unchanged.
+
+If you edit a script file by hand, you can put in any other Matlab code you like.  However, if the script file is to be read and executed by \progname{}, every line of the script must be a self-contained Matlab command --- commands cannot be split over multiple lines.  (This is a limitation of the implementation: \progname{} reads and executes script files one line at a time, in order to be able to interrupt execution if required after any command.)
+
+A script file to be processed by \progname{} must also use the variable ``\code{m}'' to store the mesh, because \progname{} expects to find the mesh there when the script has finished.
+
+Script files intended only for execution at the Matlab command prompt can contain completely arbitrary Matlab code.
+
+
+\section{Forthcoming}
+
+\subsection{New features}
+
+\begin{enumerate}
+\item
+There should be a command window for typing in Matlab commands that can operate on the current mesh.
+\item
+When deleting elements from the mesh, it should be possible to undo changes.
+\end{enumerate}
+
+
+\subsection{Existing problems to be fixed}
+
+\begin{enumerate}
+\item
+This manual is not up to date.
+\item
+The various view controls do not always maintain their effect the next time the mesh is redrawn.
+\item
+Gravity is not modelled.
+\item
+Running on a stereo display is currently being implemented.
+\end{enumerate}
+
+
+\newpage
+\section{Reference to all leaf commands}\label{section-commandreference}
+
+This section of the manual reproduces the help text from all of the script commands.  The help text is also available at the Matlab command prompt by typing \code{help }\textit{commandname}.
+
+
+\input{refall}
+
+
+
+\begin{center}
+\rule{4cm}{1pt}
+\end{center}
+
+\end{document}

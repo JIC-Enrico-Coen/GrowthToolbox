@@ -1,0 +1,1462 @@
+#restartButton
+Reload the initial state of the model.
+
+#reloadmodel
+Reload the last saved state of the model.
+
+#savemodelover
+Save the current state of the model.
+
+#elevation
+Rotate the model up and down.
+
+#azimuth
+Rotate the model left and right.
+
+#deadcanary (For catching the closedown event. May not be necessary.)
+It's pining for the fjords.
+
+#splitBioAbutton (OBSOLETE)
+
+#brushsizeText 0.1
+The size of the brush for selecting parts of the mesh.
+
+#clearSelectionButton Clear
+Deselect all vertexes, edges, and faces of the mesh.
+
+#mouseClickVertexButton
+Use the mouse to select a set of vertexes of the mesh.
+
+#mouseClickEdgeButton
+Use the mouse to select a set of edges of the mesh.
+
+#mouseClickFaceButton
+Use the mouse to select a set of elements of the mesh.
+
+#mouseClickIconButton
+Use the mouse to select parts of the mesh by clicking.
+
+#mouseBoxIconButton
+Use the mouse to select parts of the mesh by dragging out a marquee rectangle.
+
+#mouseBrushIconButton
+Use the mouse to select parts of the mesh with a circular brush.
+
+#runFlag
+Run the simulation for the specified number of steps.
+
+#stopFlag
+Stop the simulation.
+
+#bioAgridbutton
+Create a grid of square cells.
+
+#bioAscatterbutton
+Scatter isolated biological cells randomly over the mesh.
+
+#bioAuniversalbutton Fill (NEW!)
+Cover the mesh with a layer of cells.  This works for any shape of mesh, but tends to produce smaller cells near the edges.
+
+#bioAcolorsButton Randomize colours
+Randomize the colors of the biological cells.
+
+#allowbiooveredgeCheckbox Allow over mesh edge
+When scattering biological cells at random, allow them to overlap the edge of the mesh. Such cells will be trimed back to the edge.
+
+#colorVariationText
+The amount of random variation in color from one biological cell
+to its neighbours.
+
+#maxBioAtext
+The maximum allowed number of biological cells.
+The initial layer can be created with more than this,
+but splitting of cells will be disabled when this
+number is reached or exceeded. Set this value to zero
+to allow an unlimited number of cells.
+
+#bioArelsizetext
+The area of a newly created biological cell,
+relative to the area of the whole mesh.
+
+#cellSidesStaticText
+Specify the number of sides an isolated biological cell should have.
+
+#cellSidesText
+Specify the number of sides an isolated biological cell should have.
+
+#actualBioACellsStatictext
+The number of cells to create.
+
+#actualBioACellstext
+The number of cells to create.
+
+#bioArefinement
+The number of sub-edges to divide each edge of median length into,
+and other edges proportionately to that. The value is used by all the
+buttons that create different sorts of biological mesh, and the "Refine"
+button that subdivides the edges of an existing mesh.
+
+#bioArefine
+Subdivide edges of median length into the number of sub-edges given in the
+"Refinement" checkbox, and subdivide other edges proprotionately to that.
+
+#bioAaxisratiotext
+When creating isolated biological cells, use this ratio of major to minor
+axis of the normally circular cells. The major axis will be aligned with the polariser gradient.  Where there is no or negligible polariser gradient, the cells will be circular.
+
+#cellmgens_panel
+Open the separate panel for cellular morphogens.
+
+#bioAfillbutton
+Cover the entire mesh with the specified number
+of biological cells as a continuous layer.
+This does not work unless the mesh is nearly flat.
+
+#bioAdeletebutton
+Delete all the biological cells.
+
+#simplifySecondLayerButton
+Delete all biological cells that are neither
+shocked nor adjacent to a shocked cell.
+
+#bioAsinglebutton
+Create a single biological cell.
+
+#totalCellsText
+Specify the number of biological cells imagined to exist
+in the initial state of the mesh. This value will be scaled
+up as the mesh grows and reported in the report area below the
+picture. It does not relate to the simulated biological layer,
+which need not exist.
+
+#displayedCellMgenMenu  
+Select the cellular factor to operate on or display.
+
+#cellMgenSelectButton
+Draw the selected cellular factor by colouring the biological cells.
+
+#outputSelectButton
+Plot a parameter of the current growth behaviour of the mesh.
+
+#outputSelectStaticText
+Plot a parameter of the current growth behaviour of the mesh.
+
+#inputSelectButton
+Plot the value of a growth factor.
+
+#inputSelectStaticText
+Plot the value of a growth factor.
+
+#displayedGrowthMenu
+Select the morphogen to display in the picture
+and operate on in the Factors panel.
+
+#tensorPropertyMenu
+Choose which property of the selected tensor
+to plot as a color-coded value.
+
+#newplotQuantityMenu
+Choose which tensor to plot as a color-coded value.
+
+#snapshot
+Take a snapshot of the mesh in a PNG file.
+The file is stored in the project's 'snapshots'
+folder, and its name is chosen automatically.
+
+#autonameItem
+When recording a movie, choose the filename automatically.
+
+#movieButton
+Start/stop recording a movie.
+
+#resetButton
+Click to re-enable the interaction function if there was a problem.
+Click to re-enable everything if there was a program error during a simulation.
+
+#flattenButton
+Force each connected component of the mesh to be flat,
+and lay out the fragments in the XY plane. This may take
+a substantial amount of time.
+
+#edgesplitscaletext
+Finite element edges are split when they exceed a certain length.
+Initially this is the average initial length of all edges times sqrt(2).
+The threshold grows according to a certain power of the diameter of the
+mesh. This text box specifies that power.
+
+#splitmargintext
+Do not split any finite element edges until at least one has reached this
+multiple of the splitting threshold. Then split all edges exceeding the
+threshold. A value of 1 splits all edges as soon as they reach the threshold,
+while a higher value will split them in batches, which tends to better maintain
+the quality of the mesh.
+
+#maxsolvetime
+The maximum number of iterations of the elasticity algorithm
+allowed before abandoning the calculation. Not related to the
+number of iterations of the simulation: each simulation step
+that is displayed consists of a number of internal steps.
+
+#solvertolerance
+The relative accuracy with which the solver
+calculates deformation.
+
+#elastTolStaticText
+The relative accuracy with which the solver
+calculates deformation.
+
+#diffusionToleranceText
+The relative accuracy with which the solver
+calculates diffusion.
+
+#diffTolStaticText
+The relative accuracy with which the solver
+calculates diffusion.
+
+#minpolgradText
+When the polarisation gradient falls below this value per unit distance,
+the polarisation direction becomes frozen at its current value and is
+no longer computed from the polariser.  When it rises above this value
+again, the polarisation direction is once again computed from the polariser
+gradient.
+
+#explodeButton Explode
+Spatially separate the connected components of the mesh.
+
+#dissectButton Dissect
+Cut the mesh along all the seams.
+
+#maxBendtext
+Split edges in the vicinity of an edge across which the
+bend angle has changed by more than this number of radians.
+
+#maxFEtext Max FEs
+Do not allow the number of finite elements to grow above this value.
+Set to zero to allow an unlimited number.
+
+#siminfoText (No tooltip needed.)
+
+#scalebar (No tooltip needed.)
+
+#rolltext (No tooltip needed.)
+
+#elevationtext (No tooltip needed.)
+
+#azimuthtext (No tooltip needed.)
+
+#colortitle (No tooltip needed.)
+
+#colornamelo (No tooltip needed.)
+
+#colornamehi (No tooltip needed.)
+
+#flatstrain
+Set the residual strain of the mesh to what it would be if the
+unstrained state of every edge was flat.
+
+#destrain
+Remove all residual strain from the mesh.
+
+#legend (No tooltip needed.)
+
+#allowDilution
+Allow growth to dilute the concentration of the selected factor.
+
+#absorptionText
+The rate of decay of the selected factor. Dimensionless.
+
+#conductivityText
+The rate of diffusion of the selected factor.
+Dimensions are length^2/time.
+
+#morpheditmodemenu
+Selects whether clicking on the mesh will add an amount
+of the selected factor, set its value, or cause its current
+value to be fixed throughout the simulation.
+
+#invertGrowth
+Replace the selected factor by its negative everywhere.
+
+#linearDirection
+Set the direction of the gradient when adding a linear gradient
+of the selected factor. The direction is always in the XY plane,
+and the parameter is the angle between that direction and the
+positive X axis.
+
+#linearGrowth
+Apply a linear gradient of the selected factor.
+
+#radialz
+Set the centre of a radial distribution of the selected factor.
+
+#radialy
+Set the centre of a radial distribution of the selected factor.
+
+#radialx
+Set the centre of a radial distribution of the selected factor.
+
+#gfradial
+Add a radial distribution of the selected factor.
+
+#edgeGrowth
+Add the selected factor to every edge node.
+
+#randomGrowth
+Add a random amount of the selected factor to every node.
+
+#constantGrowth
+Add a constant amount of the selected factor to every node.
+
+#paintamount
+Set the amount of the selected factor that
+will be applied by the other controls.
+
+#paintslider
+Set the amount of the selected factor that
+will be applied by the other controls.
+
+#zerogf
+Set the selected factor to zero everywhere.
+
+#zeroall
+Set all growth factors to zero everywhere.
+
+#renameMgenButton
+Rename the selected factor.
+
+#deleteMgenButton
+Delete the selected factor.
+
+#newMgenButton
+Create a new factor.
+
+#loadGrowthButton
+DO NOT CLICK THIS BUTTON.
+
+#editMgenInitfnButton
+Open the interaction function in the Matlab editor.
+
+#growingText
+
+#unshockBioA
+Unshock all the biological cells.
+
+#shockAtext
+Shock this proportion of the biological cells.
+
+#shockAslider
+Shock this proportion of the biological cells.
+
+#bioAshockbutton
+Shock the specified proportion of the biological cells.
+
+#bioAuniformButton
+Colour biological cells uniformly
+
+#bioAcolorsButton
+
+
+#bioApointsizeText
+Set the size with which the vertexes of biological cells are drawn.
+The units are approximately pixels.
+
+#bioAlinesizeText
+Set the thickness with which the edges of biological cells are drawn.
+The units are approximately pixels.
+
+#bioAsplitEdgesButton
+When the bio layer consists of isolated cells, fake
+splitting them by only splitting their boundary edges.
+
+#bioAsplitCellsButton
+Do not fake splitting of biological cells.
+
+#clipCheckbox
+Turn the clipping plane on and off
+
+#dclipText
+Distance of the clipping plane from the origin.
+The higher this value, the more of the space is cut away.
+
+#elclipText
+Elevation of the clipping plane.
+
+#azclipText
+Azimuth of the clipping plane.
+
+#showTensorAxes
+Draw the axes of the currently displayed tensor quantity.
+
+#showSecondLayer
+Draw the biological cells.
+
+#showPolariser
+Draw arrows showing the polariser gradient.
+
+#showPolariser2
+Draw arrows showing the second polariser gradient. (Volumetric meshes only.)
+
+#showPolariser3
+Draw arrows showing the third polarisation gradient. (Volumetric meshes only.)
+
+#enablePlotCheckbox
+Allow the mesh to be plotted.
+
+#allowSnapsCheckbox
+When mesh plotting is turned off, still allow
+the saving of snapshots and movie frames.
+
+#showEdges
+Draw the edges of the finite elements.
+
+#colorScalePopupMenu
+Choose the color scale for visualising the plotted quantity.
+Options are Rainbow (blue low to red high), Split Rainbow (violet for
+negative, white for zero, then blue low to red high), Monochrome
+(one color for negative, zero for white, another colour for positive),
+or Custom (user-specified by the interaction function).
+
+#roll
+Roll the mesh around the direction of view.
+
+#rotateToggle
+When selected, click-dragging will rotate the model freely.
+
+#rotuprightToggle
+When selected, click-dragging will rotate the model while
+keeping the Z axis as nearly upright in the view as possible.
+
+#zoomToggle
+When selected, click-dragging will zoom the model.
+
+#panToggle
+When selected, click-dragging will pan across the model.
+
+#autoScale
+Switch between scaling the axes to the size of
+the mesh, and using user-specified bounds.
+
+#autoColorRange
+Switch between scaling the color bar to the range of the quantity
+being displayed, and giving user-specified limits.
+
+#autoColorRangeMintext
+Set the value that is mapped to the bottom end of the colour bar,
+when automatic ranging is off.
+
+#autoColorRangeMidtext
+Set the value that is mapped to the mid range of the colour bar,
+when automatic ranging is off.
+
+#autoColorRangeMaxtext
+Set the value that is mapped to the top end of the colour bar,
+when automatic ranging is off.
+
+#bsideRButton
+Draw all decorations (gradient vectors, cell
+normals, etc.) on the B size of the mesh.
+
+#asideRButton
+Draw all decorations (gradient vectors, cell
+normals, etc.) on the A size of the mesh.
+
+#sparsityText
+Plot decorations (gradient vectors, tensor axes, and cell normals)
+only on a subset of cells at least this distance from each other,
+expressed as a proportion of the mesh diameter.
+
+#sparsityStaticText
+Plot decorations (gradient vectors, tensor axes, and cell normals)
+only on a subset of cells at least this distance from each other,
+expressed as a proportion of the mesh diameter.
+
+#notesButton
+Open the notes file for the current project in the editor
+
+#initialiseIFButton
+Call the interaction function without
+performing a simulation step.
+
+#rewriteIFButton
+Rewrite the interaction function to force it to be
+compatible with the current version of the program.
+
+#editMgenInteractionButton
+Edit the current interaction function, creating it if necessary.
+
+#mgenInteractionName
+The name of the current interaction function, if any.
+
+#flipOrientationButton
+Swap the A and B sides of the mesh.
+
+#unfixallButton
+Remove all movement constraints on all vertexes of the mesh.
+
+#fixZbox
+When "Fix nodes" is selected in the adjoining menu, clicking on a vertex
+alternately sets its fixedness properties in X, Y, and Z to the settings
+of these three checkboxes and highlights it, or makes the vertex unfixed
+along all axes and dehighlights it.
+
+#fixYbox
+When "Fix nodes" is selected in the adjoining menu, clicking on a vertex
+alternately sets its fixedness properties in X, Y, and Z to the settings
+of these three checkboxes and highlights it, or makes the vertex unfixed
+along all axes and dehighlights it.
+
+#fixXbox
+When "Fix nodes" is selected in the adjoining menu, clicking on a vertex
+alternately sets its fixedness properties in X, Y, and Z to the settings
+of these three checkboxes and highlights it, or makes the vertex unfixed
+along all axes and dehighlights it.
+
+#mouseeditmodeMenu
+Select the effect of clicking on the mesh.
+----: nothing
+Fix nodes: toggle fixedness of the vertex position along the X, Y, or Z
+    axes, according to the checkboxes alongside.
+Locate node: Select a single vertex to be held at a constant position,
+    by translating the mesh as necessary afte each iteration.
+Delete element: Click on a finite element to delete it from the mesh.
+Seam edges: Click on an edge to toggle whether it is a seam edge.
+Subdivide vertex: Not implemented.
+Subdivide edge: Not implemented.
+Subdivide element: Not implemented.
+Elide edge: Delete the clicked edge and the finite elements on either side,
+    by drawing its ends together.
+Elide cell pair: Not implemented.
+
+#alwaysFlat
+Force the mesh to always remain flat in the XY plane.
+
+#twoD
+Treat the mesh as being two dimensional. It remains flat in the XY plane
+and never varies in thickness.
+
+#poissonsRatio
+Set Poisson's ratio.
+
+#rotateXYZ
+Permute the X, Y, and Z axes.
+
+#areaTargetText
+The Run To button will run the simulation until the area
+of the mesh has reached this multiple of the initial area.
+
+#areaStaticText
+The Run To button will run the simulation until the area
+of the mesh has reached this multiple of the initial area.
+
+#runToButton
+Run the simulation until the area of the mesh has
+reached the indicated multiple of the initial area.
+
+#simsteps
+Set the number of simulation steps to perform.
+
+#numStepsStaticText
+Set the number of simulation steps to perform.
+
+#stopButton
+Stop the simulation after the current iteration.
+
+#singlestep
+Do a single simulation step.
+
+#run
+Run the simulation for the indicated number of iterations.
+
+#runUntilButton Run until
+Run the simulation until the indicated time is reached.
+It will actually stop when the time until the target time
+drops below half the time step.
+
+#simtimeText
+Specify the time to run to.
+
+#timeStaticText time
+Specify the time to run to.
+
+#editor
+Select the panel for creating and editing meshes.
+
+#morphdist
+Select the panel for adding growth factors to the mesh.
+
+#runsim
+Set parameters of the simulation process.
+
+#bio1
+Edit the biological layer of cells and marked clones.
+
+#growthtensors
+Import an external source of growth information.
+
+#timestep
+Set the time step for the simulation.
+
+#freezetext
+If the value of this is f (between 0 and 1), then in each simulation step,
+only a fraction (1-f) of the calculated deformation will actually be applied.
+
+#freezeslider
+If the value of this is f (between 0 and 1), then in each simulation step,
+only a fraction (1-f) of the calculated deformation will actually be applied.
+
+#allowNegativeGrowth
+Allow growth rates to be negative.
+
+#usefrozengradient
+When turned on, wherever the polariser gradient is below the threshold,
+use the value it last had above the threshold.  When turned off, treat
+polariser gradients below the threshold as zero (i.e. isotropic growth).
+
+#allowRetriangulate
+Allow elision of thin FEs to improve the mesh quality.
+
+#allowSplitBentFEM
+Allow edges to be split in
+areas of high bending.
+
+#allowFlipEdges
+Allow the mesh to be improved by edge-flipping.
+
+#useGrowthTensors
+(Do not turn this on.)
+
+#allowSplitBio
+Allow biological cells to split
+if they exceed a size threshold.
+
+#allowSplitLongFEM
+Allow edges of the mesh to be split
+if they exceed a length threshold.
+
+#diffusionEnabled
+Allow morphogens to diffuse (if they
+have a positive diffusion constant).
+
+#plasticGrowthEnabled
+Calculate growth by modelling
+the mesh as a viscous fluid.
+
+#springyGrowthEnabled
+Calculate growth by modelling
+the mesh as a foam of incompressible
+fluid divided by elastic walls.
+
+#growthEnabled
+Calculate growth by modelling
+the mesh as an elastic solid.
+
+#splitMgenMaxButton
+When splitting an edge, set the selected growth factor
+at the new node to the minimum of the values at each end.
+
+#splitMgenMinButton
+When splitting an edge, set the selected growth factor
+at the new node to the maximum of the values at each end.
+
+#splitMgenAverageButton
+When splitting an edge, set the selected growth factor
+at the new node to the average of the values at each end.
+
+#allWildcheckbox
+Use the wild-type values of all growth factors, regardless of
+whether they have a mutant value. This is intended for easy
+switching between simulating a particular mutant and simulating
+the wild type.
+
+#revertMutantButton
+Set the mutation level of the selected factor to 1
+(i.e. have no mutation for this factor).
+
+#mutanttext
+Set the ratio of the mutated value of a growth factor
+to the wild-type value. The ratio can be smaller or
+greater than 1.
+
+#mutantslider
+Set the ratio of the mutated value of a growth factor
+to the wild-type value. The ratio can be smaller or
+greater than 1.
+
+#rotatetext
+Set the angle to rotate the mesh by the +/- buttons.
+
+#rotateslider
+Set the angle to rotate the mesh by the +/- buttons.
+
+#rotateZButton
++/- buttons rotate the mesh about the Z axis.
+
+#rotateYButton
++/- buttons rotate the mesh about the Y axis.
+
+#rotateXButton
++/- buttons rotate the mesh about the X axis.
+
+#rotateMeshButton
+Rotate the mesh about the selected axis by the selected angle.
+
+#rotateNegMeshButton
+Rotate the mesh about the selected axis by minus the selected angle.
+
+#physicalRadioButton
+When this is selected, growth in thickness is determined by KNOR in the same
+way as growth along the surface is determined by KAPAR...KBPER.
+
+#directRadioButton
+When this is selected, growth in thickness is set directly from the value of KNOR,
+bypassing the elasticity calculation.
+
+#thicknessText
+The value of the thickness to be applied by the "Set" button.
+
+#thicknessButton Set
+Set the thickness of the mesh to the given value.
+
+#numsaddle
+Set the number of up-and-downs of a saddle-shaped deformation.
+
+#saddlez
+Apply a saddle-shaped deformation.
+
+#bowlz
+Apply a bowl-shaped deformation.
+
+#zamount
+The amplitude of the mesh deformation that will be applied by the
+"Modify Z shape" buttons.
+
+#perturbz
+Apply a random displacement to every node.
+
+#zeroz
+Set the Z coordinate of every node to zero.
+
+#geomparam33
+
+#geomparam33Text
+
+#geomparam23
+
+#geomparam23Text
+
+#geomparam13
+
+#geomparam13Text
+
+#geomparam32Text
+
+#geomparam32
+
+#geomparam22
+
+#geomparam12
+
+#geomparam12Text
+
+#geomparam22Text
+
+#geomparam31Text
+
+#geomparam31
+
+#geomparam21Text
+
+#geomparam21
+
+#geomparam11Text
+
+#geomparam11
+
+#generatetype
+Select the type of mesh to create.
+
+#replacemeshbutton
+Replace the mesh of the current model, retaining all other properties,
+and mapping the morphogen distribution across as nearly as possible.
+
+#generatemesh
+Create a new model. Any current project will be closed.
+
+#refineproptext
+Set the proportion of edges to be subdivided.
+
+#refinepropslider
+Set the proportion of edges to be subdivided.
+
+#refinemesh
+Subdivide a proportion of the edges of the mesh, chosen at random.
+
+#plotFlag (Invisible)
+
+#commandFlag (Invisible)
+
+#colortextlo (label on bottom end of colorbar)
+The value of the plotted quantity corresponding
+to the colour at the foot of the colour bar.
+
+#colortexthi (label on top end of colorbar)
+The value of the plotted quantity corresponding
+to the colour at the top of the colour bar.
+
+#report (Where the status info is displayed. No need for a tooltip.)
+
+#drawmulticolor (Multi-plot)
+Enable the plotting of multiple morphogens together.
+To select the morphogens to plot together, use the
+Multi-Plot command on the Plot menu.
+
+#clipmgenButton (Mgens)
+Bring up a dialog to select a set of morphogens to clip by.
+
+#clipbymgenCheckbox (Mgens)
+Enable clipping according to the values of selected morphogens.
+Click the Mgens button to select the morphogens to clip by.
+
+#multiBrightenText
+Parameter to the method used to mix colours of overlapping
+morphogens when plotting several simultaneously. 0 multiplies
+the colours together. Larger values desaturate the colours,
+then multiply them, then resaturate the result.
+
+#enableIFtext (purpose unknown -- obsolete?)
+
+#defaultViewFromCurrentItem Set Default View From Current (menu item)
+Set the default view direction to be the current view direction. The
+current azimuth, elevation, and roll angles in degrees are displayed
+to the right of the upper part of the picture.
+
+#setviewItem Set View... (menu item)
+Set the view direction through a dialog allowing the azimuth, elevation, and
+axial rotation to be specified in degrees. Zero azimuth and elevation looks
+in the +Y direction with +X being rightwards and +Z upwards. Zero az and
+90 el looks in the -Z direction with +X rightwards and +Y upwards.
+Increasing azimuth rotates the view direction anticlockwise. Increasing
+elevation raises the camera and lowers the direction of view. Increasing the
+axial rotation rotates the camera anticlockwise about its line of sight.
+When the view direction is changed, the camera rotates about the point it
+is looking at, which is usually at the coordinate origin.
+
+#useviewItem Use View (menu item)
+This submenu selects a number of standard view directions: from above, from
+positive X, from negative Y, etc.
+
+#autozoomcentreItem
+This is a toggleable menu item.  When on, the viewpoint will automatically
+be chosen so that the bounding box of the axes (not of the mesh) is the same
+size as the picture area, and the camera is looking at the centre of the
+bounding box.
+
+#autozoomItem
+This is a toggleable menu item.  When on, the viewpoint will automatically
+be chosen so that the bounding box of the axes (not of the mesh) is the same
+size as the picture area.
+
+#autocentreItem
+This is a toggleable menu item.  When on, the viewpoint will automatically
+be chosen so that the camera is looking at the centre of the bounding box
+of the axes (not of the mesh).
+
+#rescaleItem Rescale... (menu item)
+Magnify or shrink the mesh in space and time. A dialog is brought up
+in which you can specify the amounts.
+
+#distunititem Distance unit... (menu item)
+This command brings up a dialog in which you can specify the name of
+the distance unit and the number of units that the scale bar should
+represent. The unit name should be given in the singular. If 0 is
+specified for the scale bar size, the scale bar value will be chosen
+automatically so that its size is pleasingly in proportion to the window.
+
+#timeunitItem Time unit... (menu item)
+This command brings up a dialog in which you can specify the name of
+the time unit and the time at which the simulation starts. The name
+should be given in the singular.
+
+#multiplyLayersItem Multiply Layers... (menu item)
+Replace a single-layer mesh by a mesh of multiple layers glued together.
+
+#rectifyVerticalsNowItem Rectify Verticals (menu item)
+Force the lines joining vertexes on opposite surfaces of the mesh to be
+perpendicular to the mid-surface.
+
+#allowSparseItem Allow Sparse (menu item)
+Use a sparse array for the main matrix constructed for the solution of
+the finite element equations.
+
+#importMeshItem Import Mesh (menu item)
+Replace the internal mesh structure by a copy of the global variable
+EXTERNMESH, and replot.
+
+#exportMeshItem Export Mesh (menu item)
+Copy the current mesh structure to the global variable EXTERNMESH.
+To access this from the command window, give the command
+
+global EXTERNMESH
+
+You need do that only once per session. Use Mesh>Import Mesh to copy
+EXTERNMESH back in.
+
+#savefigItem Save FIG... (menu item)
+Save the current mesh as a Matlab FIG file. This does not preserve the
+mesh structure, only the 3D graphic representation. If the FIG file is
+later loaded in Matlab, it can be rotated, zoomed, and panned, but different
+plot options cannot be chosen.
+
+#savevrmlItem Save VRML... (menu item)
+Save the current mesh as a VRML file. This file will include the surface
+and the biological cells, if they are currently being plotted. Colours
+will be as they are in the plot. VRML files can be viewed in any VRML
+viewer (such as BS Contact, available for Windows and Mac OS free from
+http://www.bitmanagement.com/), and can also be printed by Zcorp's 3D
+printers.
+
+#saveobjItem Save OBJ... (menu item)
+Save the current mesh as an OBJ file. This will only contain the
+surface and its colouring, not the biological cells. 
+
+#savematItem Save MAT... (menu item)
+Save the current mesh as a Matlab MAT file. This contains the entire mesh
+structure, and is the format that all stage files and the initial state are stored.
+
+#loadobjItem Load OBJ... (menu item)
+This attempts to load an OBJ file as a mesh, but is best not used.
+
+#loadscriptItem Load script... (menu item)
+This attempts to load and execute an M file to build a mesh, but is best
+not used.
+
+#loadmatItem Load MAT... (menu item)
+This loads a mesh from a MAT file.
+
+#openProjectItem Open Project... (menu item)
+Open a standard dialog to select a project directory to open.
+However, you will usually be able to more conveniently open a
+project by selecting it directly from the user projects submenu
+of the Projects menu.
+
+#closeProjectItem Close Project (menu item)
+Forget the current mesh and its project. The current state of the mesh
+is NOT saved.
+
+#saveProjectAsItem Save Project As... (menu item)
+Save the model as a new project.  If it has already been saved as a project,
+save it as a new copy of the project.
+
+#showProjectFolderItem Show Project Folder (menu item)
+Show the current project folder on the desktop. (Works on Windows and Mac only.)
+
+#purgeProjectItem Purge Project (menu item)
+Delete generated files from the current project directory.  These are all
+saved stages, and the entire movies and snapshots subdirectories.
+
+#addProjectsFolderItem Add User Projects Folder... (menu item)
+Add a folder to the Projects menu.  This may be either a single project or
+a folder containing many projects. The added folder will remain on the Projects menu
+across invocations of GFtbox.
+
+On startup, and when you use the Projects>Refresh command, all user projects
+directories will be searched for projects and they will be added as submenus.
+
+The GUI does not provide a way to remove folders from the Projects menu. To do
+that, you need to close GFtbox and manually edit GFtbox_config.txt in the
+GrowthToolbox directory and delete all unwanted lines that begin "projectdir".
+When you restart GFtbox the deleted items will no longer appear on the Projects menu.
+
+#refreshProjectsMenu Refresh (menu item)
+Rescan your projects directories and the System projects directory and
+rebuild the menus that list all of the projects found there.
+
+#MotionJPEGAVIItem Motion JPEG AVI (menu item)
+Movies will be compressed by the Motion JPEG method (the default).
+This produces reasonable picture quality and file size, and is playable on most platforms.
+
+#MPEG4Item (menu item)
+Movies will be stored in MPEG-4 compressed format.
+This produces low file size but also low picture quality.
+It is playable on most platforms.
+
+#ArchivalItem (menu item)
+Movies will be losslessly compressed in Motion JPEG 2000 format.
+This format is not widely supported, so you should check that the movie
+will play back in the intended environment.
+
+#UncompressedAVIItem (menu item)
+Movies will be stored in uncompressed form. Files can be very large.
+
+#MotionJPEG2000Item (menu item)
+Movies will be compressed by the Motion JPEG 2000 method.
+This may be technically superior to Motion JPEG AVI,
+but the format is not widely supported.
+
+#aboutMenu About rev. 1198 (menu item)
+This menu item exists only as a place to display the current software
+revision number. It contains a menu item displaying the date and time
+of that revision.
+
+#help Help (menu item)
+
+#miscMenu Misc (menu item)
+*
+
+#stagesMenu Stages (menu item)
+This menu is for the management of stage files, i.e. saved states of
+the mesh at time points after the start.
+
+#recomputeStagesItem (menu item)
+Recompute all stage files listed on the Stages menu, from the current
+simulation time onwards.
+
+#moreStagesItem (menu item)
+Bring up a dialog in which to specify the times of a set of stages to
+be computed.
+
+#requestStagesItem (menu item)
+Bring up a dialog in which to specify the times of a set of stages to
+add to the Stages menu, without computing them.
+
+#importRemoteStagesItem (menu item)
+Import stage files from a remote cluster job. The current stage will also
+be reloaded.
+
+#saveExperimentStagesItem (menu item)
+Copy all of the current stage files to a subdirectory of the current project's
+runs directory. You will be prompted for a new directory name and a one-line description
+of the set of stages. These both default to a date/time string.  Stage sets saved in this
+way can be reloaded with the "Stages>Import Experiment Stages..." menu command.
+
+#deleteUnusedStagesItem (menu item)
+Delete all stage times from the Stages menu for which there is no saved file.
+
+#deleteAllStagesItem (menu item)
+Delete all stage files from disc. The corresponding stage times remain
+in the Stages menu.
+
+#deleteStagesAndTimesItem (menu item)
+Delete all stage files from disc and all stage times from the Stages menu.
+
+#movieMenu Movie (menu item)
+This menu performs various operations relating to the recording of
+movies of the mesh.
+
+#movieAllStagesItem (menu item)
+Make a movie from all of the currently existing stage files, without
+performing any simulation calculations.  The current plotting options will
+be used for all frames of the movie.
+
+#movieStagesItem (menu item)
+Make a movie from a specified time range of the currently existing stage files, without
+performing any simulation calculations.  The current plotting options will
+be used for all frames of the movie.
+
+#plotMenu Plot (menu item)
+This menu sets various parameters to vary the appearance of the picture.
+
+#paramsMenu Params (menu item)
+*
+
+#meshMenu Mesh (menu item)
+*
+
+#projectsMenu Projects (menu item)
+*
+
+#dateItem (menu item)
+
+#enabledisableIFitem Enable Interaction Function (menu item)
+Enable or disable the calling of the interaction function at the start
+of every simulation step. There is rarely any reason to disable it.
+
+#validateMeshItem Validate Mesh (menu item)
+Perform a check on the internal consistency of the mesh data structure.
+
+#useGraphicsCardItem Snapshot screen res (menu item)
+This is a toggleable menu item.
+
+When it is checked, GFtbox will attempt to speed up computations by
+performing them on the graphics card, if possible.  It will first check
+to see if the graphics card can handle the computation and the relevant
+Matlab library is present, giving a warning if either condition fails.
+
+When it is unchecked, it will not use the graphics card for its
+computations.
+
+#hiresOptionsItem
+This opens a dialog for setting options for high-resolution snapshots and movies.
+It contains three boolean flags to specify whether hi-res images will be saved for,
+respectively, user-requested snapshots, automatic stage file snapshots, and movies.
+The width, height, and magnification factor can be specified.  There are dependencies
+among these: changing any one changes the other two.  You should not change hires
+options that affect movies while a movie is in progress.
+
+#alwaysRectifyVerticalsItem Always Rectify Verticals (menu item)
+This is a toggleable menu item.
+
+When it is checked, after each growth step, each pair of vertices on opposite
+sides of the mesh will be adjusted so that the line between them remains
+perpendicular to the surface of the mesh.  This is a remeshing of the substance,
+not an elastic deformation of the substance.
+
+When unchecked, no such constraint is applied.
+
+#useprevdispItem Use Prev Displacement as Guess (menu item)
+This is a toggleable menu item.
+
+When it is checked, the displacements computed in the previous simulation
+step will be used as the initial guess in the iterative process for
+computing the displacements in the current simulation step. On the first
+simulation step, the estimate will be a very small random amount.
+
+When it is unchecked, the initial guess is a very small random amount.
+
+There is generally no reason to turn this off.
+
+#stripsaveItem Strip Saved Meshes (menu item)
+This is a toggleable menu item.
+
+When it is checked, meshes saved to MAT files (including all stage files
+and the initial state) have some unnecessary information deleted from them
+to save space. The information is reconstructed when the files are loaded.
+
+When unchecked, the entire data stucture is saved.
+
+#GUIformat GUI format... (menu item)
+Adjust parameters of the GUI appearance, such as font size.
+
+#thumbnailItem Make Thumbnail (menu item)
+Save a small picture of the current state of the mesh to serve as a
+thumbnail picture for the project.
+
+#compressionQualityItem Quality...
+Set the compression quality of subsequently recorded movies. The range is
+from 100 (no compression) downwards. The lower the number, the smaller the
+movie file, but the lower the visual quality of the movie.  The effect will
+depend on which movie codec is being used.
+
+#RecordMeshes Also record meshes (menu item)
+This is a toggleable menu item.
+
+When it is checked, and a movie is being recorded, for each frame added to the movie
+the entire mesh structure will also be saved as a MAT file. (This can take up a lot
+of disc space.)
+
+#gyrateItem Gyrate... (menu item)
+Replot the mesh several times in succession while tilting it up and down
+and rotating it around the Z axis, ending in the same orientation as it began.
+If a movie is being recorded, all of these views will be added to it.
+
+A dialog will be opened in which you can select the number of movie frames
+over which the movement should be performed.
+
+#tiltItem Tilt... (menu item)
+Replot the mesh several times in succession while tilting it up and down,
+ending in the same orientation as it began. If a movie is being recorded,
+all of these views will be added to it.
+
+A dialog will be opened in which you can select the number of movie frames
+over which the movement should be performed.
+
+#spinItem Spin... (menu item)
+Replot the mesh several times in succession while rotating it around the
+Z axis, ending in the same orientation as it began. If a movie is being
+recorded, all of these views will be added to it.
+
+A dialog will be opened in which you can select the number of movie frames
+over which the movement should be performed.
+
+#codecMenu Codec (menu item)
+Choose a compressed movie format for all subsequently recorded movies.
+Any movie currently being recorded is not affected.
+
+Warning: Not all compressors work on all platforms, but the only way to
+determine if a compressor is supported is to try it and see.
+
+Motion JPEG AVI is probably the best choice (considering both the
+size of the movie and compatibility with other movie playback software),
+followed by MPEG-4, which produces much smaller files but much poorer image quality.
+
+#frameRateItem Frame rate... (menu item)
+Set the playback frame rate of all subsequently created movies. Any movie
+currently being recorded is not affected.
+
+This frame rate is not related to the simulation time step.
+
+#addFrameItem Add frame (menu item)
+Add the current view of the mesh as a single frame to the movie currently
+being recorded.
+
+#replotItem Replot (menu item)
+Force the mesh to be redrawn. It should never be necessary to use this.
+
+#setLegendItem Set Legend... (menu item)
+Specify a string to append to the end of the information included in the
+legend (the large text at the top of the picture).
+
+#canvasColorsItem Set Canvas Colors... (menu item)
+Specify the colour of the canvas and the colour of the finite element
+edges. The canvas colour is only effective in multiplotting mode.
+
+#lightMenuItem Turn Light On/Off (menu item)
+Turn a light on or off within the scene. Turning the light on can improve the visual
+appearance. The position and intensity of the light are not adjustable.
+
+#ambientItem Ambient Light... (menu item)
+Set the level of ambient lighting. This only has effect if the light is
+turned on. (See Plot>Turn Light On/Off.)
+
+#opacityItem Opacity... (menu item)
+Set the opacity of the mesh. 0 is invisibly transparent; 1 is totally opaque.
+
+Because Matlab may use different graphics procedures,
+depending on whether opacity is exactly 1 or less than 1, you may sometimes
+find that an opaque plot looks better if the opacity is set to a hair under
+1, e.g. 0.999.
+
+#lineSmoothingItem Line Smoothing (menu item)
+Set whether Matlab should anti-alias lines, enhancing the quality of the
+image. Default value is true.
+
+Depending on the choice of Renderer, this may not have any effect. When it is
+effective, it may produce odd results unless Opacity is also set to exactly 1.
+
+#cellsonbothsidesItem Duplicate cells on both sides (menu item)
+This is a toggleable menu item.
+
+When it is checked, every biological cell is drawn on both sides of the mesh.
+
+When it is unchecked, each cell is drawn on only the side it belongs to.
+Connected cells always belong to the same side of the mesh, but separate
+clumps are assigned to random sides on creation.
+
+#staticDecorItem Static Decorations
+This is a toggleable menu item.
+
+When it is checked (the default), polariser gradient arrows will tend to be
+in the same positions from one iteration to the next.
+
+When it is unchecked, and the Sparsity value is positive, the positions of the
+polariser gradient arrows will be completely different from one iteration to the next.
+
+#normalsMenuItem Show Normals (menu item)
+This alternates between Show Normals and Hide Normals.
+
+Show Normals causes each finite element's normal vector to be drawn,
+originating at its centre, on the side selected by the Decor A/B radio
+buttons in the Plot Options panel.  If a positive value is selected for
+Sparsity, arrows will be drawn only for selected cells at spaced-out
+intervals.
+
+#displacementsMenuItem Show Displacements (menu item)
+This alternates between Show Displacements and Hide Displacements.
+
+Show Displacements causes a displacement arrow to be drawn from each vertex
+of the mesh after each simulation step, showing its movement in the last
+simulation step. Only the relative lengths of the arrows are meaningful:
+they are scaled so that the largest has a convenient length.
+
+#axesMenuItem Show/Hide Axes (menu item)
+This alternates between Show Axes and Hide Axes.
+
+Show Axes causes a set of X-Y-Z axes to be drawn.
+
+#axesMenuItem Show/Hide Colorbar (menu item)
+This alternates between Show Colorbar and Hide Colorbar.
+
+Show Colorbar causes the colorbar at the right edge of the picture
+to be drawn, when there is a nonempty range of colours to display.
+
+#seamsMenuItem Show/Hide Seams (menu item)
+Show Seams draws the seam edges as thick red lines.
+
+Hide Seams draws them the same as any other edge.
+
+#makevvbutton Create
+Generate a VV layer.
+
+#showmeshMenuItem Show/Hide Mesh (menu item)
+Specifies whether the finite element mesh should be drawn.
+
+#vvMenuItem Show VV Layer (menu item)
+This alternates between Show VV Layer and Hide VV Layer, specifying whether
+the VV layer (if present) should be drawn.
+
+#thicknessMenuItem Show/Hide Thickness (menu item)
+Show Thickness draws the mesh as a surface of finite thickness.
+
+Hide Thickness draws it as a zero-thickness sheet.
+
+#scalebarscaleItem Scale Bar Scaling... (menu item)
+Have the scale bar scaled up from its proper size. The number you type into
+the dialog is the 
+
+#scalebarMenuItem Show/Hide Scale Bar (menu item)
+Show Scale Bar draws a scale bar in the bottom left corner of the plot.
+
+#legendMenuItem Show/Hide Legend (menu item)
+Determine whether the legend should be drawn. This is a piece large text at
+the top of the figure which mhows the current time,
+the name of the currently plotted morphogen, and the set of mutant
+moprhogens (if any).
+
+#whiteMenuItem White bgnd (menu item)
+Make the background of the picture white. Best for printed materials.
+The legend, scale bar, axes and finite element edges will be black.
+
+#blackMenuItem Black bgnd (menu item)
+Make the background of the picture black. Best for presentations.
+The legend, scale bar, axes and finite element edges will be white.
+
+#multiplotItem Multi-plot (menu item)
+Bring up a dialog to choose a set or morphogens to plot simultaneously.
+
+The multi-plotting will not actually be done unless the Multi-plot checkbox
+in the Plot Options panel is turned on.
+
+#makefigItem Make External Figure (menu item)
+Plot the mesh in a separate figure window.
+
+#stereoItem Stereo... (menu item)
+(Not yet supported.)
+
+#nodeNumbersItem Show Node Numbers... (menu item)
+Display the index number of every vertex of the mesh.
+
+#edgeNumbersItem Show Edge Numbers... (menu item)
+Display the index number of every edge of the mesh.
+
+#FENumbersItem Show FE Numbers... (menu item)
+Display the index number of every finite element of the mesh.
+
+#rendererMenu Renderer (menu item)
+This submenu lists all of Matlab's available renderers (the graphics
+libraries it uses to draw to the screen).  OpenGL is usually the
+best one to use, but in certain versions of Matlab, combined with certain
+versions of Windows and certain versions of the video hardware drivers,
+defects of rendering show up.  If this happens try using one of the other
+renderers.
+
+#openGLRendererItem OpenGL
+Use the "OpenGL" graphics library for drawing things on the screen.
+
+#zbuggerRendererItem zbuffers
+Use the "zbuffers" graphics library for drawing things on the screen.
+
+#paintersRendererItem painters
+Use the "painters" graphics library for drawing things on the screen.
+
+#noneRendererItem None
+Do not use any graphics library for drawing things on the screen.  The effect
+of selecting this is that the mesh will not be drawn.  This option is only
+included because it is possible, not because it serves any practical purpose.
+
+#allowbiooverlapCheckbox Allow overlap
+When scattering biological cells at random, allow them to overlap each other.
+If this is turned off, no cell will be created overlapping an existing one.
+As a result, the number of cells created will in general be less than the
+number requested.
+
+#relativepolgrad
+When turned on, the Min.pol.grad. value is understood as relative to
+the polariser magnitude.  When turned off, the Min.pol.grad. value
+is an absolute one.
+
+#axisRangeFromPictureButton
+Set the axis range that will be used
+when autoscaling is off, from
+the current axis range.
+
+#precisionItem (menu item)
+Select single or double precision for the elasticity computation.
+
+#singlePrecisionItem (menu item)
+Select single precision for the elasticity computation.
+
+#doublePrecisionItem (menu item)
+Select double precision for the elasticity computation.
+
+#solverItem (menu item)
+Select the solver for the elasticity computation.
+
+#cgsSolverItem (menu item)
+Use the CGS (conjugate gradient squared) solver for the elasticity computation.
+
+#lsqrSolverItem (menu item)
+Use the LSQR (least squares) solver for the elasticity computation.
+
+#culaSgesvSolverItem (menu item)
+Use the culaSgesv solver for the elasticity computation.
+This requires an installation of the CULA library (at Basic level or higher)
+from culatools.org, and also compilation of test_culaSgels.cpp with mex.
+
+#errorTypeMenu Error Measurement (menu item)
+Select whether the error in the computation of elasticity or diffusion
+should be measured as the maximum error at any vertex or the root mean square
+error.  The former is generally preferable.
+
+#normErrorItem Norm (menu item)
+Measure the error in the computation of elasticity or diffusion as the
+root mean square error at any vertex.  This is the less preferred option.
+
+#maxabsErrorItem Norm (menu item)
+Measure the error in the computation of elasticity or diffusion as the
+maximum error at any vertex.  This is the preferred option.
+
+#catchIFExceptionsItem
+This determines how GFtbox handles errors in the interaction function.
+
+When turned on, (the default), the error is detected, the simulation is
+stopped, the interaction function is disabled, and the elements in the
+GUI relating to the i.f. turn red.
+
+When off, Matlab will stop execution of the interaction function immediately.
+If "Breakpoints > Stop on Errors" is turned on in the Matlab editor,
+Matlab will then enter the debugger at the place where the error occurred.
+
+The setting is global, not specific to the current project.  It
+persists across invocations of Matlab and is stored (if changed from the
+default) in the user's config file in the setting "catchIFExceptions".
+
+End users should mostly leave this turned on.  Those who want to use the
+debugger to determine what went wrong should turn this off.  
+
+#timeCommandsItem
+When checked, the time taken for each GUI command executed is shown in
+the Matlab console.  Not all GUI commands are timed.
+
+#vvsegsperedgetext (uicontrol, vvsegsperedgetext, 3) has no tooltip string.
+Set the number of subsegments ethat ach cell wall segment should be divided into.
+
+#numvvcellstext (uicontrol, numvvcellstext, ) has no tooltip string.
+Ignore this.
+
+#vvmgenamount (uicontrol, vvmgenamount, 1) has no tooltip string.
+The amount of a VV morphogen to add.
+
+#selectedVVmgenmenu (uicontrol, selectedVVmgenmenu,  ) has no tooltip string.
+Select the VV morphogen to operate on.
+
+#addrandomVVmgenbutton (uicontrol, addrandomVVmgenbutton, Add random) has no tooltip string.
+Add a random amount of the current VV morphogen to every vertex.
+
+#addconstVVmgenbutton (uicontrol, addconstVVmgenbutton, Add const.) has no tooltip string.
+Add a fixed amount of the current VV morphogen to every vertex.
+
+#setzeroVVmgenbutton (uicontrol, setzeroVVmgenbutton, Set zero) has no tooltip string.
+Set the current VV morphogen to zero everywhere.
+
+#renameVVmgenbutton (uicontrol, renameVVmgenbutton, Rename) has no tooltip string.
+Rename the current VV morphogen.
+
+#deleteVVmgenbutton (uicontrol, deleteVVmgenbutton, Delete) has no tooltip string.
+Delete the current VV morphogen.
+
+#newVVmgenbutton (uicontrol, newVVmgenbutton, New) has no tooltip string.
+Make a new VV morphogen.
+
+#vvlayer (uicontrol, vvlayer, VV Layer) has no tooltip string.
+Show the panel for editing the VV layer.
+

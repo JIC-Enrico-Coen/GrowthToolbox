@@ -1,0 +1,13 @@
+% The user may edit any part of this function lying between lines that
+% begin "%%% USER CODE" and "%%% END OF USER CODE".  Those lines themselves
+% delimiters themselves must not be moved, edited, deleted, or added.
+
+    if isempty(m), return; end
+
+    fprintf( 1, '%s found in %s\n', mfilename(), which(mfilename()) );
+
+    setGlobals();
+    realtime = m.globalDynamicProps.currenttime;
+    dt = m.globalProps.timestep;
+
+%%% USER CODE: INITIALISATION

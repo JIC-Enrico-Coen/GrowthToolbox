@@ -1,0 +1,21 @@
+figure {
+    margin 5
+    valign top
+    halign right
+    innerhalign right
+    columns 1
+    resize on
+    string "Listbox test"
+    text {
+        string "Select an experiment:"
+    }
+    listbox {
+        string ""
+        lines 10
+        teststring "00000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    }
+    hgroup {
+        okbutton { teststring "00000000" }
+        cancelbutton { teststring "00000000" }
+    }
+}
