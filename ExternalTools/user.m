@@ -80,18 +80,18 @@ function [ r, seed ] = user ( dim_num, n, seed, usertype, varargin )
         %    cellAreas = mesh.cellareas( cellIndexes );
         %    [cells,bcs] = randInTriangles( cellAreas, n );
         %    r = meshBaryToGlobalCoords( mesh, cellIndexes(cells), bcs )';
-        case 'polygon'
-            % Following argument is a convex 2D polygon.
-            if isempty(varargin)
-                userdata = [ [0 0];[2 -1];[2.5 1];[4 0.5];[3 2]; [1.5 4];[1 0]];
-              % userdata = [ [0 0];[1 0];[1 1];[0 1]];
-                r = randInPoly( n, userdata )';
-            else
-                r = randInPoly( n, varargin{1} )';
-            end
-            if dim_num > 2
-                r = [ r zeros( n, dim_num-2 ) ];
-            end
+%         case 'polygon'
+%             % Following argument is a convex 2D polygon.
+%             if isempty(varargin)
+%                 userdata = [ [0 0];[2 -1];[2.5 1];[4 0.5];[3 2]; [1.5 4];[1 0]];
+%               % userdata = [ [0 0];[1 0];[1 1];[0 1]];
+%                 r = randInPoly( n, userdata )';
+%             else
+%                 r = randInPoly( n, varargin{1} )';
+%             end
+%             if dim_num > 2
+%                 r = [ r zeros( n, dim_num-2 ) ];
+%             end
         case 'triangles'
             % Following arguments represent a list of triangles.
             % varargin{1} is a list of node coordinates.

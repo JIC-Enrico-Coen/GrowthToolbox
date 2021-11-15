@@ -1,8 +1,10 @@
 function s = printModelOptions( fid, m, reportOptions )
 %printModelOptions( m )
 %printModelOptions( fid, m )
+%printModelOptions( fid, m, optionnames )
 %   Print the current model options to the given stream (by default the
-%   console).
+%   console). If optionnames is given it should be a cell array of option
+%   names, specifying that only those options are to be printed.
 
     if nargin==1
         m = fid;

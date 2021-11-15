@@ -5,7 +5,7 @@ function recentprojectsMenuItemCallback(hObject, eventdata)
     [parentdir,modelname,modelext] = fileparts( ud.modeldir );
     modelname = [modelname,modelext]; % In case the model name contains a ".".
     startTic = startTimingGFT( handles );
-    [m,ok] = leaf_loadmodel( handles.mesh, modelname, parentdir );
+    [m,ok] = leaf_loadmodel( handles.mesh, modelname, parentdir, 'soleaccess', true );
     stopTimingGFT('leaf_loadmodel',startTic);
     if ok && ~isempty(m)
 %         unselectProjectMenu( handles );

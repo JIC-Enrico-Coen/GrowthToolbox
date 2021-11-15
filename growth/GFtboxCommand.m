@@ -40,10 +40,8 @@ function GFtboxCommand( varargin )
     %                           % list of stages that are to be
     %                           % output.
     %                           % Overrides Stepsize.
-    %                           % Overrides total_time, i.e. total_time=max(stages)
     %                           % stage filenumbers are time - consistent
     %                           % GFtbox
-    %    'Total_time',tvalue,...% i.e. number_steps =  tvalue/dt, also see Stages
     %    
     % Using steps
     %    'Steps', 20,...        % number of steps to be run
@@ -119,17 +117,13 @@ function GFtboxCommand( varargin )
     end
     setFixedClusterDetails();
     repetitions = 1;
-    number_steps = 0;
     stepsize=1;
-    total_time=[];
     parallelOptions = true;
     stages=[];
-%     modeloptionlist = struct();
     usecluster = ~oncluster();
     fprintf('Start - %s\n',datestr(now));
     starttime=clock();
     MatlabModule = 'matlab';
-%     sensitivityflag=false;
 
     argStruct = safemakestruct( mfilename(), varargin );
     argNames = fieldnames( argStruct );
@@ -154,16 +148,10 @@ function GFtboxCommand( varargin )
             case 'REPETITIONS'
                 % The number runs to be performed with each set of parameters.
                 repetitions = argvalue;
-            case 'STEPS'
-                % The total number of simulation steps to perform.
-                number_steps = argvalue;
             case 'STEPSIZE'
                 % The number of simulation steps to perform between saved
                 % stages and movie frames.
                 stepsize = argvalue;
-            case 'TOTAL_TIME'
-                % the total simulation time to run the simulation for.
-                total_time = argvalue;
             case 'COMBINEOPTIONS'
                 switch argvalue
                     case 'together'
@@ -262,15 +250,14 @@ function GFtboxCommand( varargin )
     
     % Decide timestep, number of steps, and stages to save.
     dt = m.globalProps.timestep;
-    if ~isempty(total_time)
-        number_steps = round( total_time/dt );
-    elseif ~isempty(stages)
-        number_steps = round( max(stages)/dt );
-    elseif ~isempty( m.stagetimes )
+    if isempty( stages )
         stages = m.stagetimes;
-    else
-        stages = 0 : (stepsize*dt) : (number_steps * dt);
     end
+    if isempty( stages )
+        fprintf( 2, 'No stages specified. Cannot run.\n' );
+        return;
+    end
+    number_steps = round( max(stages)/dt );
     
     % All of the options supplied to GFtboxCommand that have not been
     % recognised should be options of the model being run.
@@ -394,19 +381,21 @@ function GFtboxCommand( varargin )
         subfilename = cell( 1, numruns );
         runnum = 0;
         for i=1:length(allmodeloptions)
-            subexptID = [ exptID '_' allmodeloptions(i).currentrun ];
-            modeloptionsString = structToString( allmodeloptions(i) );
+            currentrun = allmodeloptions(i).currentrun;
+            modeloptionsString = structToString( safermfield( allmodeloptions(i), 'currentrun' ) );
+            subexptID = [ exptID '_' currentrun ];
+%             modeloptionsString = structToString( s );
             fprintf( 1, 'Options for run %d, subexptID %s:\n', i, subexptID );
             disp( allmodeloptions(i) );
             for repnum=1:repetitions
                 runnum = runnum+1;
-                ID = [ProjectName,subexptID];
-                if repetitions > 1
-                    ID = [ID,'R',sprintf('%03d',repnum)];
-                end
-                temp_argument_list = [clusterArgString, ', ', modeloptionsString, ', ''ExpID'', ''', ID, ''''];
-                disp(temp_argument_list);
+                ID = [ProjectName,subexptID,'R',sprintf('%03d',repnum)];
+                morefuckingargs = struct( 'currentrun', ID );
+                morefuckingargsstring = structToString( morefuckingargs );
+                temp_argument_list = [clusterArgString, ', ', modeloptionsString, ', ', morefuckingargsstring, ', ''ExpID'', ''', ID, ''''];
+                fprintf( 1, 'temp_argument_list = %s\n', temp_argument_list );
                 [~,subfilename{runnum}] = unixtemplate( repnum, temp_argument_list, subexptID );
+                % currentrun
             end
         end
         if ~DryRun
@@ -427,13 +416,22 @@ function GFtboxCommand( varargin )
         end
     else
         m = leaf_loadmodel( [], ProjectName, LocalProjectsDirectory, 'rewrite', false);
-        m = leaf_setproperty( m, 'staticreadonly', true , 'allowInteraction',true); % prevent cross talk when on cluster
+        m = leaf_setproperty( m, 'staticreadonly', true, 'allowInteraction', true ); % prevent cross talk when on cluster
         m = leaf_reload( m, 'restart' , 'rewrite', false);
-        m = leaf_setproperty( m, 'staticreadonly', true, 'allowInteraction',true ); % prevent cross talk when on cluster
+        m = leaf_setproperty( m, 'staticreadonly', true, 'allowInteraction', true ); % prevent cross talk when on cluster
+        fprintf( 1, 'Setting m.globalProps.currentrun to argStruct.currentrun = %s\n', argStruct.currentrun );
+        m = leaf_setproperty( m, 'currentrun', argStruct.currentrun ); % Give the model access to which run it is executing.
+            % This also tells it not to save stages to the project
+            % directory, only to the run directory.
         m = initialiseOptions( m );
         if haveModelOptions
             m = setModelOptions( m, modeloptions );
+            fprintf( 1, 'Model options specified:\n' );
+            disp( modeloptions );
+        else
+            fprintf( 1, 'No model options specified, running with defaults.\n' );
         end
+        printModelOptions( 1, m );
         doOneRun( ...
             m, ...
             stepsize, ...
@@ -504,42 +502,21 @@ function doOneRun( ...
     % instance running on the cluster.
     seednumber = sum(10000*clock()) + sum(double(LocalExperimentUniqueFullPath));
     rng(seednumber,'twister');
-%     m = leaf_record_mesh_frame(m,'RECORD','ON'); % This procedure has been disabled because I don't have a clue what it's supposed to do.
+    rngstate = rng();
+    fprintf( 2, 'Random seed = %d\n', rngstate.Seed );
     m = savemesh(m);
     m = savepng(m);
 
-    if isempty(stages)
-        for step=stepsize:stepsize:number_steps
-            m = leaf_iterate( m, stepsize, 'plot', 0 );
-            disp('save output');
-            m=savemesh(m);
-            m=savepng(m);
+    for i_stage=1:length(stages)
+        while meshBeforeTime( m, stages(i_stage) ) % realtime<stages(i_stage)
+            % iterate stepsize steps without recording
+            m = leaf_iterate( m, 1, 'plot', 0 );
         end
-    else
-%         realtime = m.globalDynamicProps.currenttime;
-        for i_stage=1:length(stages)
-            while meshBeforeTime( m, stages(i_stage) ) % realtime<stages(i_stage)
-                % iterate stepsize steps without recording
-                m = leaf_iterate( m, 1, 'plot', 0 );
-%                 realtime = m.globalDynamicProps.currenttime;
-            end
-            m=savemesh(m);
-            m=savepng(m);
-        end
+        m=savemesh(m);
+        m=savepng(m);
     end
 end
 
-
-% function [errors,filename] = pctemplate(n,s,ProjectName) %#ok<DEFNU>
-% % THIS IS NEVER CALLED. IT WOULD ONLY BE CALLED IF THE REMOTE MACHINE RAN
-% % WINDOWS.
-% 
-%     errors = [];
-%     filename=sprintf('%sRun%-d.bat',ProjectName,n);
-%     h=fopen(filename,'w');
-%     fprintf(h,'matlab -nosplash -nodesktop -nodisplay -nojvm -r "RunSilent(%s)"\n',s);
-%     fclose(h);
-% end
 
 function [errors,local_sh_basefilename] = unixtemplate(n,argsstring,batchnumberstr)
 % This is called exactly once. Its purpose is to run a single call of RunSilent on

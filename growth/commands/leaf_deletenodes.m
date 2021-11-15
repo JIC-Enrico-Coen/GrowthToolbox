@@ -9,6 +9,8 @@ function m = leaf_deletenodes( m, varargin )
 %   Equivalent GUI operation: none.
 %
 %   Topics: Mesh editing.
+%
+%   See also: leaf_deleteElements
 
     if isempty(m), return; end
     [ok, nodes, args] = getTypedArg( mfilename(), {'numeric','logical'}, varargin );

@@ -43,6 +43,13 @@ function [m,ok] = leaf_loadmodel( m, modelname, projectdir, varargin )
 %                 files will be reported by dialogs; if false, no dialogs
 %                 will be presented.  In both cases a message will be
 %                 written to the console.
+%       soleaccess:
+%                 A boolean value that specifies whether the caller of this
+%                 procedure has sole access to the project from which this
+%                 file is being loaded. If so,
+%                 m.globalDynamicProps.staticreadonly will be turned off.
+%                 If false, it will be turned on. If empty, it will be
+%                 unaltered. The default is empty.
 %
 %   If for any reason the model cannot be loaded, a warning will be output,
 %   the loaded model will be discarded, and m and ok returns as [] and
@@ -67,9 +74,9 @@ function [m,ok] = leaf_loadmodel( m, modelname, projectdir, varargin )
     [s,ok] = safemakestruct( mfilename(), varargin );
     if ~ok, return; end
     s = defaultfields( s, 'rewrite', true, 'copyname', [], 'copydir', [], ...
-        'interactive', isinteractive( m ) );
+        'interactive', isinteractive( m ), 'soleaccess', [] );
     ok = checkcommandargs( mfilename(), s, 'exact', ...
-        'rewrite', 'copyname', 'copydir', 'interactive' );
+        'rewrite', 'copyname', 'copydir', 'interactive', 'soleaccess' );
     if ~ok, return; end
 
     % Insert defaults for arguments.
@@ -138,8 +145,16 @@ function [m,ok] = leaf_loadmodel( m, modelname, projectdir, varargin )
             end
         end
         if ~isempty(m)
-            s = rmfield( s, { 'copyname', 'copydir' } );
-            options = cellFromStruct( s );
+            if ~isempty( s.soleaccess )
+                switch s.soleaccess
+                    case true
+                        m.globalDynamicProps.staticreadonly = false;
+                    case false
+                        m.globalDynamicProps.staticreadonly = true;
+                    otherwise
+                        % Leave m.globalDynamicProps.staticreadonly unchanged.
+                end
+            end
             m = storeCodeRevInfo( m );
             for i=1:length(m.pictures)
                 resetView( m.pictures(i) );

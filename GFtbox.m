@@ -40,6 +40,8 @@ if (nargin > 0) && ischar(varargin{1})
     gui_State.gui_Callback = str2func(varargin{1});
 end
 
+% varargin{:}
+
 if nargout
     [varargout{1:nargout}] = gui_mainfcn(gui_State, varargin{:});
 else
@@ -74,6 +76,11 @@ function GFtbox_OpeningFcn(hObject, ~, handles, ~)
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to GFtbox (see VARARGIN)
 
+    seednumber = sum(10000*clock());
+    rng(seednumber,'twister');
+    rngstate = rng();
+    fprintf( 2, 'Random seed = %d\n', rngstate.Seed );
+    
 % Test to see if GFtbox has already been initialised, by looking for one of
 % the dynamically created Help menus.
 pc = get( handles.projectsMenu, 'Children' );
@@ -977,7 +984,7 @@ function openProjectItem_Callback(hObject, eventdata, handles)
         projectdir = handles.mesh.globalProps.projectdir;
     end
     startTic = startTimingGFT( handles );
-    [m,ok] = leaf_loadmodel( handles.mesh, '', projectdir, 'interactive', true );
+    [m,ok] = leaf_loadmodel( handles.mesh, '', projectdir, 'interactive', true, 'soleaccess', true );
     stopTimingGFT('leaf_loadmodel',startTic);
     if ok && ~isempty(m)
         % Unselect old project menu item.
@@ -1011,7 +1018,7 @@ function reloadmodel_Callback(hObject, eventdata, handles)
         complain( 'Cannot reload the mesh while the simulation is busy.' );
         return;
     end
-    reloadMesh( handles, 'reload' );
+    reloadMesh( handles, 'reload', 'soleaccess', true );
 
 
 % --- Executes on button press in nextStageButton.

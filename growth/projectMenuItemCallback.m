@@ -18,13 +18,13 @@ fprintf( 1, 'projectMenuItemCallback %s\n', get( hObject, 'Label' ) );
             [projectdir,modelname] = dirparts( ud.modeldir );
             startTic = startTimingGFT( handles );
             [m,ok] = leaf_loadmodel( handles.mesh, modelname, projectdir, ...
-                'copydir', motifsDir );
+                'copydir', motifsDir, 'soleaccess', true );
             stopTimingGFT('leaf_loadmodel',startTic);
         end
     else
         [projectdir,modelname] = dirparts( ud.modeldir );
         startTic = startTimingGFT( handles );
-        [m,ok] = leaf_loadmodel( handles.mesh, modelname, projectdir );
+        [m,ok] = leaf_loadmodel( handles.mesh, modelname, projectdir, 'soleaccess', true );
         stopTimingGFT('leaf_loadmodel',startTic);
         if ~ok
             beep;

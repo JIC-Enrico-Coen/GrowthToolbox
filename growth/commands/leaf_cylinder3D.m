@@ -100,7 +100,9 @@ function m = leaf_cylinder3D( m, varargin )
     else
         m = replaceNodes( m, newm );
     end
-    
+    s.FEtype = s.type;
+    s.type = 'cylinder3d';
+    m.meshparams = s;
     
     m = concludeGUIInteraction( handles, m, savedstate );
 end

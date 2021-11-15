@@ -70,6 +70,8 @@ function m = replaceNodes( m, newm )
         m.mgen_absorption = m.mgen_absorption( renumber, : );
         if oldfull3d==newfull3d
             m.fixedDFmap = m.fixedDFmap( prenumber, : );
+        else
+            m.fixedDFmap = false( getNumberOfVertexes(m), 3 );
         end
         m.cellbulkmodulus = m.cellbulkmodulus( renumberCells );
         m.cellpoisson = m.cellpoisson( renumberCells );

@@ -23,6 +23,8 @@ function [m,ok] = leaf_reload( m, varargin )
 %                 concurrently on a parallel machine, all using the same
 %                 project.
 %
+%       soleaccess:  As for leaf_loadmodel.
+%
 %   Equivalent GUI operations:  The "Restart" button is equivalent to
 %           m = leaf_reload( m, 'restart' );
 %       The "Reload" button is equivalent to
@@ -50,8 +52,8 @@ function [m,ok] = leaf_reload( m, varargin )
     end
     [s,ok] = safemakestruct( mfilename(), args );
     if ~ok, return; end
-    s = defaultfields( s, 'rewrite', true );
-    ok = checkcommandargs( mfilename(), s, 'exact', 'rewrite' );
+    s = defaultfields( s, 'rewrite', true, 'soleaccess', [] );
+    ok = checkcommandargs( mfilename(), s, 'exact', 'rewrite', 'soleaccess' );
     if ~ok, return; end
     
     ok = true;
@@ -117,19 +119,27 @@ function [m,ok] = leaf_reload( m, varargin )
     else
         loadfile = fullfile( modeldir, loadfile );
     end
-    if false
-        staticbasename = staticBaseName( modelname );
-        staticfile = fullfile( modeldir, staticbasename );
-        if ~exist( staticfile, 'file' )
-            staticfile = '';
-        end
-    end
-    staticpart = splitstruct( m, gFULLSTATICFIELDS );
+%     if false
+%         staticbasename = staticBaseName( modelname );
+%         staticfile = fullfile( modeldir, staticbasename );
+%         if ~exist( staticfile, 'file' )
+%             staticfile = '';
+%         end
+%     end
+%     staticpart = splitstruct( m, gFULLSTATICFIELDS );
     % [m,ok] = loadmesh_anyfile( m, loadfile, staticpart );
     [m,ok] = loadmesh_anyfile( m, loadfile, [], isinteractive(m) );
-    % ok = ~isempty(m);
-    if ~ok, m = []; end
     if ok
+        if ~isempty( s.soleaccess )
+            switch s.soleaccess
+                case true
+                    m.globalDynamicProps.staticreadonly = false;
+                case false
+                    m.globalDynamicProps.staticreadonly = true;
+                otherwise
+                    % Leave m.globalDynamicProps.staticreadonly unchanged.
+            end
+        end
         m.globalProps.projectdir = projectdir;
         m.globalProps.modelname = modelname;
         m.globalDynamicProps.laststagesuffix = makestagesuffixf( m.globalDynamicProps.currenttime );
@@ -145,5 +155,7 @@ function [m,ok] = leaf_reload( m, varargin )
       % else
             m = resetInteractionHandle( m, mfilename() );
       % end
+    else
+        m = [];
     end
 end

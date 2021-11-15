@@ -7,7 +7,7 @@ function longedges = findlongedges( m, do )
         if m.globalProps.thresholdsq > 0
             splitthreshold = currentEdgeThreshold( m );
             splitmargin = max( m.globalProps.splitmargin, 1 )^2;
-            longedges = find( lengthsqs > splitthreshold*splitmargin );
+            longedges = find( lengthsqs > splitthreshold * splitmargin );
         end
 %         if ~isempty(longedges)
 %             fprintf( 1, 'Long edges:' );

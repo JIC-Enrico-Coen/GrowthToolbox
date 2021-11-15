@@ -16,7 +16,7 @@ function stageMenuItemCallback( hObject, eventdata )
         stage = stageTagToString( t );
     end
     if stageexists
-        reloadMesh( handles, stage );
+        reloadMesh( handles, stage, 'soleaccess', true );
     else
         % Find latest stage before.
         stagetime = stageStringToReal( stage );

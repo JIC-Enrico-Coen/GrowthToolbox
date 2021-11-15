@@ -10,7 +10,7 @@ function [g,g2] = mgenCellGradient( m, mgen, cis )
 %   matrix.  This applies only to laminar meshes.
 
     if nargin < 3
-        cis = 1:size(m.tricellvxs,1);
+        cis = 1:getNumberOfFEs(m);
     end
     if (numel(mgen)==1) || ischar(mgen)
         mgen = FindMorphogenIndex( m, mgen );

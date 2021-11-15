@@ -6,7 +6,7 @@ function RunSilent(varargin)
 
     if isempty( which('GFtboxCommand') )
         disp('>>>>>> COULD NOT FIND TOOLSHED SO ADD IT TO PATH ')
-        pathToToolshed='DArT_Toolshed';
+        pathToToolshed='DArT_Toolshed/GrowthToolbox';
         addpath(genpath(pathToToolshed));
     end
     disp('Starting GFtboxCommand');

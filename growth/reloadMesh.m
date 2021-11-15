@@ -1,7 +1,7 @@
-function reloadMesh( handles, reloadtype )
+function reloadMesh( handles, reloadtype, varargin )
     wasBusy = setGFtboxBusy( handles, true );
     startTic = startTimingGFT( handles );
-    [m,ok] = leaf_reload( handles.mesh, reloadtype, 'rewrite', false );
+    [m,ok] = leaf_reload( handles.mesh, reloadtype, 'rewrite', false, varargin{:} );
     stopTimingGFT('leaf_reload',startTic);
     if ok
         handles = installNewMesh( handles, m );

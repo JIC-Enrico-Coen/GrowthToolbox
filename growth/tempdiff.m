@@ -30,7 +30,7 @@ function temperatures = tempdiff( nodecoords, cellvertexes, conductivity, ...
     global gUSENEWFES_DIFFUSE FE_T3
     
     verbose = true;
-    fprintf( 2, '%s %s: beginning\n', datestring(), mfilename() );
+    fprintf( 1, '%s %s: beginning\n', datestring(), mfilename() );
 
     STEADYSTATE = all(isinf(conductivity));
     numnodes = size(nodecoords,1);
@@ -40,34 +40,34 @@ function temperatures = tempdiff( nodecoords, cellvertexes, conductivity, ...
     uniformAbsorption = numel(absorption)==1;
     realtype = 'double';
     if usesparse
-        fprintf( 2, '%s %s: allocating sparse %s CC for %d nodes.\n', datestring(), mfilename(), realtype, numnodes );
+        fprintf( 1, '%s %s: allocating sparse %s CC for %d nodes.\n', datestring(), mfilename(), realtype, numnodes );
         CC = sparse(zeros(numnodes,numnodes,realtype));
-        fprintf( 2, '%s %s: allocating sparse %s HH for %d nodes.\n', datestring(), mfilename(), realtype, numnodes );
+        fprintf( 1, '%s %s: allocating sparse %s HH for %d nodes.\n', datestring(), mfilename(), realtype, numnodes );
         HH = sparse(zeros(numnodes,numnodes,realtype));
-        fprintf( 2, '%s %s: allocating sparse %s AA for %d nodes.\n', datestring(), mfilename(), realtype, numnodes );
+        fprintf( 1, '%s %s: allocating sparse %s AA for %d nodes.\n', datestring(), mfilename(), realtype, numnodes );
         AA = sparse(zeros(numnodes,1,realtype));
 %         if STEADYSTATE
 %             Ap = sparse(zeros(numnodes,1));
 %             Ad = sparse(zeros(numnodes,1));
 %         end
     else
-        fprintf( 2, '%s %s: assigning %s CC for %d nodes.\n', datestring(), mfilename(), realtype, numnodes );
+        fprintf( 1, '%s %s: assigning %s CC for %d nodes.\n', datestring(), mfilename(), realtype, numnodes );
         CC = zeros(numnodes,numnodes,realtype);
-        fprintf( 2, '%s %s: assigned %s CC for %d nodes.\n', datestring(), mfilename(), realtype, numnodes );
+        fprintf( 1, '%s %s: assigned %s CC for %d nodes.\n', datestring(), mfilename(), realtype, numnodes );
         
-        fprintf( 2, '%s %s: assigning %s HH for %d nodes.\n', datestring(), mfilename(), realtype, numnodes );
+        fprintf( 1, '%s %s: assigning %s HH for %d nodes.\n', datestring(), mfilename(), realtype, numnodes );
         HH = zeros(numnodes,numnodes,realtype);
-        fprintf( 2, '%s %s: assigned %s HH for %d nodes.\n', datestring(), mfilename(), realtype, numnodes );
+        fprintf( 1, '%s %s: assigned %s HH for %d nodes.\n', datestring(), mfilename(), realtype, numnodes );
         
-        fprintf( 2, '%s %s: allocating %s AA for %d nodes.\n', datestring(), mfilename(), realtype, numnodes );
+        fprintf( 1, '%s %s: allocating %s AA for %d nodes.\n', datestring(), mfilename(), realtype, numnodes );
         AA = zeros(numnodes,1,realtype);
-        fprintf( 2, '%s %s: allocated %s AA for %d nodes.\n', datestring(), mfilename(), realtype, numnodes );
+        fprintf( 1, '%s %s: allocated %s AA for %d nodes.\n', datestring(), mfilename(), realtype, numnodes );
 %         if STEADYSTATE
 %             Ap = zeros(numnodes,1);
 %             Ad = zeros(numnodes,1);
 %         end
     end
-    fprintf( 2, '%s %s: allocation of C, H, A succeeded.\n', datestring(), mfilename() );
+    fprintf( 1, '%s %s: allocation of C, H, A succeeded.\n', datestring(), mfilename() );
     
     numvxs = 3;
     % The elements of cellC are twice the integrals of N(i)*N(j) over a
@@ -253,7 +253,7 @@ function temperatures = tempdiff( nodecoords, cellvertexes, conductivity, ...
 %             Ad(renumber) = Ad(renumber) - (cellarea/numvxs) * temperatures(renumber).*absorption;
 %         end
     end
-    fprintf( 2, '%s %s: H matrix assembled.\n', datestring(), mfilename() );
+    fprintf( 1, '%s %s: H matrix assembled.\n', datestring(), mfilename() );
     if gUSENEWFES_DIFFUSE
         % This code is wrong. It gives the right HH, but the wrong CC.
         newC = zeros(numnodes,numnodes);
@@ -335,12 +335,12 @@ function temperatures = tempdiff( nodecoords, cellvertexes, conductivity, ...
     varyingnodes = eliminateVals( size(CC,1), fixednodes ); 
 %     numVarying = length(remainingTemps);
     D = CC + Hdt;
-    fprintf( 2, '%s %s: Selecting submatrices.\n', datestring(), mfilename() );
+    fprintf( 1, '%s %s: Selecting submatrices.\n', datestring(), mfilename() );
     D22 = D(varyingnodes,varyingnodes);
     C22 = CC(varyingnodes,varyingnodes);
     H21 = HH(varyingnodes,fixednodes);
     A2 = AA(varyingnodes);
-    fprintf( 2, '%s %s: Selected submatrices.\n', datestring(), mfilename() );
+    fprintf( 1, '%s %s: Selected submatrices.\n', datestring(), mfilename() );
 %     if DIFFUSION_TYPE==DIFF_INFINITE
 %         Ap2 = Ap(remainingTemps,:);
 %         Ad2 = Ad(remainingTemps,:);
@@ -359,7 +359,7 @@ function temperatures = tempdiff( nodecoords, cellvertexes, conductivity, ...
 %             for i=1:numVarying
 %                 H22(i,i) = H22(i,i) - Ad2(i);
 %             end
-            fprintf( 2, '%s %s: About to solve steady state diffusion.\n', datestring(), mfilename() );
+            fprintf( 1, '%s %s: About to solve steady state diffusion.\n', datestring(), mfilename() );
             [t2,cgflag,cgrelres,cgiter] = mycgs( sparse(H22), ...
                                                  -H21*t1, ...
                                                  tolerance, ...
@@ -371,7 +371,7 @@ function temperatures = tempdiff( nodecoords, cellvertexes, conductivity, ...
                                                  @teststopbutton, ...
                                                  m );
         elseif DT2_METHOD
-            fprintf( 2, '%s %s: About to solve transient diffusion.\n', datestring(), mfilename() );
+            fprintf( 1, '%s %s: About to solve transient diffusion.\n', datestring(), mfilename() );
             H22 = HH(varyingnodes,varyingnodes);
             FA = -(H22*t2 + H21*t1)*dt + A2;
             % Solve D22*dt2 = FA for dt2, the change at the varying nodes.
@@ -399,7 +399,7 @@ function temperatures = tempdiff( nodecoords, cellvertexes, conductivity, ...
                                                  @teststopbutton, ...
                                                  m );
         end
-        fprintf( 2, '%s: Computation time for diffusion (cgs,sparse,double) is %.6f seconds.\n', ...
+        fprintf( 1, '%s: Computation time for diffusion (cgs,sparse,double) is %.6f seconds.\n', ...
            datestring(),  toc(starttic) );
         if cgflag ~= 0
             if cgflag==20
@@ -424,7 +424,7 @@ function temperatures = tempdiff( nodecoords, cellvertexes, conductivity, ...
                                                     verbose, ...
                                                     @teststopbutton, ...
                                                     m );
-            fprintf( 2, '%s: Computation time for diffusion (cgs,sparse,double) is %.6f seconds.\n', ...
+            fprintf( 1, '%s: Computation time for diffusion (cgs,sparse,double) is %.6f seconds.\n', ...
                 datestring(), toc(starttic) );
           % t2 = (t2+t3)/2;
           % t2 = t3
@@ -437,7 +437,7 @@ function temperatures = tempdiff( nodecoords, cellvertexes, conductivity, ...
             FF = C22*t2 - H21*(t1*dt) + A2;
             t2 = inv(D22)*FF;
         end
-        fprintf( 2, '%s: Computation time for diffusion (matrix inversion,full,double) is %.6f seconds.\n', ...
+        fprintf( 1, '%s: Computation time for diffusion (matrix inversion,full,double) is %.6f seconds.\n', ...
             datestring(), toc(starttic) );
     end
     EXACT_METHOD = false;
@@ -467,8 +467,8 @@ function temperatures = tempdiff( nodecoords, cellvertexes, conductivity, ...
         exact_error = T1 - t2;
         t2 = T1;
         t = toc(starttic);
-        fprintf( 2, '%s: Computation time for diffusion (exact method,full,double) is %.6f seconds.\n', datestring(), t );
+        fprintf( 1, '%s: Computation time for diffusion (exact method,full,double) is %.6f seconds.\n', datestring(), t );
     end
     temperatures(varyingnodes) = t2;
-    fprintf( 2, '%s %s: Completed.\n', datestring(), mfilename() );
+    fprintf( 1, '%s %s: Completed.\n', datestring(), mfilename() );
 end

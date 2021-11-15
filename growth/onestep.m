@@ -2,7 +2,7 @@ function [m,ok,splitdata] = onestep( m, useGrowthTensors, useMorphogens )
 %[m,ok] = onestep( m, useGrowthTensors )
 %   Run one step of the iteration:
 %   * Calculate the polarisation gradients.
-%   * Perform a FEM calculation.
+%   * Perform a FEM calculation for growth.
 %   * Restore flatness/thickness.
 %   * Perform dilution-by-growth.
 %   * Generate the FEM cell normal vectors.
@@ -29,32 +29,41 @@ function [m,ok,splitdata] = onestep( m, useGrowthTensors, useMorphogens )
         m = meshFlatStrain( m, m.globalProps.flattenratio );
     end
     
-    haveGrowth = false;
+    moved = false;
+    growthByFE = false;
     if m.globalProps.growthEnabled
         if useGrowthTensors
             if any( reshape( [ m.celldata.cellThermExpGlobalTensor ], 1, [] ) ~= 0 )
-                haveGrowth = true;
+                growthByFE = true;
             else
                 useGrowthTensors = false;
             end
             if any( reshape( [ m.celldata.residualStrain ], 1, [] ) ~= 0 )
-                haveGrowth = true;
+                growthByFE = true;
             end
         elseif m.globalProps.flatten
-            haveGrowth = true;
+            growthByFE = true;
+        elseif m.globalProps.selfGrowth
+            growthByFE = false;
+            [m,result] = invokeIFcallback( m, 'Selfgrowth' );
+            moved = result.didGrow;
+            if moved
+                m.displacements = result.displacements;
+            end
+            if any(~isfinite(m.displacements(:)))
+                xxxx = 1;
+            end
         elseif useMorphogens
             if any( any( m.morphogens(:,1:3) ~= 0 ) )
-                haveGrowth = true;
+                growthByFE = true;
             end
             if any( reshape( [ m.celldata.residualStrain ], 1, [] ) ~= 0 )
-                haveGrowth = true;
+                growthByFE = true;
             end
         end
     end
     
-%     haveGrowth = true;  % TEMPORARY FIX TO ALLOW THE COMPUTATION WHEN THERE IS NO GROWTH BUT A CUT HAS BEEN MADE IN THE MESH TO LET RESIDUAL STRAIN RELAX.
-    
-    if haveGrowth
+    if growthByFE
         fprintf( 1, '%s: Growth computation beginning for iteration %d (time %g - %g).\n', ...
             datestring(), m.globalDynamicProps.currentIter, m.globalDynamicProps.currenttime, m.globalDynamicProps.currenttime + m.globalProps.timestep );
     else
@@ -62,7 +71,7 @@ function [m,ok,splitdata] = onestep( m, useGrowthTensors, useMorphogens )
             datestring(), m.globalDynamicProps.currentIter, m.globalDynamicProps.currenttime, m.globalDynamicProps.currenttime + m.globalProps.timestep );
     end
     
-    if haveGrowth
+    if growthByFE
 %         oldprismnodes = m.prismnodes;
         transportspeed = cell( size( m.transportfield ) );
         for i=1:length(transportspeed)
@@ -114,7 +123,7 @@ function [m,ok,splitdata] = onestep( m, useGrowthTensors, useMorphogens )
                     && any(thicknessmgen);
         end
         
-        if moved && ~isempty(u)
+        if moved
             if full3d
                 m.FEnodes = m.FEnodes + u;
             else
@@ -149,7 +158,7 @@ function [m,ok,splitdata] = onestep( m, useGrowthTensors, useMorphogens )
                     m = makebendangles( m );
                 end
             end
-            m = calcCloneVxCoords( m );
+            
             % Rescale transport vectors.
             for i=1:length(transportspeed)
                 if ~isempty( tv )
@@ -161,34 +170,44 @@ function [m,ok,splitdata] = onestep( m, useGrowthTensors, useMorphogens )
                     m.transportfield{i} = m.transportfield{i} .* repmat( scaling, 1, 3 );
                 end
             end
-            m = calcmeshareas( m );        
-            m = VV_recomputeCoords( m );
+            
             if ~m.globalProps.flatten
                 m = dilateSubstances( m, u );
-                if m.globalProps.allowFlipEdges
-                    m = flipedges( m );
-                end
-                if m.globalProps.allowElideEdges
-                    m = tryElideEdge( m );
-                end
-                [ m, ~, splitdata ] = trysplit( m );
-                if hasNonemptySecondLayer( m )
-                    m = calcBioACellAreas( m );
-                    if m.globalProps.allowSplitBio
-                        m = splitSecondLayer( m );
-                    end
-                    if m.secondlayer.jiggleAmount * m.secondlayer.splitThreshold ~= 0
-                        m = perturbSecondLayer( m, ...
-                                m.secondlayer.jiggleAmount * m.secondlayer.splitThreshold );
-                    end
-                    if strcmp( m.globalProps.biocolormode, 'area' )
-                        m = setSecondLayerColorsByArea( m );
-                    end
-                end
             end
             clear u
+            
         end
-    else
+    end
+    
+    if moved
+        m = calcCloneVxCoords( m );
+        m = calcmeshareas( m );        
+        m = VV_recomputeCoords( m );
+        if ~m.globalProps.flatten
+            if m.globalProps.allowFlipEdges
+                m = flipedges( m );
+            end
+            if m.globalProps.allowElideEdges
+                m = tryElideEdge( m );
+            end
+            [ m, ~, splitdata ] = trysplit( m );
+            if hasNonemptySecondLayer( m )
+                m = calcBioACellAreas( m );
+                if m.globalProps.allowSplitBio
+                    m = splitSecondLayer( m );
+                end
+                if m.secondlayer.jiggleAmount * m.secondlayer.splitThreshold ~= 0
+                    m = perturbSecondLayer( m, ...
+                            m.secondlayer.jiggleAmount * m.secondlayer.splitThreshold );
+                end
+                if strcmp( m.globalProps.biocolormode, 'area' )
+                    m = setSecondLayerColorsByArea( m );
+                end
+            end
+        end
+    end
+    
+    if ~moved
         m.displacements = [];
     end
     

@@ -279,8 +279,7 @@ function [m,ok] = leaf_iterate( m, varargin )
                     end
                 end
                 if m.globalProps.stepsperframe > 0
-                    m.globalDynamicProps.stepssinceframe = m.globalDynamicProps.stepssinceframe+1;
-                    m.globalDynamicProps.stepssinceframe = mod( m.globalDynamicProps.stepssinceframe, m.globalProps.stepsperframe );
+                    m.globalDynamicProps.stepssinceframe = mod( m.globalDynamicProps.stepssinceframe+1, m.globalProps.stepsperframe );
                 else
                     m.globalDynamicProps.stepssinceframe = 0;
                 end

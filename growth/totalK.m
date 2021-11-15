@@ -73,10 +73,10 @@ function [m,U,K,F] = totalK( m, useGrowthTensors, useMorphogens )
     if ~useSparse
         try
             if useSingle
-                fprintf( 2, '%s %s: allocating single K: %d dfs.\n', datestring(), mfilename(), numDFs );
+                fprintf( 1, '%s %s: allocating single K: %d dfs.\n', datestring(), mfilename(), numDFs );
                 K = zeros( numDFs, numDFs, 'single' );
             else
-                fprintf( 2, '%s %s: allocating double K: %d dfs.\n', datestring(), mfilename(), numDFs );
+                fprintf( 1, '%s %s: allocating double K: %d dfs.\n', datestring(), mfilename(), numDFs );
                 K = zeros( numDFs, numDFs );
             end
         catch err
@@ -107,17 +107,17 @@ function [m,U,K,F] = totalK( m, useGrowthTensors, useMorphogens )
         % third argument is numDFs*dfsPerNode times the average number of nodes
         % in all the cells that a typical node is a member of.
         estimatedSpace = numDFs*dfsPerCell*4;
-        fprintf( 2, '%s %s: allocating sparse K: %d space.\n', datestring(), mfilename(), estimatedSpace );
+        fprintf( 1, '%s %s: allocating sparse K: %d space.\n', datestring(), mfilename(), estimatedSpace );
         K = spalloc( numDFs, numDFs, estimatedSpace );
     end
     if useSingle
-        fprintf( 2, '%s %s: allocating single F: %d dfs.\n', datestring(), mfilename(), numDFs );
+        fprintf( 1, '%s %s: allocating single F: %d dfs.\n', datestring(), mfilename(), numDFs );
         F = zeros( numDFs, 1, 'single' );
     else
-        fprintf( 2, '%s %s: allocating double F: %d dfs.\n', datestring(), mfilename(), numDFs );
+        fprintf( 1, '%s %s: allocating double F: %d dfs.\n', datestring(), mfilename(), numDFs );
         F = zeros( numDFs, 1 );
     end
-    fprintf( 2, '%s %s: allocated K and F.\n', datestring(), mfilename() );
+    fprintf( 1, '%s %s: allocated K and F.\n', datestring(), mfilename() );
         
     ELIMINATERIGIDMOTION = false;
     EXACTINV = false;
@@ -190,7 +190,7 @@ function [m,U,K,F] = totalK( m, useGrowthTensors, useMorphogens )
     fe = FiniteElementType.MakeFEType('P6');
 %     TEST_K = zeros(18,18,numcells);
 %     TEST_F = zeros(18,numcells);
-    fprintf( 2, '%s %s: Assembling K and F.\n', datestring(), mfilename() );
+    fprintf( 1, '%s %s: Assembling K and F.\n', datestring(), mfilename() );
     for ci=1:numcells
         gt1 = zeros(vxsPerCell,cptsPerTensor);
         if useGrowthTensors
@@ -266,16 +266,16 @@ function [m,U,K,F] = totalK( m, useGrowthTensors, useMorphogens )
         end
         dfBase = prismvxs*3;
         newIndexes = reshape( [ dfBase-2; dfBase-1; dfBase ], 1, [] );
-%         fprintf( 2, 'Inserting element %d into K and F.\n', ci );
+%         fprintf( 1, 'Inserting element %d into K and F.\n', ci );
         K( newIndexes, newIndexes ) = K( newIndexes, newIndexes ) + k;
         F( newIndexes ) = F( newIndexes ) - f;
-%         fprintf( 2, 'Inserted element %d into K and F.\n', ci );
+%         fprintf( 1, 'Inserted element %d into K and F.\n', ci );
         
         if mod(ci,1000)==0
-            fprintf( 2, '%s Processed %d elements.\n', datestring(), ci );
+            fprintf( 1, '%s Processed %d elements.\n', datestring(), ci );
         end
     end
-    fprintf( 2, '%s %s: Assembled K and F.\n', datestring(), mfilename() );
+    fprintf( 1, '%s %s: Assembled K and F.\n', datestring(), mfilename() );
     if ELIMINATERIGIDMOTION
       % rR = rank(R)
       % rK = rank(K)
