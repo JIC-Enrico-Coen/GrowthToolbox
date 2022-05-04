@@ -24,6 +24,6 @@ function m = leaf_deletenodes( m, varargin )
         nodemap(nodes) = true;
         nodes = nodemap;
     end
-    listcells = find( cellMapFromNodeMap( m, nodes, 'any' ) );
-    m = leaf_deleteElements( m, listcells );
+    listelements = find( elementMapFromNodeMap( m, nodes, 'any' ) );
+    m = leaf_deleteElements( m, listelements );
 end

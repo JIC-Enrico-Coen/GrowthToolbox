@@ -2,9 +2,9 @@ function m = completesecondlayer( m, olddata )
 %m = completesecondlayer( m )
 %   This takes a mesh having a second layer containing only the components
 %       cells(:).vxs(:)
+%       cell3dcoords(:,1:3)
 %       vxFEMcell(:)
 %       vxBaryCoords(:,1:3)
-%       cell3dcoords(:,1:3)
 %   and calculates or updates all the rest.
 %
 %   If either vxFEMcell and vxBaryCoords is missing or empty, it will also
@@ -29,8 +29,6 @@ function m = completesecondlayer( m, olddata )
     if ~isfield( m.secondlayer, 'vxFEMcell' ) || isempty( m.secondlayer.vxFEMcell )
         m.secondlayer.vxFEMcell = extendArray1( m.secondlayer.vxFEMcell, numnewvxs, 0 );
         m.secondlayer.vxBaryCoords = extendArray1( m.secondlayer.vxBaryCoords, numnewvxs, 0 );
-%         m.secondlayer.vxFEMcell = zeros( numbiovxs, 1 );
-%         m.secondlayer.vxBaryCoords = zeros( numbiovxs, 3 );
         for i=1:numbiovxs
             [ ci, bc, ~, ~ ] = findFE( m, m.secondlayer.cell3dcoords(i,:) );
             m.secondlayer.vxFEMcell(i) = ci;
@@ -87,7 +85,7 @@ function m = completesecondlayer( m, olddata )
     numnewedges = size(m.secondlayer.edges,1) - olddata.numedges;
     m.secondlayer = extendCellIndexing( m.secondlayer, numnewcells, numnewedges, numnewvxs );
     
-    m.secondlayer.visible.cells = extendArray12( m.secondlayer.visible.cells, [numnewcells,1], true );
+    m.secondlayer.visible.cells = logical( extendArray12( m.secondlayer.visible.cells, [numnewcells,1], true ) );
     
     [ok,m.secondlayer] = checkclonesvalid( m.secondlayer );
     if ~ok

@@ -1,5 +1,5 @@
-function [sl,m,ok] = makeCellGrid( type, magnitude, centre, ndivs, nsubdivs, plane, add, hemisphere, range, m, numcells )
-%[sl,m] = makeCellGrid( type, magnitude, centre, ndivs, nsubdivs, plane, add, m, numcells )
+function [sl,ok] = makeCellGrid( type, bbox, ndivs, nsubdivs, plane, hemisphere, range, numcells )
+%[sl,ok] = makeCellGrid( type, bbox, ndivs, nsubdivs, plane, hemisphere, range, numcells )
 %   Construct grids of cells of various sorts.
 %   If m is given and returned, install this as a cellular layer into m.
 %
@@ -20,9 +20,8 @@ function [sl,m,ok] = makeCellGrid( type, magnitude, centre, ndivs, nsubdivs, pla
 %       a sphere.
 %   hemisphere: 
 %
-%   MAGNITUDE is the dimensions of the mesh in 2 or 3 dimensions.
-%
-%   CENTRE is the location of the centre of the bounding box of the mesh.
+%   BBOX is the bounding box within which to construct the cells. It may be
+%       given in 2 or 3 dimensions.
 %
 %   NDIVS is the number of divisions as specified above.
 %
@@ -59,6 +58,8 @@ function [sl,m,ok] = makeCellGrid( type, magnitude, centre, ndivs, nsubdivs, pla
     
     subdivhandled = isempty( nsubdivs ) || all(nsubdivs <= 1);
     
+    scalingneeded = true;
+    
     switch type
         case 'SolidHemisphere3D'
             % Make a mesh covering the whole surface of a solid hemisphere.
@@ -66,7 +67,6 @@ function [sl,m,ok] = makeCellGrid( type, magnitude, centre, ndivs, nsubdivs, pla
             numcellsHemisphere = numcells - numcellsPlane;
             totalCells = numcellsPlane + numcellsHemisphere;
             fprintf( 1, 'About to make "%s" voronoi layer of %d cells.\n', type, totalCells );
-            meshbbox = [min(m.FEnodes,[],1); max(m.FEnodes,[],1)];
             [cellsPlane,vxsPlane,~] = makeVoronoiEllipse( numcellsPlane, 8, [-1 1 -1 1], true );
 %             [cellsPlane,vxsPlane,~] = makeVoronoiEllipse( numcellsPlane, 8, [meshbbox(1,2) meshbbox(2,2) meshbbox(1,3) meshbbox(2,3)], true );
             vxsPlane = [vxsPlane zeros(size(vxsPlane,1),1)];
@@ -77,22 +77,21 @@ function [sl,m,ok] = makeCellGrid( type, magnitude, centre, ndivs, nsubdivs, pla
             sl2 = struct( 'pts', vxsHemisphere, 'cellvxs', cellToRaggedArray( cellsHemisphere, NaN, true ) );
             sl = joinCellLayers( sl1, sl2 );
             
-            centre = (meshbbox(1,:) + meshbbox(2,:))/2;
-            scaling = meshbbox(2,:) - centre;
+            centre = (bbox(1,:) + bbox(2,:))/2;
+            scaling = bbox(2,:) - centre;
             sl.pts = centre + sl.pts .* scaling;
+            scalingneeded = false;
         case 'EquatorialYZVoronoi'
             % Make a circular mesh on the equator of the object.
-            meshbbox = [min(m.FEnodes,[],1); max(m.FEnodes,[],1)];
             fprintf( 1, 'About to make "%s" voronoi layer of %d cells.\n', type, numcells );
-            [cells,vxs,~] = makeVoronoiEllipse( numcells, 8, [meshbbox(1,2) meshbbox(2,2) meshbbox(1,3) meshbbox(2,3)], true );
+            [cells,vxs,~] = makeVoronoiEllipse( numcells, 8, [bbox(1,2) bbox(2,2) bbox(1,3) bbox(2,3)], true );
             vxs = [-0.015*ones(size(vxs,1),1) vxs];
             sl = safemakestruct( mfilename(), { 'pts', vxs, 'cellvxs', cellToRaggedArray( cells, NaN ) } );
+            scalingneeded = false;
         case 'Block3DVoronoi'
-            % Make four Voronoi meshes, three rectangular and one circular.
-            % Position them 
-%             [sl,m,ok] = makeCellGrid( s.mode, s.magnitude, s.centre, s.divisions, s.subdivisions, s.plane, s.add, s.hemisphere, s.range, m );
-            xyzlo = min(m.FEnodes,[],1);
-            xyzhi = max(m.FEnodes,[],1);
+            % Make five rectangular Voronoi meshes, for the top and four sides (excluding the bottom) of a block.
+            xyzlo = bbox(1,:); % min(m.FEnodes,[],1);
+            xyzhi = bbox(2,:); % max(m.FEnodes,[],1);
             xyzrange = xyzhi - xyzlo;
             
             area1 = xyzrange(1)*xyzrange(3);
@@ -114,7 +113,7 @@ function [sl,m,ok] = makeCellGrid( type, magnitude, centre, ndivs, nsubdivs, pla
             vxs1 = [ vxs1(:,1), xyzmid(2) + zeros(size(vxs1,1),1), vxs1(:,2) ];
             sl1 = safemakestruct( mfilename(), { 'pts', vxs1, 'cellvxs', cellToRaggedArray( cells1, NaN ) } );
             
-            % +X side. This is in the YZ plane, from Y=0 to Y=maximum., and
+            % +X side. This is in the YZ plane, from Y=0 to Y=maximum, and
             % X everywhere = maximum.
             [cells2,vxs2,~] = makeVoronoiRectangle( cellsperface(2), 20, [xyzmid(2) xyzhi(2) xyzlo(3) xyzhi(3)], true );
             vxs2 = [ xyzhi(1) + zeros(size(vxs2,1),1), vxs2 ];
@@ -141,13 +140,14 @@ function [sl,m,ok] = makeCellGrid( type, magnitude, centre, ndivs, nsubdivs, pla
             
             sl = combineGrids( [ sl1, sl2, sl3, sl4, sl5 ] );
 %             m = leaf_refinebioedges( m, 'refinement', s.subdivisions );
+            scalingneeded = false;
             xxxx = 1;
         case 'MakePrim3DVoronoi'
             % Make four Voronoi meshes, three rectangular and one circular.
             % Position them 
 %             [sl,m,ok] = makeCellGrid( s.mode, s.magnitude, s.centre, s.divisions, s.subdivisions, s.plane, s.add, s.hemisphere, s.range, m );
-            xyzlo = min(m.FEnodes,[],1);
-            xyzhi = max(m.FEnodes,[],1);
+            xyzlo = bbox(1,:); % min(m.FEnodes,[],1);
+            xyzhi = bbox(2,:); % max(m.FEnodes,[],1);
             
             area1 = (xyzhi(1)-xyzlo(1))*(xyzhi(3)-xyzlo(3));
             area2 = area1*pi/2;
@@ -177,6 +177,7 @@ function [sl,m,ok] = makeCellGrid( type, magnitude, centre, ndivs, nsubdivs, pla
             sl3 = safemakestruct( mfilename(), { 'pts', vxs3, 'cellvxs', cellToRaggedArray( cells3, 0 ) } );
             
             sl = combineGrids( [ sl1, sl2, sl3 ] );
+            scalingneeded = false;
             xxxx = 1;
         case 'MakePrim3DGrid'
             divsaround = ndivs(1);
@@ -199,6 +200,7 @@ function [sl,m,ok] = makeCellGrid( type, magnitude, centre, ndivs, nsubdivs, pla
             % Stitch these together.
             sl = combineGrids( [ sl1, sl2, sl3 ], 1e-6 );
             subdivhandled = true;
+            scalingneeded = true;
         case 'test'
             
             totalCells = 2*prod(ndivs([1 2]));
@@ -212,6 +214,7 @@ function [sl,m,ok] = makeCellGrid( type, magnitude, centre, ndivs, nsubdivs, pla
             sl2.cellvxs = reverseRaggedArray( sl2.cellvxs );
             sl = combineGrids( [ sl1, sl2 ], 1e-6 );
             subdivhandled = true;
+            scalingneeded = true;
             xxxx = 1;
         case 'testXY'
             
@@ -233,6 +236,7 @@ function [sl,m,ok] = makeCellGrid( type, magnitude, centre, ndivs, nsubdivs, pla
             end
             sl = combineGrids( [ sl1, sl2 ], 1e-6 );
             subdivhandled = true;
+            scalingneeded = true;
         case 'test1'
             
             totalCells = 2*prod(ndivs([1 2]));
@@ -253,22 +257,27 @@ function [sl,m,ok] = makeCellGrid( type, magnitude, centre, ndivs, nsubdivs, pla
             end
             sl = combineGrids( [ sl1, sl2 ], 1e-6 );
             subdivhandled = true;
+            scalingneeded = true;
         case 'radial'
             fprintf( 1, 'About to make "%s" grid layer of %d cells.\n', type, prod(ndivs([1 2])) );
             sl = makeCircularRadialGrid( ndivs, nsubdivs, range );
             subdivhandled = true;
+            scalingneeded = true;
         case 'rectgrid'
             fprintf( 1, 'About to make "%s" grid layer of %d cells.\n', type, prod(ndivs([1 2])) );
             sl = make2DGrid( ndivs, nsubdivs, range );
             subdivhandled = true;
+            scalingneeded = true;
         case 'circlegrid'
             fprintf( 1, 'About to make "%s" grid layer of %d cells.\n', type, prod(ndivs([1 2])) );
             sl = makeCircularOrthogonalGrid( ndivs, nsubdivs, range );
             subdivhandled = true;
+            scalingneeded = true;
         case 'latlong'
             fprintf( 1, 'About to make "%s" grid layer of %d cells.\n', type, prod(ndivs([1 2])) );
             sl = makeSphericalLatLongGrid( ndivs, nsubdivs, range, hemisphere );
             subdivhandled = true;
+            scalingneeded = true;
         case {'box', 'spherebox'}
             totalCells = 2*sum( prod( ndivs( [1 2;2 3;3 1] ), 2 ), 1 );
             fprintf( 1, 'About to make "%s" grid layer of %d cells.\n', type, totalCells );
@@ -280,27 +289,20 @@ function [sl,m,ok] = makeCellGrid( type, magnitude, centre, ndivs, nsubdivs, pla
     end
     
     sl = setplane( sl, plane );
-    if ~isempty( magnitude )
-        if numel(magnitude)==1
-            sl.pts = sl.pts * magnitude;
-        else
-            magnitude( (end+1):size(sl.pts,2) ) = magnitude(1);
-            magnitude( (size(sl.pts,2)+1):end ) = [];
-            sl.pts = sl.pts .* repmat( magnitude/2, size(sl.pts,1), 1 );
-        end
-    end
-    if ~isempty(centre)
-        sl.pts = sl.pts + repmat( centre, size(sl.pts,1), 1 );
+    if ~isempty( bbox ) && scalingneeded
+        centre = sum( bbox, 1 )/2;
+        scaling = bbox(2,:)-centre;
+        scaling( (end+1):size(sl.pts,2) ) = bbox(1);
+        scaling( (size(sl.pts,2)+1):end ) = [];
+        sl.pts = sl.pts .* repmat( scaling, size(sl.pts,1), 1 );
     end
     
 %     plotsl( 1, sl );
     
-    if (~isempty(m)) && (nargout >= 2)
-        if ~subdivhandled
-%             sl = refineBasicCellularLayer( sl, mean(nsubdivs) );
-        end
-        [m,ok] = installGrid( m, sl, add );
-    end
+%     if (~isempty(m)) && (nargout >= 2)
+% %         [m1,ok] = installGrid( m, sl, add );
+%         [m,ok] = installCells( m, sl.pts, sl.cellvxs, 'add', add );
+%     end
 end
 
 function sl = setplane( sl, plane )

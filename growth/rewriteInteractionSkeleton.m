@@ -77,9 +77,9 @@ function [m,ok] = rewriteInteractionSkeleton( m, newIFname, newIFdir, msg )
         m.globalProps.mgen_interactionName = newIFname;
         [m.globalProps.projectdir,m.globalProps.modelname] = dirparts( newIFdir );
         if m.globalProps.newcallbacks
-            results = 'm';
-        else
             results = '[m,results]';
+        else
+            results = 'm';
         end
         contents = [ contents(1:(tokenExtents(1,1)-1)), ...
                      results, ...

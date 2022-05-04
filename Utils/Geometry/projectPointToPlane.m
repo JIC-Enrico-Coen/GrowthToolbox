@@ -1,4 +1,4 @@
-function [pp,bc] = projectPointToPlane( vxs, p, dir )
+function [pp,bc] = projectPointToPlane( vxs, p, n )
 %pp = projectPointToPlane( vxs, p, dir )
 %   Project P in direction DIR onto the plane defined by the three vertexes
 %   VXS, giving point PP.  VXS is a 3*D matrix of three row vectors of any
@@ -15,8 +15,8 @@ function [pp,bc] = projectPointToPlane( vxs, p, dir )
     end
     numpoints = size(p,1);
     if dot(n,n)==0
-        pp = projectPointToLine( vxs([1 2],:), p );
-        bc = [ ones(numpoints,1), zeros(numpoints,2) ];
+        [pp,bc] = projectPointToLine( vxs([1 2],:), p, false );
+%         bc = [ ones(numpoints,1), zeros(numpoints,2) ];
     else
         p1 = p - ones(numpoints,1)*vxs(1,:);
         v21 = vxs(2,:) - vxs(1,:);

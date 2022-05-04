@@ -8,13 +8,14 @@ function [newvxs,remap] = mergenodesprox( vxs, tol, transitive )
 %   If TRANSITIVE is true, then whenever a vertex X is close to Y, and Y is
 %   close to Z, then X is deemed close to Z, even if X and Z are farther
 %   apart than TOL. Thus all vertexes close to each other are merged, but
-%   some vartexes far from each other are also merged. The set of resulting
-%   vertexes will be independent of the order of the given vertexes.
+%   some vertexes far from each other may also be merged. The set of
+%   resulting vertexes will be independent of the order of the given
+%   vertexes.
 %
 %   If TRANSITIVE is false, vertexes far from each other are never
 %   merged, but some vertexes that are close to each other may not be
 %   merged. The number and positions of the resulting vertexes may depend
-%   on the order of the given vertexes, and it is not guaranteed that 
+%   on the order of the given vertexes.
 %
 %   By default, TRANSITIVE is false. 
 %

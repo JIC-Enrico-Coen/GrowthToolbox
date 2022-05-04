@@ -1,6 +1,7 @@
-function m = deleteFEs(m,elementsToDelete)
-%m = deleteFEs(m,elementsToDelete)    Delete finite elements from the mesh.
+function [m,deletionInfo] = deleteFEs(m,elementsToDelete)
+%[m,deletionInfo] = deleteFEs(m,elementsToDelete)    Delete finite elements from the mesh.
 
+    deletionInfo = [];
     if nargin==1, return; end
     
     if islogical(elementsToDelete)
@@ -48,7 +49,7 @@ function m = deleteFEs(m,elementsToDelete)
 
 
 
-        m = renumberMesh3D( m, 'fekeepmap', rFEmap );
+        [m,deletionInfo] = renumberMesh3D( m, 'fekeepmap', rFEmap );
         [result,m] = validmesh( m );
         if ~result
             xxxx = 1;
@@ -58,17 +59,17 @@ function m = deleteFEs(m,elementsToDelete)
     end
     
     numedges = size(m.edgeends,1);
-    numcells = size(m.tricellvxs,1);
-    cellsBitMap = true(numcells,1);
+    numelements = size(m.tricellvxs,1);
+    elementsBitMap = true(numelements,1);
     edgesBitMap = true(numedges,1);
     elementsToDelete = unique(elementsToDelete);
-    cellsBitMap(elementsToDelete) = false;
-    if length(elementsToDelete)==numcells
+    elementsBitMap(elementsToDelete) = false;
+    if length(elementsToDelete)==numelements
         fprintf( 1, 'Attempt to delete entire mesh ignored.\n' );
         return;
     end
 
-    % Find all edges bordering the cells and set the relevant cell index to
+    % Find all edges bordering the elements and set the relevant element index to
     % zero.  Keep a list of edges that are to be deleted.
     numedgestodelete = 0;
     for cdi=1:length(elementsToDelete)
@@ -97,10 +98,10 @@ function m = deleteFEs(m,elementsToDelete)
         nodesBitMap(savednodes) = true;
     end
     
-    m.secondlayer = deleteCellsInFEs( m.secondlayer, cellsBitMap, m.globalDynamicProps.currenttime );
+    m.secondlayer = deleteCellsInFEs( m.secondlayer, elementsBitMap, m.globalDynamicProps.currenttime );
     
     m = renumberMesh( m, [], [], [], ...
-                         nodesBitMap, edgesBitMap, cellsBitMap );
+                         nodesBitMap, edgesBitMap, elementsBitMap );
     
     m.saved = 0;
   

@@ -76,7 +76,7 @@ function [ok,handles,m,savedstate] = prepareForGUIInteraction( m, allowRunning )
             return;
         end
         savedstate = guiBusyStart( handles );
-        fprintf( 1, '%s\n', mfilename() );
+        timedFprintf( 1, 'Completed.\n' );
     end
     
     ok = true;

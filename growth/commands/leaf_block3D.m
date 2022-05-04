@@ -125,6 +125,12 @@ function m = leaf_block3D( m, varargin )
 
     ei = 0;
     for i=1:s.divisions(3)
+        % The mirroring of cube vertex indexing is so that if we subdivide
+        % each cube into tetrahedra, the divisions that appear on the cube
+        % faces will be consistent for cubes sharing the same face.
+        % If we are not subdividing, or if we are subdividing into
+        % pentahedra, then there is no need for mirroring, but we do it in
+        % all cases anyway.
         px = flipCuboidIndexes( 3*mod(i-1,2), segmentsperFE+1 );
 %         px = flipCubeIndexes( mod(i-1,2) );
         for j=1:s.divisions(2)
@@ -134,7 +140,7 @@ function m = leaf_block3D( m, varargin )
                 pz = py( flipCuboidIndexes( 1*mod(k-1,2), segmentsperFE+1 ) );
                 % pz = py( flipCubeIndexes( mod(k-1,2) ) );
                 ei = ei+1;
-                vxsets(ei,:) = vxsets( ei,pz );
+                vxsets(ei,:) = vxsets( ei, pz );
             end
         end
     end
@@ -148,34 +154,33 @@ function m = leaf_block3D( m, varargin )
             % Make a new version of vxsets dividing each cube into five
             % tetrahedra.
             % For the vertexes of a cube numbered 1 to 8, the tetrahedra
-            % vertex sets would be 1 2 4 8, 1 3 7 8, and 1 5 6 8.
-            % tetraindexes = [ 1 2 4 8; 1 3 4 8; 1 3 7 8; 1 5 7 8; 1 5 6 8; 1 2 6 8 ]';
-            % subindexes = [ 1 2 3 5;  4 3 2 8;  6 2 8 5;  7 3 5 8;  2 3 5 8 ]';
+            % vertex sets are given by subindexes:
             subindexes = [ 2 4 1 6; 3 1 4 7; 5 1 6 7; 8 4 7 6; 1 4 7 6 ]';
+            % These are then applied to each of the cubes:
             vxsets = reshape( vxsets( :, subindexes )', size( subindexes, 1 ), [] )';
         case 'T4Q2'
-            % Make a new version of vxsets dividing each cube into five
-            % tetrahedra.
-            % For the vertexes of a cube numbered 1 to 8, the tetrahedra
-            % vertex sets would be 1 2 4 8, 1 3 7 8, and 1 5 6 8.
-            % tetraindexes = [ 1 2 4 8; 1 3 4 8; 1 3 7 8; 1 5 7 8; 1 5 6 8; 1 2 6 8 ]';
+            % The cubes are quadratic, with vertexes 1:27.
+            % The tetrahedron vertex sets for the basic quadratic cube are
+            % given by subindexes:
             subindexes = [ 1 2 3 4 5 7 10 11 13 19;
                            9 8 7 6 5 3 18 17 15 27;
                            21 12 3 24 15 27 20 11 23 19
                            25 16 7 22 13 19 26 17 23 27
                            3 5 7 11 13 19 15 17 23 27 ]';
+            % These are then applied to each of the cubes:
             vxsets = reshape( vxsets( :, subindexes )', size( subindexes, 1 ), [] )';
         case 'P6'
-            % Make a new version of vxsets dividing each cube into three
-            % tetrahedra.
-            % For the vertexes of a cube numbered 1 to 8, the tetrahedra
-            % vertex sets would be 1 2 4 8, 1 3 7 8, and 1 5 6 8.
+            % Make a new version of vxsets dividing each cube into two
+            % pentaahedra.
+            % For the vertexes of a cube numbered 1 to 8, the pentahedron
+            % vertex sets are given by subindexes:
             subindexes = [ 1 2 4 5 6 8; 1 4 3 5 8 7 ]';
+            % These are then applied to each of the cubes:
             vxsets = reshape( vxsets( :, subindexes )', size( subindexes, 1 ), [] )';
         otherwise
             % Type not recognised, cannot build mesh.
             fprintf( 1, '%s: Unknown or unsupported finite element type ''%s''.\n', mfilename(), s.type );
-            m = [];
+            % m = [];
             return;
     end
     

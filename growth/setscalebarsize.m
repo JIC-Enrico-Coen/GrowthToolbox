@@ -19,7 +19,7 @@ function setscalebarsize( m )
             return;
         end
         % m is a mesh.
-%         sb = -ones( 1, length(m.pictures) );
+        sb = -ones( 1, length(m.pictures) );
         theaxes = reshape(m.pictures,1,[]);
         for i=1:length(m.pictures)
             h = guidata( m.pictures(1) );

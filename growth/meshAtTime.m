@@ -1,4 +1,4 @@
-function isat = meshAtTime( m, t, tolerance )
+function isat = meshAtTime( m, t, varargin )
 %isat = meshAtTime( m, t, tolerance )
 %   Test to see if the current simulation time is close to the time T.  The
 %   tolerance is a fraction of the current timestep, and defaults to 0.01.
@@ -6,12 +6,13 @@ function isat = meshAtTime( m, t, tolerance )
 %   interval of T.
 %
 %   SEE ALSO: meshAfterTime, meshBeforeTime, meshAtOrAfterTime,
-%       meshAtOrBeforeTime
+%       meshAtOrBeforeTime, meshCompareTime
 
-    if nargin < 3
-        tolerance = 0.01;
-    end
-    absTolerance = m.globalProps.timestep*tolerance;
-    isat = abs(m.globalDynamicProps.currenttime - t) < absTolerance;
+%     if nargin < 3
+%         tolerance = 0.01;
+%     end
+%     absTolerance = m.globalProps.timestep*tolerance;
+%     isat = abs(m.globalDynamicProps.currenttime - t) < absTolerance;
+    isat = meshCompareTime( m, t, 'eq', varargin{:} );
 end
 

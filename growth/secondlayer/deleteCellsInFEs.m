@@ -1,8 +1,8 @@
 function secondlayer = deleteCellsInFEs( secondlayer, goodFEmap, t )
-%secondlayer = deleteCellsInFEs( secondlayer, badFEmap )
+%secondlayer = deleteCellsInFEs( secondlayer, goodFEmap, t )
 %   This deletes every second layer cell, any vertexes of which lie in any
-%   of the finite elements listed in badFEs.  This is called by deleteFEs,
-%   which deletes finite elements.
+%   of the finite elements not listed in goodFEmap.  This is called by
+%   deleteFEs, which deletes finite elements.
 
     if isNonemptySecondLayer( secondlayer )
         goodVxsmap = goodFEmap(secondlayer.vxFEMcell);

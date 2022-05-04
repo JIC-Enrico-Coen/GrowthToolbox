@@ -1,10 +1,9 @@
-function ok = checklineagevalid( secondlayer, complainer )
-%ok = checklineagevalid( secondlayer, complainer )
+function ok = checklineagevalid( secondlayer, severity )
+%ok = checklineagevalid( secondlayer, severity )
 %   Make validity checks on the cell lineage data.
-%   COMPLAINER is either @error or @warning.
 
     if nargin < 2
-        complainer = @warning;
+        severity = 0;
     end
     ok = true;
     numcells = length( secondlayer.cells );
@@ -13,32 +12,32 @@ function ok = checklineagevalid( secondlayer, complainer )
     if isfield( secondlayer, 'cellid' )
         maxcellid = length( secondlayer.cellidtoindex );
         if length(secondlayer.cellid) ~= numcells
-            complainer( 'Wrong length of cellid, found %d, expected %d.\n', length(secondlayer.cellid), numcells );
+            complain2( severity, 'Wrong length of cellid, found %d, expected %d.', length(secondlayer.cellid), numcells );
             ok = false;
         end
         if length(secondlayer.cellid) ~= length(unique(secondlayer.cellid))
-            complainer( 'Some existing cells have the same id.' );
+            complain2( severity, 'Some existing cells have the same id.' );
             ok = false;
         end
         numinvalidids = sum( (secondlayer.cellid <= 0) | (secondlayer.cellid > maxcellid) );
         if any(secondlayer.cellid <= 0)
-            complainer( '%d invalid cellids.\n', numinvalidids );
+            complain2( severity, '%d invalid cellids.', numinvalidids );
             ok = false;
         end
         if size(secondlayer.cellidtotime,1) ~= maxcellid
-            complainer( 'Wrong length of cellidtotime: found %d, expected %d.\n', size(secondlayer.cellidtotime,1), maxcellid );
+            complain2( severity, 'Wrong length of cellidtotime: found %d, expected %d.', size(secondlayer.cellidtotime,1), maxcellid );
             ok = false;
         end
         if ok
             if ~all(secondlayer.cellidtoindex( secondlayer.cellid ) == (1:numcells)')
-                complainer( 'cellidtoindex(cellid) ~= 1:numcells.' );
+                complain2( severity, 'cellidtoindex(cellid) ~= 1:numcells at %d places.', sum( secondlayer.cellidtoindex( secondlayer.cellid ) ~= (1:numcells)' ) );
                 ok = false;
             end
         end
         if ok
             id_defined = find(secondlayer.cellidtoindex>0);
             if ~all( secondlayer.cellid( secondlayer.cellidtoindex(id_defined) ) == id_defined )
-                complainer( 'cellid(cellidtoindex(cellidtoindex>0) ) ~= find(cellidtoindex>0).' );
+                complain2( severity, 'cellid(cellidtoindex(cellidtoindex>0) ) ~= find(cellidtoindex>0).' );
                 ok = false;
             end
         end
@@ -47,7 +46,7 @@ function ok = checklineagevalid( secondlayer, complainer )
 %         haveparent = secondlayer.cellparent > 0;
 %         daughterofparent = secondlayer.celldaughters(secondlayer.cellparent(haveparent),:);
 %         if ~all(all(daughterofparent == repmat( find(haveparent), 1, 2 )))
-%             complainer( 'Some ' );
+%             complain2( severity, 'Some ' );
 %             ok = false;
 %         end
     end

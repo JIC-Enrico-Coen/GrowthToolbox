@@ -59,7 +59,7 @@ function [ m, didsplit, splitdata, numunsplit ] = trysplit( m, splitlong, splitb
         edgebending = edgebending(bentedgemap);
         bentedges = reshape( m.celledges( m.edgecells( bentedgemap, : ), : ), [], 1 );
         if ~isempty(bentedges)
-            fprintf( 1, 'Bent edges:' );
+            timedFprintf( 1, 'Bent edges:' );
             fprintf( 1, ' %d', bentedges );
             fprintf( 1, '\n' );
         end
@@ -81,7 +81,7 @@ function [ m, didsplit, splitdata, numunsplit ] = trysplit( m, splitlong, splitb
 %             end
 %         end
 %         if ~isempty(longedges)
-%             fprintf( 1, 'Long edges:' );
+%             timedFprintf( 1, 'Long edges:' );
 %             fprintf( 1, ' %d', longedges );
 %             fprintf( 1, '\n' );
 %         end
@@ -114,7 +114,7 @@ function [ m, didsplit, splitdata, numunsplit ] = trysplit( m, splitlong, splitb
             mgenedges = reshape( find(mgenedgemap), [], 1 );
         end
         if ~isempty(mgenedges)
-            fprintf( 1, 'Mgen edges:' );
+            timedFprintf( 1, 'Mgen edges:' );
             fprintf( 1, ' %d', mgenedges );
             fprintf( 1, '\n' );
         end

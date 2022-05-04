@@ -14,27 +14,28 @@ function [cn,vn] = biocellNormals( m, cis )
         elseif islogical(cis)
             cis = find(cis);
         end
-        nc = length(cis);
-        cn = zeros(nc,3);
-        for cii = 1:nc
-            ci = cis(cii);
-            cvxs = m.secondlayer.cells(ci).vxs;
-            [c,p,flatness,planarity,v,d] = bestFitPlane( m.secondlayer.cell3dcoords(cvxs,:), 'area' );
-            cn(cii,:) = p;
-        end
-        
-        if nargout >= 2
-            vn = zeros( getNumberOfCellvertexes(m), 3 );
-            nvn = zeros( getNumberOfCellvertexes(m), 1 );
-            for cii = 1:nc
-                ci = cis(cii);
-                cvxs = m.secondlayer.cells(ci).vxs;
-                vn( cvxs, : ) = vn( cvxs, : ) + cn(cii,:);
-                nvn( cvxs ) = nvn( cvxs )+1;
-            end
-            vn = vn ./ nvn;
-            vn = vn ./ sqrt(sum(vn.^2,2));
-            vn(isnan(vn)) = 0;
-        end
+        [cn,vn] = polyNormals( m.secondlayer.cell3dcoords, { m.secondlayer.cells(cis).vxs } );
+%         nc = length(cis);
+%         cn = zeros(nc,3);
+%         for cii = 1:nc
+%             ci = cis(cii);
+%             cvxs = m.secondlayer.cells(ci).vxs;
+%             [c,p,flatness,planarity,v,d] = bestFitPlane( m.secondlayer.cell3dcoords(cvxs,:), 'area' );
+%             cn(cii,:) = p;
+%         end
+%         
+%         if nargout >= 2
+%             vn = zeros( getNumberOfCellvertexes(m), 3 );
+%             nvn = zeros( getNumberOfCellvertexes(m), 1 );
+%             for cii = 1:nc
+%                 ci = cis(cii);
+%                 cvxs = m.secondlayer.cells(ci).vxs;
+%                 vn( cvxs, : ) = vn( cvxs, : ) + cn(cii,:);
+%                 nvn( cvxs ) = nvn( cvxs )+1;
+%             end
+%             vn = vn ./ nvn;
+%             vn = vn ./ sqrt(sum(vn.^2,2));
+%             vn(isnan(vn)) = 0;
+%         end
     end
 end

@@ -1,5 +1,5 @@
-function m = leaf_deletepatch( m, varargin )
-%m = leaf_deletepatch( m, fes )
+function [m,delinfo] = leaf_deletepatch( m, varargin )
+%[m,delinfo] = leaf_deletepatch( m, fes )
 %   Delete the specified finite elements from the leaf.
 %
 %   Arguments:
@@ -11,6 +11,7 @@ function m = leaf_deletepatch( m, varargin )
 %
 %   Topics: Mesh editing.
 
+    delinfo = [];
     if isempty(m), return; end
     [ok, fes, args] = getTypedArg( mfilename(), {'numeric','logical'}, varargin );
     if ~ok, return; end
@@ -23,5 +24,5 @@ function m = leaf_deletepatch( m, varargin )
     else
         fes = floor(fes);
     end
-    m = deleteFEs( m, fes );
+    [m,delinfo] = deleteFEs( m, fes );
 end

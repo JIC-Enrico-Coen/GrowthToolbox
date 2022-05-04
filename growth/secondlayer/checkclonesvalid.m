@@ -2,19 +2,6 @@ function [ok,secondlayer] = checkclonesvalid( secondlayer )
 %[ok,secondlayer] = checkclonesvalid( secondlayer )
 %   Make consistency checks of secondlayer.
 
-    ERRORS = false;
-    if ERRORS
-        complainer = @error;
-    else
-        complainer = @warning;
-    end
-    VERBOSE = false;
-    if VERBOSE
-        whiner = @warning;
-    else
-        whiner = @donothing;
-    end
-
     ok = 1;
     numcells = length( secondlayer.cells );
     numedges = size( secondlayer.edges, 1 );
@@ -29,14 +16,14 @@ function [ok,secondlayer] = checkclonesvalid( secondlayer )
         
         % Each cell must have the same number of vertexes as edges.
         if nv ~= ne
-            complainer( 'Cell %d has %d vertexes and %d edges. Numbers should be equal.\n', ...
+            complain2( 0, 'Cell %d has %d vertexes and %d edges. Numbers should be equal.', ...
                 ci, nv, ne );
             ok = 0;
         end
         
         % Each cell must have at least three vertexes.
         if (ne < 3) || (nv < 3)
-            complainer( 'Cell %d has %d vertexes and %d edges. A cell must have at least three of each.\n', ...
+            complain2( 0, 'Cell %d has %d vertexes and %d edges. A cell must have at least three of each.', ...
                 ci, nv, ne );
         end
     end
@@ -46,7 +33,7 @@ function [ok,secondlayer] = checkclonesvalid( secondlayer )
     for ci=1:numcells
         bad = find( (secondlayer.cells(ci).vxs > numvxs) | (secondlayer.cells(ci).vxs <= 0) );
         if bad
-            complainer( 'Cell %d has invalid vertex indices', ci );
+            complain2( 0, 'Cell %d has invalid vertex indices', ci );
             fprintf( 1, ' %d', bad );
             fprintf( 1, ': [' );
             fprintf( 1, ' %d', secondlayer.cells(ci).vxs );
@@ -55,7 +42,7 @@ function [ok,secondlayer] = checkclonesvalid( secondlayer )
         end
         bad = find( (secondlayer.cells(ci).edges > numedges) | (secondlayer.cells(ci).edges <= 0) );
         if bad
-            complainer( 'Cell %d has invalid edge indices', ci );
+            complain2( 0, 'Cell %d has invalid edge indices', ci );
             fprintf( 1, ' %d', bad );
             fprintf( 1, ': [' );
             fprintf( 1, ' %d', secondlayer.cells(ci).edges );
@@ -65,25 +52,25 @@ function [ok,secondlayer] = checkclonesvalid( secondlayer )
     end
     bad = find( (secondlayer.edges(:,1) > numvxs) | (secondlayer.edges(:,1) <= 0) );
     if bad
-        complainer( 'Edges with invalid first vertex index:\n' );
+        complain2( 0, 'Edges with invalid first vertex index:\n' );
         fprintf( 1, '    edge %d bad vertex %d\n', [ bad, secondlayer.edges(bad,1) ]' );
         ok = 0;
     end
     bad = find( (secondlayer.edges(:,2) > numvxs) | (secondlayer.edges(:,2) <= 0) );
     if bad
-        complainer( 'Edges with invalid second vertex index:\n' );
+        complain2( 0, 'Edges with invalid second vertex index:\n' );
         fprintf( 1, '    edge %d bad vertex %d\n', [ bad, secondlayer.edges(bad,2) ]' );
         ok = 0;
     end
     bad = find( (secondlayer.edges(:,3) > numcells) | (secondlayer.edges(:,3) <= 0) );
     if bad
-        complainer( 'Edges with invalid first cell index:\n' );
+        complain2( 0, 'Edges with invalid first cell index:\n' );
         fprintf( 1, '    edge %d bad cell %d\n', [ bad, secondlayer.edges(bad,3) ]' );
         ok = 0;
     end
     bad = find( secondlayer.edges(:,4) > numcells );
     if bad
-        complainer( 'Edges with invalid second cell index:\n' );
+        complain2( 0, 'Edges with invalid second cell index:\n' );
         fprintf( 1, '    edge %d bad cell %d\n', [ bad, secondlayer.edges(bad,4) ]' );
         ok = 0;
     end
@@ -96,7 +83,7 @@ function [ok,secondlayer] = checkclonesvalid( secondlayer )
     for ci=1:numcells
         cev = secondlayer.cells(ci);
         if any((cev.vxs < 1) | (cev.vxs > numvxs))
-            complainer( 'Cell %d contains invalid vertexes.\n', ci );
+            complain2( 0, 'Cell %d contains invalid vertexes.', ci );
             fprintf( 1, '    [' );
             fprintf( 1, ' %d', cev.vxs );
             fprintf( 1, ' ]\n' );
@@ -104,7 +91,7 @@ function [ok,secondlayer] = checkclonesvalid( secondlayer )
             cev.vxs = cev.vxs(cev.edges>=1);
         end
         if any(cev.edges < 1)
-            complainer( 'Cell %d contains invalid edges.\n', ci );
+            complain2( 0, 'Cell %d contains invalid edges.', ci );
             fprintf( 1, '    [' );
             fprintf( 1, ' %d', cev.edges );
             fprintf( 1, ' ]\n' );
@@ -133,12 +120,12 @@ function [ok,secondlayer] = checkclonesvalid( secondlayer )
                     vi = cev.vxs(cvi);
                     cvi1 = mod(cvi,nv) + 1;
                     vi1 = cev.vxs(cvi1);
-                    complainer( 'Cell %d edge %d (%d) should join vertexes %d and %d, but joins %d and %d. Edge = [ %d %d %d %d ]\n', ...
+                    complain2( 0, 'Cell %d edge %d (%d) should join vertexes %d and %d, but joins %d and %d. Edge = [ %d %d %d %d ]\n', ...
                         ci, cvi, ei, vi, vi1, e([1 2]), e );
                     ok = 0;
                 end
                 if (e(3) ~= ci) && (e(4) ~= ci)
-                    complainer( 'Cell %d edge %d (%d) should have cell %d on one side, but has cells %d and %d.\n', ...
+                    complain2( 0, 'Cell %d edge %d (%d) should have cell %d on one side, but has cells %d and %d.', ...
                         ci, cvi, ei, ci, e([3 4]) );
                     ok = 0;
                 end
@@ -149,7 +136,7 @@ function [ok,secondlayer] = checkclonesvalid( secondlayer )
     tweaked = false;
     % Every edge is an edge of at least one cell.
     if any(lostEdges)
-        complainer( '%d edges are not referenced by any cell.\n', sum(lostEdges) );
+        complain2( 0, '%d edges are not referenced by any cell.', sum(lostEdges) );
       % ok = false;
         if nargout >= 2
             newToOldEdge = find(~lostEdges);
@@ -171,15 +158,15 @@ function [ok,secondlayer] = checkclonesvalid( secondlayer )
         dupedgelist = find(dupedgemap);
         dupedgelist = p( [ dupedgelist, dupedgelist+1 ] )';
         ok = false;
-        complainer( 'validmesh:duplicateedges', ...
-            'There are multiple edges joining the same vertexes: %d examples.\n', size(dupedgelist,2) );
+        complain2( 0, 'validmesh:duplicateedges', ...
+            'There are multiple edges joining the same vertexes: %d examples.', size(dupedgelist,2) );
         fprintf( 1, 'Bad edge pairs:\n' );
         fprintf( 1, '    [%d,%d]\n', dupedgelist );
     end
     
     % Every edge has a generation index.
     if isfield( secondlayer, 'generation' )
-        r = checksize( numedges, length(secondlayer.generation), 'secondlayer.generation', complainer );
+        r = checksize( numedges, length(secondlayer.generation), 'secondlayer.generation' );
         if ~r
             secondlayer.generation = procrustesHeight( secondlayer.generation, numedges );
         end
@@ -187,20 +174,20 @@ function [ok,secondlayer] = checkclonesvalid( secondlayer )
     end
     if isfield( secondlayer, 'generation' )
         if numedges ~= length(secondlayer.generation)
-            complainer( 'There are %d edges but %d generation indexes.\n', ...
+            complain2( 0, 'There are %d edges but %d generation indexes.', ...
                 numedges, length(secondlayer.generation) );
             ok = false;
         end
     end
     if isfield( secondlayer, 'edgepropertyindex' )
-        r = checksize( numedges, length(secondlayer.edgepropertyindex), 'secondlayer.edgepropertyindex', complainer );
+        r = checksize( numedges, length(secondlayer.edgepropertyindex), 'secondlayer.edgepropertyindex' );
         if ~r
             secondlayer.edgepropertyindex = procrustesHeight( secondlayer.edgepropertyindex, numedges, 1 );
         end
         ok = r && ok;
     end
     if isfield( secondlayer, 'interiorborder' )
-        r = checksize( numedges, length(secondlayer.interiorborder), 'secondlayer.interiorborder', complainer );
+        r = checksize( numedges, length(secondlayer.interiorborder), 'secondlayer.interiorborder' );
         if ~r
             secondlayer.interiorborder = procrustesHeight( secondlayer.interiorborder, numedges );
         end
@@ -209,7 +196,7 @@ function [ok,secondlayer] = checkclonesvalid( secondlayer )
     
     % Every vertex is a vertex of at least one cell.
     if any(lostVxs)
-        complainer( '%d vertexes are not referenced by any cell.\n', sum(lostVxs) ); %#ok<*FNDSB>
+        complain2( 0, '%d vertexes are not referenced by any cell.', sum(lostVxs) ); %#ok<*FNDSB>
       % ok = false;
         if nargout >= 2
             newToOldVx = find(~lostVxs);
@@ -234,11 +221,11 @@ function [ok,secondlayer] = checkclonesvalid( secondlayer )
   %     lostVxs( secondlayer.edges(ei,[1 2]) ) = false;
   % end
     if any(lostVxs)
-        complainer( '%d vertexes are not referenced by any edge.\n', sum(lostVxs) );
+        complain2( 0, '%d vertexes are not referenced by any edge.', sum(lostVxs) );
         ok = false;
     end
     
-    [ok1,secondlayer] = checkbioedgehandedness( secondlayer, complainer );
+    [ok1,secondlayer] = checkbioedgehandedness( secondlayer );
     ok = ok && ok1;
     
     if ok && tweaked && (nargout >= 2)
@@ -246,7 +233,7 @@ function [ok,secondlayer] = checkclonesvalid( secondlayer )
         ok = checkclonesvalid( secondlayer );
     end
     
-    cellidok = checklineagevalid( secondlayer, complainer );
+    cellidok = checklineagevalid( secondlayer );
     if ~cellidok
         xxxx = 1;
     end
@@ -254,7 +241,7 @@ function [ok,secondlayer] = checkclonesvalid( secondlayer )
     ok = ok && cellidok;
     
     % The cell value dictionary must be internally consistent.
-    okdict = validdictionary( secondlayer.valuedict, complainer );
+    okdict = validdictionary( secondlayer.valuedict );
     % The cell value dictionary must be consistent with the number of cell
     % values.
     if okdict
@@ -262,7 +249,7 @@ function [ok,secondlayer] = checkclonesvalid( secondlayer )
         numcellvaluenames = length( secondlayer.valuedict.index2NameMap );
         if numcellvalues ~= numcellvaluenames
             ok = false;
-            complainer( 'Number of cell values (%d) is not equal to number of cell value names (%d).\n    Fixed by taking the latter to be correct.\n', ...
+            complain2( 0, 'Number of cell values (%d) is not equal to number of cell value names (%d).\n    Fixed by taking the latter to be correct.', ...
                 numcellvalues, numcellvaluenames );
             secondlayer.cellvalues = procrustesWidth( secondlayer.cellvalues, numcellvaluenames );
         end
@@ -271,32 +258,32 @@ function [ok,secondlayer] = checkclonesvalid( secondlayer )
     ok = ok && okdict;
     
     
-%     ok = checkindexdata( 'cell', secondlayer.celldata, numcells, complainer ) && ok;
-%     ok = checkindexdata( 'edge', secondlayer.edgedata, numedges, complainer ) && ok;
-%     ok = checkindexdata( 'vertex', secondlayer.vxdata, numvxs, complainer ) && ok;
+    ok = checkindexdata( 'cell', secondlayer.celldata, numcells ) && ok;
+    ok = checkindexdata( 'edge', secondlayer.edgedata, numedges ) && ok;
+    ok = checkindexdata( 'vertex', secondlayer.vxdata, numvxs ) && ok;
 end
 
-function ok = checkindexdata( name, d, len, complainer )
+function ok = checkindexdata( name, d, len )
     ok = true;
     if isempty(d), return; end
     if length(d.genindex) ~= len
-        complainer( 'There are %d %ss but %d generation indexes.\n', ...
+        complain2( 0, 'There are %d %ss but %d generation indexes.', ...
             len, name, length(d.genindex) );
         ok = false;
     end
     if size(d.parent,1) ~= len
-        complainer( 'There are %d %ss but parent data for %d.\n', ...
+        complain2( 0, 'There are %d %ss but parent data for %d.', ...
             len, name, size(d.parent,1) );
         ok = false;
     end
     if size(d.values,1) ~= len
-        complainer( 'There are %d %ss but values for %d.\n', ...
+        complain2( 0, 'There are %d %ss but values for %d.', ...
             len, name, size(d.values,1) );
         ok = false;
     end
     maxgen = max( d.genindex );
     if ~isempty(maxgen) && (maxgen > d.genmaxindex)
-        complainer( 'The maximum %s generation index should be %d but one has an index of %d.\n', ...
+        complain2( 0, 'The maximum %s generation index should be %d but one has an index of %d.', ...
             name, d.genmaxindex, maxgen );
         ok = false;
     end

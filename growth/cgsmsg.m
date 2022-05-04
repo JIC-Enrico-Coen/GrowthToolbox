@@ -17,7 +17,7 @@ function cgsmsg( cgflag,cgrelres,cgiter,cgmaxiter )
         case 21
             fprintf( 1, 'CGS error %d: failed due to excessive relative error %g after %d of %d iterations.\n', cgflag, cgrelres, cgiter, cgmaxiter );
         otherwise
-            fprintf( 1, 'CGS error %d: failed after %d of %d iterations for miscellaneous reason.\n', cgflag, cgiter, cgmaxiter, cgflag );
+            fprintf( 1, 'CGS error %d: failed after %d of %d iterations for miscellaneous reason %d.\n', cgflag, cgiter, cgmaxiter, cgflag );
     end
 end
 

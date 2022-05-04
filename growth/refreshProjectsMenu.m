@@ -1,5 +1,6 @@
 function handles = refreshProjectsMenu( handles )
     wasBusy = setGFtboxBusy( handles, true );
+    handles = updateRecentProjects( handles );
     c = getMenuChildren( handles.projectsMenu );
     [firstProjectsMenu,lastProjectsMenu] = findProjectDirMenuItems( handles );
     for i=firstProjectsMenu:lastProjectsMenu

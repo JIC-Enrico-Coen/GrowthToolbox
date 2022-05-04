@@ -62,11 +62,6 @@ function [m,ok] = leaf_makesecondlayer( m, varargin )
 %           'radial' and 'rectgrid', and the equatorial plane for mode
 %           'latlong'. For modes that require the mesh to be nearly flat,
 %           the default is whatever plane it is flattest in, otherwise 'XY'.
-%       centre: Specifies the centre of the bounding box of the cellular
-%           layer. Defaults to the centre of the bounding box of the mesh.
-%       magnitude: Specifies the diameter of the cellular layer in two or
-%           three dimensions. Defaults to the magnitude of the bounding box
-%           of the mesh in those dimensions.
 %       hemisphere: Applies to latlong grids only.  A value of 'n'
 %           specifies that only the north hemisphere is to be made, 's'
 %           that only the south hemisphere is to be made, and anything else
@@ -210,8 +205,9 @@ function [m,ok] = leaf_makesecondlayer( m, varargin )
     if ~ok, return; end
     s = defaultfields( s, ...
         'mode', 'full', ...
-        'centre', [], ...
-        'magnitude', [], ...
+        'bbox', [], ...
+        ... % 'centre', [], ... % OBSOLETE
+        ... % 'magnitude', [], ... % OBSOLETE
         'divisions', [], ...
         'range', [], ...
         'hemisphere', '', ...
@@ -239,8 +235,7 @@ function [m,ok] = leaf_makesecondlayer( m, varargin )
         'hexperrow', 12 );
     ok = checkcommandargs( mfilename(), s, 'only', ...
         'mode', ...
-        'centre', ...
-        'magnitude', ...
+        'bbox', ...
         'divisions', ...
         'range', ...
         'hemisphere', ...
@@ -268,6 +263,10 @@ function [m,ok] = leaf_makesecondlayer( m, varargin )
         case 'single'
             s.mode = 'scatter';
             s.numcells = 1;
+    end
+    
+    if isempty( s.bbox )
+        s.bbox = meshbbox( m, false, 0 );
     end
     
     haveexternaldata = (~isempty( s.vertexdata )) || (~isempty( s.celldata ));
@@ -372,11 +371,13 @@ function [m,ok] = leaf_makesecondlayer( m, varargin )
         end
     end
     
-    if isfield( s, 'numcells' ) && (s.numcells < 0)
+    if isfield( s, 'numcells' ) && ~isempty( s.numcells ) && (s.numcells < 0)
         s.numcells = defaultNumCells;
     end
     
-    fprintf( 1, 'Making %d cells.\n', s.numcells );
+    if ~isempty( s.numcells )
+        fprintf( 1, 'Making %d cells.\n', s.numcells );
+    end
     
     if ~s.add
         m.secondlayer = deleteSecondLayerCells( m.secondlayer );
@@ -403,7 +404,7 @@ function [m,ok] = leaf_makesecondlayer( m, varargin )
         elseif s.relinitarea > 0
             cellarea = s.relinitarea * m.globalProps.initialArea;
             celldiameter = sqrt(cellarea*4/pi);
-        elseif ~useMakeCellGrid && (~strcmp( s.mode, 'full' )) && (~strcmp( s.mode, 'voronoi' )) && (~strcmp( s.mode, 'hex' )) && (~strcmp( s.mode, 'empty' ))
+        elseif ~useMakeCellGrid && (~strcmp( s.mode, 'full' )) && (~strcmp( s.mode, 'voronoi' )) && (~strcmp( s.mode, 'Block3DHex' )) && (~strcmp( s.mode, 'hex' )) && (~strcmp( s.mode, 'empty' ))
             complain( '%s: no cell size found for mode "%s": use one of absdiam, absarea, reldiam, or relarea.', ...
                 mfilename(), s.mode );
             ok = false;
@@ -428,7 +429,7 @@ function [m,ok] = leaf_makesecondlayer( m, varargin )
         end
     end
     
-    if ~useMakeCellGrid && (~haveexternaldata) && (celldiameter <= 0)
+    if ~useMakeCellGrid && (~haveexternaldata) && (~strcmp( s.mode, 'Block3DHex' )) && (celldiameter <= 0)
         fprintf( 1, '%s: Cannot fill the mesh with cells of requested diameter zero.\n', mfilename() );
         ok = false;
         return;
@@ -452,13 +453,27 @@ function [m,ok] = leaf_makesecondlayer( m, varargin )
                                         m.globalProps.colorvariation );
     end
 
-%     if strcmp( s.mode, 'few' ) && (s.numcells >= size( m.tricellvxs, 1 ))
-%         s.mode = 'each';
-%     end
-
     numoldcells = length(m.secondlayer.cells);
     switch s.mode
-            
+        case 'Block3DHex'
+            [allvxs,alledges,allpolyvxs,allpolyedges,polypairs,borderedges,p] = blockHexCells( ...
+                'bbox', s.bbox, ...
+                'faces', [true true false; true true true], ...
+                'divisions', s.divisions, ...
+                'spacing', 0.5, ...
+                'firsthexoffsets', [0.2 0.5 1], ...
+                'lasthexoffsets', [0.2 0.5 1], ...
+                'angle', 30, ...
+                'noise', 0, ...
+                'plot', false );
+            sl = struct( 'pts', allvxs, 'cellvxs', allpolyvxs );
+            [m,ok] = installCells( m, sl.pts, sl.cellvxs, 'add', s.add );
+            surfacevxs = (sl.pts==s.bbox(1,:)) | (sl.pts==s.bbox(2,:));
+            bordervxs = sum(surfacevxs,2) >= 2;
+            borderedges = all( bordervxs( m.secondlayer.edges(:,[1 2]) ), 2 );
+            m.secondlayer.auxdata.polypairs = polypairs;
+            xxxx = 1;
+
         case { 'radial', 'rectgrid', 'circlegrid', 'latlong', 'box', ...
                'spherebox', 'MakePrim3DGrid', 'MakePrim3DVoronoi', 'Block3DVoronoi', 'EquatorialYZVoronoi', ...
                'SolidHemisphere3D', 'test', 'test1', 'testXZ', 'testYZ', ...
@@ -469,14 +484,10 @@ function [m,ok] = leaf_makesecondlayer( m, varargin )
                     mfilename(), s.mode );
                 return;
             end
-            bbox = meshbbox( m, false, 0 );
-            if isempty(s.magnitude)
-                s.magnitude = bbox(2,:)-bbox(1,:);
+            [sl,ok] = makeCellGrid( s.mode, s.bbox, s.divisions, s.subdivisions, s.plane, s.hemisphere, s.range, s.numcells );
+            if ok
+                [m,ok] = installCells( m, sl.pts, sl.cellvxs, 'add', s.add );
             end
-            if isempty( s.centre )
-                s.centre = sum(bbox,1)/2;
-            end
-            [sl,m,ok] = makeCellGrid( s.mode, s.magnitude, s.centre, s.divisions, s.subdivisions, s.plane, s.add, s.hemisphere, s.range, m, s.numcells );
             if ~ok
                 fprintf( 1, '%s: interrupted, cellular layer not made.\n', mfilename() );
                 clearstopbutton( m );

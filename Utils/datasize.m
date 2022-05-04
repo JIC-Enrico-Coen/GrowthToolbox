@@ -1,5 +1,5 @@
 function n = datasize( s )
-%n = structsize( s )
+%n = datasize( s )
 %   Estimate the number of bytes in anything.
 
     if iscell(s)

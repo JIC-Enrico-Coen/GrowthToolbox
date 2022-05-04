@@ -4,7 +4,10 @@ function m = leaf_mgen_conductivity( m, varargin )
 %   Arguments:
 %   morphogen: The name or index of a morphogen.
 %   conductivity: The diffusion constant for the morphogen, in units of
-%       length^2/time.
+%       length^2/time. conductivity can also be a cell array {c,mode},
+%       where c is the condictuvity and m is the mixing mode to be used
+%       when calculating per-element values from per-vertex values. The
+%       mixing mode is 'min', 'mid', or 'max'.
 %   Values can be set for multiple morphogens by listing morphogen names
 %   and conductivities alternately.  Where more than one morphogen is to be
 %   given the same conductivity, an array of morphogen indexes or a cell
@@ -27,9 +30,15 @@ function m = leaf_mgen_conductivity( m, varargin )
     while ~isempty(args)
         [ok1, morphogen, args] = getTypedArg( mfilename(), {'numeric','char','cell'}, args );
         if ok1
-            [ok2, conductivity, args] = getTypedArg( mfilename(), 'double', args );
+            [ok2, conductivity, args] = getTypedArg( mfilename(), {'double','cell'}, args );
         end
         if ~(ok1 && ok2), return; end
+        if iscell( conductivity )
+            mixmode = conductivity{2};
+            conductivity = conductivity{1};
+        else
+            mixmode = 'mid';
+        end
         haveinf = any(isinf(conductivity(:)));
         if haveinf
             if ~all(isinf(conductivity(:)))
@@ -42,7 +51,7 @@ function m = leaf_mgen_conductivity( m, varargin )
             conductivity = conductivity(1);
         end
         if length(conductivity)==getNumberOfVertexes(m)
-            conductivity = perVertextoperFE( m, conductivity );
+            conductivity = perVertextoperFE( m, conductivity, mixmode );
         end
         g = FindMorphogenIndex( m, morphogen, mfilename() );
         for i=1:length(g)

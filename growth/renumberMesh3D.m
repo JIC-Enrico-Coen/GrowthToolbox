@@ -1,5 +1,5 @@
-function m = renumberMesh3D( m, varargin )
-%m = renumberMesh3D( m, ... )
+function [m,delinfo] = renumberMesh3D( m, varargin )
+%[m,delinfo] = renumberMesh3D( m, ... )
 % For volumetric meshes only.
 %
 % This is a general routine for deleting vertexes, finite elements,
@@ -56,10 +56,12 @@ function m = renumberMesh3D( m, varargin )
     global gFIELDTYPES
     % gFIELDTYPES holds data on the types of the various array fields of m.
     
+    delinfo = [];
     [s1,ok] = safemakestruct( mfilename(), varargin );
     if ~ok, return; end
-    deletiontypes = { 'fevx', 'fe', 'cellvx', 'celledge', 'cell', 'mgen', 'cellmgen' };
+    deletiontypes = { 'fevx', 'fe', 'feedge', 'cellvx', 'celledge', 'cell', 'mgen', 'cellmgen' };
     datamodes = { 'dellist', 'delmap', 'keeplist', 'keepmap' };
+    datatypes = { 'int32', 'logical', 'int32', 'logical' };
     anywork = false;
     havework = struct();
     for i=1:length(deletiontypes)
@@ -67,15 +69,19 @@ function m = renumberMesh3D( m, varargin )
         for j=1:length(datamodes)
             fn = [ deletiontypes{i} datamodes{j} ];
             if isfield( s1, fn )
-                s.(deletiontypes{i}).(datamodes{j}) = s1.(fn);
+                delinfo.(deletiontypes{i}).(datamodes{j}) = s1.(fn);
                 h = h || ~isempty(s1.(fn));
                 s1 = rmfield( s1, fn );
             else
-                s.(deletiontypes{i}).(datamodes{j}) = [];
+                delinfo.(deletiontypes{i}).(datamodes{j}) = zeros( 0, 1, datatypes{j} );
             end
+            
+            delinfo.(deletiontypes{i}).(datamodes{j}) = cast( delinfo.(deletiontypes{i}).(datamodes{j}), datatypes{j} );
         end
         havework.(deletiontypes{i}) = h;
         anywork = anywork || h;
+        delinfo.(deletiontypes{i}).remap = zeros(0,1,'int32');
+        
     end
     remainingFields = fieldnames(s1);
     if ~isempty(remainingFields)
@@ -87,6 +93,7 @@ function m = renumberMesh3D( m, varargin )
     end
     
     if ~anywork
+        delinfo = [];
         return;
     end
     
@@ -116,65 +123,63 @@ function m = renumberMesh3D( m, varargin )
     for i=1:length(deletiontypes)
         deltype = deletiontypes{i};
         if havework.(deltype)
-            s.(deltype) = unifyDelData( numitems.(deltype), s.(deltype) );
+            delinfo.(deltype) = unifyDelData( numitems.(deltype), delinfo.(deltype) );
         end
     end
     
     full3d = isVolumetricMesh( m );
     
     if full3d
-        fevxs = m.FEsets.fevxs;
+        fevxs = int32( m.FEsets.fevxs );
+        feedges = int32( m.FEconnectivity.feedges );
     else
-        fevxs = m.tricellvxs;
+        fevxs = int32( m.tricellvxs );
+        feedges = int32( m.celledges );
     end
     
-    % Reconcile fevx and fe data.  Vertexes and FEs are retained only if
-    % they are retained by both sets of data.
-    havefe = ~isempty( s.fe.dellist );
-    havefevx = ~isempty( s.fevx.dellist );
+    % Reconcile fevx, feedge, and fe data.  Vertexes, edges, and FEs are
+    % retained only if they are retained by all sets of data.
+    havefe = ~isempty( delinfo.fe.dellist );
+    havefevx = ~isempty( delinfo.fevx.dellist );
     if havefe
         if havefevx
-            s.fe.keepmap = s.fe.keepmap & all( s.fevx.keepmap( fevxs ), 2 );
-            s.fe.keeplist = [];
-            s.fe.dellist = [];
-            s.fe = unifyDelData( numitems.fe, s.fe );
+            delinfo.fe.keepmap = delinfo.fe.keepmap & all( delinfo.fevx.keepmap( fevxs ), 2 );
+            delinfo.fe = unifyDelData( numitems.fe, delinfo.fe, 'keepmap' );
             
-            usedvxs = unique( fevxs( s.fe.keepmap, : ) );
-            usedmap = false( size( s.fevx.keepmap ) );
+            usedvxs = unique( fevxs( delinfo.fe.keepmap, : ) );
+            usedmap = false( size( delinfo.fevx.keepmap ) );
             usedmap(usedvxs) = true;
-            s.fevx.keepmap = s.fevx.keepmap & usedmap;
-            s.fevx.keeplist = [];
-            s.fevx.dellist = [];
-            s.fevx = unifyDelData( numitems.fevx, s.fevx );
+            delinfo.fevx.keepmap = delinfo.fevx.keepmap & usedmap;
+            delinfo.fevx = unifyDelData( numitems.fevx, delinfo.fevx, 'keepmap' );
         else
-            s.fevx.keeplist = unique( fevxs( s.fe.keepmap, : ) );
-            s.fevx = unifyDelData( numitems.fevx, s.fevx );
+            delinfo.fevx.keeplist = unique( fevxs( delinfo.fe.keepmap, : ) );
+            delinfo.fevx = unifyDelData( numitems.fevx, delinfo.fevx, 'keeplist' );
             havefevx = true;
         end
     elseif havefevx
-        s.fe.keepmap = all( s.fevx.keepmap( fevxs ), 2 );
-        s.fe.keeplist = [];
-        s.fe.dellist = [];
-        s.fe = unifyDelData( numitems.fe, s.fe );
+        delinfo.fe.keepmap = all( delinfo.fevx.keepmap( fevxs ), 2 );
+        delinfo.fe = unifyDelData( numitems.fe, delinfo.fe, 'keepmap' );
         havefe = true;
     end
     
-    havecell = ~isempty( s.cell.dellist );
-    havecellvx = ~isempty( s.cellvx.dellist );
+    usededges = unique( feedges( delinfo.fe.keepmap, : ) );
+    delinfo.feedge.keeplist = usededges;
+    delinfo.feedge = unifyDelData( numitems.feedge, delinfo.feedge, 'keeplist' );
+    
+    havecell = ~isempty( delinfo.cell.dellist );
+    havecellvx = ~isempty( delinfo.cellvx.dellist );
 
     % Reconcile fe and cell data.  A cell vertex is retained only if it
     % lies in a retained FE.
     if havefe && hasNonemptySecondLayer( m )
-        newcellvxkeepmap = s.fe.keepmap( m.secondlayer.vxFEMcell );
+        newcellvxkeepmap = delinfo.fe.keepmap( m.secondlayer.vxFEMcell );
         if havecellvx
-            s.cellvx.keepmap = s.cellvx.keepmap & newcellvxkeepmap;
+            delinfo.cellvx.keepmap = delinfo.cellvx.keepmap & newcellvxkeepmap;
         else
-            s.cellvx.keepmap = newcellvxkeepmap;
+            delinfo.cellvx.keepmap = newcellvxkeepmap;
             havecellvx = true;
         end
-        s.cell.keeplist = [];
-        s.cell.dellist = [];
-        s.cell = unifyDelData( numitems.cellvx, s.cellvx );
+        delinfo.cellvx = unifyDelData( numitems.cellvx, delinfo.cellvx, 'keepmap' );
     end
     
     % Reconcile cellvx and cell data.  Cell vertexes and cells are retained
@@ -185,69 +190,76 @@ function m = renumberMesh3D( m, varargin )
             extracellkeepmap = false( getNumberOfCells( m ), 1 );
             allcellvxs = { m.secondlayer.cells.vxs };
             for i=1:length( m.secondlayer.cells )
-                extracellkeepmap(i) = all( s.cellvx.keepmap( allcellvxs{i}.vxs ) );
+                extracellkeepmap(i) = all( delinfo.cellvx.keepmap( allcellvxs{i}.vxs ) );
             end
-            s.cell.keepmap = s.cell.keepmap & extracellkeepmap;
-            s.cell.keeplist = [];
-            s.cell.dellist = [];
-            s.cell = unifyDelData( numitems.cellvx, s.cellvx );
+            delinfo.cell.keepmap = delinfo.cell.keepmap & extracellkeepmap;
+            delinfo.cell = unifyDelData( numitems.cell, delinfo.cell, 'keepmap' );
             
-            usedvxs = unique( [ m.secondlayer.cells(s.cell.keepmap).vxs ] );
-            usedmap = false( size( s.cellvx.keepmap ) );
+            usedvxs = unique( [ m.secondlayer.cells(delinfo.cell.keepmap).vxs ] );
+            usedmap = false( size( delinfo.cellvx.keepmap ) );
             usedmap(usedvxs) = true;
-            s.cellvx.keepmap = s.cellvx.keepmap & usedmap;
-            s.cellvx.keeplist = [];
-            s.cellvx.dellist = [];
-            s.cellvx = unifyDelData( numitems.cellvx, s.cellvx );
+            delinfo.cellvx.keepmap = delinfo.cellvx.keepmap & usedmap;
+            delinfo.cellvx = unifyDelData( numitems.cellvx, delinfo.cellvx, 'keepmap' );
         else
-            s.cellvx.keeplist = unique( [ m.secondlayer.cells(s.cell.keepmap).vxs ] );
-            s.cellvx = unifyDelData( numitems.cellvx, s.cellvx );
+            delinfo.cellvx.keeplist = unique( [ m.secondlayer.cells(delinfo.cell.keepmap).vxs ] );
+            delinfo.cellvx = unifyDelData( numitems.cellvx, delinfo.cellvx, 'keeplist' );
         end
     elseif havecellvx
-        s.cell.keepmap = false( getNumberOfCells( m ), 1 );
+        delinfo.cell.keepmap = false( getNumberOfCells( m ), 1 );
         allcellvxs = { m.secondlayer.cells.vxs };
         for i=1:length( m.secondlayer.cells )
-            s.cell.keepmap(i) = all( s.cellvx.keepmap( allcellvxs{i} ) );
+            delinfo.cell.keepmap(i) = all( delinfo.cellvx.keepmap( allcellvxs{i} ) );
         end
-        s.cell.keeplist = [];
-        s.cell.dellist = [];
-        s.cell = unifyDelData( numitems.cell, s.cell );
+        delinfo.cell = unifyDelData( numitems.cell, delinfo.cell, 'keepmap' );
+        
+        % Duplicates a chhunk of code from above -- bad!
+        % By deleting all the dells that include deleted vertexes, some
+        % non-deleted vertexes may no longer belong to any cell, and should
+        % also be deleted. These vertexes must be found and added to
+        % delinfo.cellvx.
+        usedvxs = unique( [ m.secondlayer.cells(delinfo.cell.keepmap).vxs ] );
+        usedmap = false( size( delinfo.cellvx.keepmap ) );
+        usedmap(usedvxs) = true;
+        delinfo.cellvx.keepmap = delinfo.cellvx.keepmap & usedmap;
+        delinfo.cellvx = unifyDelData( numitems.cellvx, delinfo.cellvx, 'keepmap' );
     end
     
     % A celledge is retained only if both of its vertexes are retained
-    s.celledge.keepmap = all( s.cellvx.keepmap( m.secondlayer.edges(:,[1 2]) ), 2 );
-    s.celledge = unifyDelData( numitems.celledge, s.celledge );
+    delinfo.celledge.keepmap = all( delinfo.cellvx.keepmap( m.secondlayer.edges(:,[1 2]) ), 2 );
+    delinfo.celledge = unifyDelData( numitems.celledge, delinfo.celledge, 'keepmap' );
     
     % Recompute our idea of what we are doing.
-    havefevx = ~isempty( s.fe.dellist );
-    havefe = ~isempty( s.fevx.dellist );
-    havecellvx = ~isempty( s.cell.dellist );
-    havecell = ~isempty( s.cellvx.dellist );
+    havefevx = ~isempty( delinfo.fe.dellist );
+    havefe = ~isempty( delinfo.fevx.dellist );
+    havecellvx = ~isempty( delinfo.cell.dellist );
+    havecell = ~isempty( delinfo.cellvx.dellist );
     
     if ~full3d && havefevx
-        s.prismvx.keeplist = s.fevx.keeplist*2;
-        s.prismvx.keeplist = reshape( [ s.prismvx.keeplist-1; s.prismvx.keeplist ], [], 1 );
-        s.prismvx = unifyDelData( numitems.fevx*2, s.prismvx );
+        delinfo.prismvx.keeplist = delinfo.fevx.keeplist*2;
+        delinfo.prismvx.keeplist = reshape( [ delinfo.prismvx.keeplist-1; delinfo.prismvx.keeplist ], [], 1 );
+        delinfo.prismvx = unifyDelData( numitems.fevx*2, delinfo.prismvx, 'keeplist' );
     end
     
-    fns = fieldnames(s);
+    fns = fieldnames(delinfo);
     for i=1:length(fns)
         fn = fns{i};
-        s.(fn) = makeremapper( s.(fn) );
+        delinfo.(fn) = makeremapper( delinfo.(fn) );
     end
+    
+%     okbeforedeletion = consistentMeshDelInfo( m, delinfo, false )
     
     for i=1:size(gFIELDTYPES,1)
         fn = gFIELDTYPES{i,1};
-        % fn is the name of a field of m. If it is absent or empty, do
+        % fn is the name of a deep field of m. If it is absent or empty, do
         % nothing.
         
-        if strcmp( fn, 'cellstiffness' )
+        if strcmp( fn, 'globalDynamicProps.locatenode' )
             xxxx = 1;
         end
         
         v = getDeepField( m, fn );
         if isempty( v )
-            fprintf( 1, 'Deep field %s not found.\n', fn );
+%             fprintf( 1, 'Deep field %s not found.\n', fn );
             xxxx = 1;
             continue;
         end
@@ -278,10 +290,10 @@ function m = renumberMesh3D( m, varargin )
             if strcmp(dimtype,'prismvx') && full3d
                 dimtype = 'fevx';
             end
-            if ~isfield( s, dimtype )
+            if ~isfield( delinfo, dimtype )
                 continue;
             end
-            reindexer = s.(dimtype);
+            reindexer = delinfo.(dimtype);
             if isempty(reindexer.keepmap)
                 continue;
             end
@@ -289,7 +301,7 @@ function m = renumberMesh3D( m, varargin )
             whichcase = j+10*vdims;
             switch whichcase
                 case 11
-                    v = v(reindexer.keepmap);
+                    v = reshape( v(reindexer.keepmap), [], 1 );
                 case 21
                     v = v(reindexer.keepmap,:);
                 case 22
@@ -312,19 +324,18 @@ function m = renumberMesh3D( m, varargin )
             if haszero
                 valuetype(1) = [];
             end
-            if strcmp(valuetype,'prismvx') && full3d
-                valuetype = 'fevx';
-            end
-            if ~isfield(s,  valuetype )
-                continue;
-            end
-            reindexer = s.(valuetype);
-            if ~isempty(reindexer.keepmap)
-                changed = true;
-                if haszero
-                    v(v>0) = reindexer.remap(v(v>0));
-                else
-                    v = reindexer.remap(v);
+            if isfield( delinfo, valuetype )
+                if strcmp(valuetype,'prismvx') && full3d
+                    valuetype = 'fevx';
+                end
+                reindexer = delinfo.(valuetype);
+                if ~isempty(reindexer.keepmap)
+                    changed = true;
+                    if haszero
+                        v(v>0) = reindexer.remap(v(v>0));
+                    else
+                        v = reindexer.remap(v);
+                    end
                 end
             end
         end
@@ -339,11 +350,18 @@ function m = renumberMesh3D( m, varargin )
     % m.secondlayer.cells is a struct array with fields 'vxs' and 'edges',
     % which must be renumbered.
     for i=1:length( m.secondlayer.cells )
-        m.secondlayer.cells(i).vxs = s.('cellvx').remap( m.secondlayer.cells(i).vxs );
-        m.secondlayer.cells(i).edges = []; % s.('celledge').remap( m.secondlayer.cells(i).vxs );
+        m.secondlayer.cells(i).vxs = reshape( delinfo.('cellvx').remap( m.secondlayer.cells(i).vxs ), 1, [] );
+        m.secondlayer.cells(i).edges = reshape( delinfo.('celledge').remap( m.secondlayer.cells(i).edges ), 1, [] );
+%         m.secondlayer.cells(i).edges = int32([]); % s.('celledge').remap( m.secondlayer.cells(i).edges );
     end
-    % m = completesecondlayer( m );
-    m.secondlayer = makeSecondLayerEdgeData( m.secondlayer );
+    sl = m.secondlayer;
+    newedges1 = delinfo.('cellvx').remap( m.secondlayer.edges(:,[1 2]) );
+    newedges2 = m.secondlayer.edges(:,[3 4]);
+    newedges2(newedges2~=0) = delinfo.('cell').remap( newedges2(newedges2~=0) );
+    reverseedges = newedges2(:,1)==0;
+    m.secondlayer.edges = [ newedges1, newedges2 ];
+    m.secondlayer.edges(reverseedges,:) = m.secondlayer.edges(reverseedges,[2 1 4 3]);
+%     m.secondlayer = makeSecondLayerEdgeData( m.secondlayer );
     
     if full3d
         m.FEconnectivity = connectivity3D( m );
@@ -351,51 +369,72 @@ function m = renumberMesh3D( m, varargin )
         [m.edgeends,m.celledges,m.edgecells,~] = connectivityTriMesh(size(m.nodes,1),m.tricellvxs);
         m = makeVertexConnections( m );
     end
+    
+%     okafterdeletion = consistentMeshDelInfo( m, delinfo, true )
 end
 
-function dd = unifyDelData( n, dd )
-% dd has three fields: dellist, delmap, keeplist, and keepmap.
-% At most one should be nonempty.  The other two fields will be computed
+function dd = unifyDelData( n, dd, fn )
+% dd has four fields: dellist, delmap, keeplist, and keepmap.
+% At most one should be nonempty.  The other fields will be computed
 % from that one.
 
     if ~isfield( dd, 'dellist' )
-        dd.dellist = [];
+        dd.dellist = zeros(0,1,'int32');
     end
     if ~isfield( dd, 'delmap' )
-        dd.delmap = [];
+        dd.delmap = zeros(0,1,'logical');
     end
     if ~isfield( dd, 'keeplist' )
-        dd.keeplist = [];
+        dd.keeplist = zeros(0,1,'int32');
     end
     if ~isfield( dd, 'keepmap' )
-        dd.keepmap = [];
+        dd.keepmap = zeros(0,1,'logical');
+    end
+    if ~isfield( dd, 'remap' )
+        dd.remap = zeros(0,1,'int32');
+    end
+    
+    if nargin < 3
+        if ~isempty( dd.keepmap )
+            fn = 'keepmap';
+        elseif ~isempty( dd.keeplist )
+            fn = 'keeplist';
+        elseif ~isempty( dd.delmap )
+            fn = 'delmap';
+        elseif ~isempty( dd.dellist )
+            fn = 'dellist';
+        else
+            return;
+        end
+    end
+    
+    switch fn
+        case 'keepmap'
+            dd.keeplist = int32( find( dd.keepmap ) );
+            dd.delmap = ~dd.keepmap;
+            dd.dellist = int32( find( dd.delmap ) );
+        case 'keeplist'
+            dd.keepmap = false(n,1);
+            dd.keepmap(dd.keeplist) = true;
+            dd.delmap = ~dd.keepmap;
+            dd.dellist = int32( find( dd.delmap ) );
+        case 'delmap'
+            dd.keepmap = ~dd.delmap;
+            dd.keeplist = int32( find( dd.keepmap ) );
+            dd.dellist = int32( find( dd.delmap ) );
+        case 'dellist'
+            dd.keepmap = true(n,1);
+            dd.keepmap(dd.dellist) = false;
+            dd.delmap = ~dd.keepmap;
+            dd.keeplist = int32( find( dd.keepmap ) );
     end
 
-    if ~isempty( dd.keepmap )
-        dd.keeplist = find( dd.keepmap );
-        dd.delmap = ~dd.keepmap;
-        dd.dellist = find( dd.delmap );
-    elseif ~isempty( dd.keeplist )
-        dd.keepmap = false(n,1);
-        dd.keepmap(dd.keeplist) = true;
-        dd.delmap = ~dd.keepmap;
-        dd.dellist = find( dd.delmap );
-    elseif ~isempty( dd.delmap )
-        dd.keepmap = ~dd.delmap;
-        dd.keeplist = find( dd.keepmap );
-        dd.dellist = find( dd.delmap );
-    elseif ~isempty( dd.dellist )
-        dd.keepmap = true(n,1);
-        dd.keepmap(dd.dellist) = false;
-        dd.delmap = ~dd.keepmap;
-        dd.keeplist = find( dd.keepmap );
-    end
 end
 
 function reindexer = makeremapper( reindexer )
     if ~isempty(reindexer.keepmap)
-        reindexer.remap = zeros( size(reindexer.keepmap) );
-        reindexer.remap(reindexer.keepmap) = (1:sum(reindexer.keepmap))';
+        reindexer.remap = zeros( size(reindexer.keepmap), 'int32' );
+        reindexer.remap(reindexer.keepmap) = int32(1:sum(reindexer.keepmap))';
     end
 end
 

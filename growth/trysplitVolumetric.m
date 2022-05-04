@@ -60,7 +60,7 @@ function [ m, didsplit, splitdata, numunsplit ] = trysplitVolumetric( m, splitlo
 %             end
 %         end
 %         if ~isempty(longedges)
-%             fprintf( 1, 'Splitting %d long edges:', length(longedges) );
+%             timedFprintf( 1, 'Splitting %d long edges:', length(longedges) );
 %             fprintf( 1, ' %d', longedges );
 %             fprintf( 1, '\n' );
 %         end
@@ -91,7 +91,7 @@ function [ m, didsplit, splitdata, numunsplit ] = trysplitVolumetric( m, splitlo
             mgenedgemap = any( x > splitmgen, 2 );
             mgenedges = find( mgenedgemap );
             if ~isempty(mgenedges)
-                fprintf( 1, 'Mgen edges:' );
+                timedFprintf( 1, 'Mgen edges:' );
                 fprintf( 1, ' %d', mgenedges );
                 fprintf( 1, '\n' );
             end

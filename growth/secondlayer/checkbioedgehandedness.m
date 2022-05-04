@@ -1,4 +1,4 @@
-function [ok,secondlayer] = checkbioedgehandedness( secondlayer, complainer )
+function [ok,secondlayer] = checkbioedgehandedness( secondlayer )
     ok = true;
     for ei=1:size( secondlayer.edges, 1 )
         edgedata = secondlayer.edges( ei, : );
@@ -12,8 +12,8 @@ function [ok,secondlayer] = checkbioedgehandedness( secondlayer, complainer )
             v2i = mod(v1i,length(cvxs)) + 1;
             if cvxs(v2i) ~= v2
                 ok = false;
-                complainer( 'validmesh:badedgedata', ...
-                    'edge %d has wrong handedness in cell %d: [ %d %d %d %d ]', ei, cell1, v1, v2, cell1, cell2 );
+                complain2( 0, ...
+                    'Edge %d has wrong handedness in cell %d: [ %d %d %d %d ].', ei, cell1, v1, v2, cell1, cell2 );
                 fprintf( 1, 'cell %d has vertex list [', cell1 );
                 fprintf( 1, ' %d', cvxs );
                 fprintf( 1, ' ]\n' );
@@ -25,8 +25,8 @@ function [ok,secondlayer] = checkbioedgehandedness( secondlayer, complainer )
             v1i = mod(v2i,length(cvxs)) + 1;
             if cvxs(v1i) ~= v1
                 ok = false;
-                complainer( 'validmesh:badedgedata', ...
-                    'edge %d has wrong handedness in cell %d: [ %d %d %d %d ]', ei, cell2, v1, v2, cell1, cell2 );
+                complain2( 0, ...
+                    'Edge %d has wrong handedness in cell %d: [ %d %d %d %d ].', ei, cell2, v1, v2, cell1, cell2 );
                 fprintf( 1, 'cell %d has vertex list [', cell2 );
                 fprintf( 1, ' %d', cvxs );
                 fprintf( 1, ' ]\n' );

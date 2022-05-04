@@ -1,10 +1,11 @@
-function m = deletepoints( m, pointstodelete )
-%m = deletepoints( m, pointstodelete )
+function [m,delinfo] = deletepoints( m, pointstodelete )
+%[m,delinfo] = deletepoints( m, pointstodelete )
 %   Delete the given set of vertexes from the finite element mesh.
 %   Every finite element of which any of these vertexes is a vertex will be
 %   deleted.  This may imply deleting some other vertexes that are left
 %   without an element to be a vertex of.
 
+    delinfo = [];
     if nargin==1, return; end
     
     if isnumeric(pointstodelete)
@@ -17,7 +18,7 @@ function m = deletepoints( m, pointstodelete )
     else
     	fesToDelete = any( pointstodelete(m.tricellvxs), 2 );
     end
-    m = deleteFEs(m,fesToDelete);
+    [m,delinfo] = deleteFEs(m,fesToDelete);
     
 %     if islogical( pointstodelete )
 %         pointstodelete = find(pointstodelete);

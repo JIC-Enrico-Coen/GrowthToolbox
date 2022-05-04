@@ -6,7 +6,9 @@ function m = calcCloneVxCoords( m, vxs )
     if ~hasNonemptySecondLayer( m ), return; end
 
     numvxs = length( m.secondlayer.vxFEMcell );
-    if nargin < 2, vxs = 1:numvxs; end
+    if nargin < 2
+        vxs = 1:numvxs;
+    end
     if ~isfield( m.secondlayer, 'cell3dcoords' )
         m.secondlayer.cell3dcoords = zeros(0,3, 'single');
     end

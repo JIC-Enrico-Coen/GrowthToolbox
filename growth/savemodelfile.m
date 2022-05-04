@@ -53,8 +53,8 @@ global gPlotHandles gUNSAVEDFIELDS;
     [thepath,thebasename,theext] = fileparts( savefilename );
     thename = [thebasename,theext];
     try
-        fprintf( 1, '%s: Saving current state to %s in %s\n', ...
-            mfilename(), thename, thepath );
+        timedFprintf( 1, 'Saving current state to %s in %s\n', ...
+            thename, thepath );
         if strip
             m1 = m;
             m = stripmesh(m);
@@ -67,8 +67,8 @@ global gPlotHandles gUNSAVEDFIELDS;
     catch le
         success = false;
         warning(le.identifier, '%s', le.message);
-        fprintf( 1, '%s: Could not write model file %s to %s.\nModel not saved.\n', ...
-            mfilename, thename, thepath );
+        timedFprintf( 1, 'Could not write model file %s to %s.\nModel not saved.\n', ...
+            thename, thepath );
     end
     
     % Restore the fields that were not saved.

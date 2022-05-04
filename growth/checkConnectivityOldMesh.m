@@ -1,19 +1,9 @@
-function [ok,m] = checkConnectivityOldMesh( m, verbose )
+function [ok,m] = checkConnectivityOldMesh( m )
 %ok = checkConnectivityOldMesh( m )
 %   Perform validity checks on the connectivity information for a mesh of
 %   one layer of pentahedra.
 
-    ERRORS = false;
-    if ERRORS
-        complainer = @error;
-    else
-        complainer = @warning;
-    end
-    if verbose
-        whiner = @warning;
-    else
-        whiner = @donothing;
-    end
+    severity = 0;
 
     ok = true;
 
@@ -26,7 +16,7 @@ for fi=1:numelements
     vxs = m.tricellvxs(fi,:);
     if (vxs(1)==vxs(2)) || (vxs(3)==vxs(1)) || (vxs(2)==vxs(3))
         ok = false;
-        complainer( 'Triangle %d fails to have distinct vertexes: [%d,%d,%d].\n', ...
+        complain2( severity, 'Triangle %d fails to have distinct vertexes: [%d,%d,%d].', ...
             fi, vxs(1), vxs(2), vxs(3) );
     end
 end
@@ -36,7 +26,7 @@ for fi=1:numelements
     es = m.celledges(fi,:);
     if (es(1)==es(2)) || (es(3)==es(1)) || (es(2)==es(3))
         ok = false;
-        complainer( 'Triangle %d fails to have distinct edges: [%d,%d,%d].\n', ...
+        complain2( severity, 'Triangle %d fails to have distinct edges: [%d,%d,%d].', ...
             fi, es(1), es(2), es(3) );
     end
 end
@@ -49,7 +39,7 @@ end
         for ei=m.celledges(fi,:)
             if all(m.edgecells(ei,:) ~= fi)
                 ok = false;
-                complainer( 'validmesh:celledge2', ...
+                complain2( severity, ...
                     'Cell %d has edge %d but edge is connected to cells %d and %d.', ...
                     fi, ei, m.edgecells(ei,1), m.edgecells(ei,2) );
             end
@@ -62,7 +52,7 @@ if any(any((m.celledges<1) | (m.celledges > numedges)))
         for ei=eis
             if (ei < 1) || (ei > numedges)
                 ok = false;
-                complainer( 'validmesh:celledge1', ...
+                complain2( severity, ...
                     'Cell %d has edge %d, which is outside the valid range %d:%d.', ...
                     fi, ei, 1, numedges );
             end
@@ -82,13 +72,13 @@ if any(any(m.edgeends<1))
     for ei=1:numedges
         p1 = m.edgeends(ei,1);
         if p1 < 1
-            complainer( 'validmesh:badpointindex1', ...
+            complain2( severity, ...
                 'Edge %d endpoint 1 is %d, should be positive.', ...
                 ei, p1 );
         end
         p2 = m.edgeends(ei,2);
         if p2 < 1
-            complainer( 'validmesh:badpointindex2', ...
+            complain2( severity, ...
                 'Edge %d endpoint 2 is %d, should be positive.', ...
                 ei, p2 );
         end
@@ -99,7 +89,7 @@ if any(sameends)
     ok = false;
     for ei=1:numedges
         if sameends(ei)
-            complainer( 'validmesh:badpointindex3', ...
+            complain2( severity, ...
                 'Edge %d endpoints should be distinct, are %d %d', ...
                 ei, m.edgeends(ei,1), m.edgeends(ei,2) );
         end
@@ -110,13 +100,13 @@ if any(any(m.edgeends>numnodes))
     for ei=1:numedges
         p1 = m.edgeends(ei,1);
         if p1 > numnodes
-            complainer( 'validmesh:badpointindex1', ...
+            complain2( severity, ...
                 'Edge %d endpoint 1 is %d, should be not more than %d.', ...
                 ei, p1, numnodes );
         end
         p2 = m.edgeends(ei,2);
         if p2 > numnodes
-            complainer( 'validmesh:badpointindex2', ...
+            complain2( severity, ...
                 'Edge %d endpoint 2 is %d, should be not more than %d.', ...
                 ei, p2, numnodes );
         end
@@ -126,7 +116,7 @@ badcells = m.edgecells(:,1) < 1;
 if any(badcells)
     ok = false;
     for ei=find(badcells)'
-        complainer( 'validmesh:badpointindex4', ...
+        complain2( severity, ...
             'Edge %d cell 1 is %d, should be positive.', ...
             ei, m.edgecells(ei,1) );
     end
@@ -135,7 +125,7 @@ badcells = m.edgecells(:,1) < 0;
 if any(badcells)
     for ei=find(badcells)'
         ok = false;
-        complainer( 'validmesh:badpointindex4', ...
+        complain2( severity, ...
             'Edge %d cell 2 is %d, should be non-negative.', ...
             ei, m.edgecells(ei,2) );
     end
@@ -145,7 +135,7 @@ if any(badcells(:))
     ok = false;
     for ei=1:numelements
         for j=1:2
-            complainer( 'validmesh:badpointindex4', ...
+            complain2( severity,  ...
                 'Edge %d cell %d is %d, should be no more than %d.', ...
                 ei, j, m.edgecells(ei,j), numelements );
         end
@@ -155,7 +145,7 @@ badcells = m.edgecells(:,1)==m.edgecells(:,2);
 if any(badcells(:))
     ok = false;
     for ei=find(badcells)'
-        complainer( 'validmesh:badpointindex6', ...
+        complain2( severity, ...
             'Edge %d cells on either side should be distinct, are %d %d', ...
             ei, m.edgecells(ei,1), m.edgecells(ei,2) );
     end
@@ -165,7 +155,7 @@ for ei=1:numedges
     f2 = m.edgecells(ei,2);
     if (f1 ~= 0) && ~isedgeof( m, ei, f1 )
         ok = false;
-        complainer( 'validmesh:badpointindex7', ...
+        complain2( severity, ...
             'Edge %d (n %d,%d) (f %d,%d) is not an edge or not the right edge of cell %d (p %d,%d,%d, e %d,%d,%d)', ...
             ei, m.edgeends(ei,1), m.edgeends(ei,2), ...
             f1, f2, f1, ...
@@ -174,7 +164,7 @@ for ei=1:numedges
     end
     if (f2 ~= 0) && ~isedgeof( m, ei, f2 )
         ok = false;
-        complainer( 'validmesh:badpointindex8', ...
+        complain2( severity, ...
             'Edge %d (n %d,%d) (f %d,%d) is not an edge or not the right edge of cell %d (p %d,%d,%d, e %d,%d,%d)', ...
             ei, m.edgeends(ei,1), m.edgeends(ei,2), f1, f2, f2, ...
             m.tricellvxs(f2,1), m.tricellvxs(f2,2), m.tricellvxs(f2,3), ...
@@ -186,7 +176,7 @@ end
     errs = checkUniqueRows( m.tricellvxs );
     if ~isempty(errs)
         ok = false;
-        complainer( 'validmesh:dupcellvxs', ...
+        complain2( severity, ...
             'Some cells have the same vertexes:' );
         fprintf( 1, ' %d', errs );
         fprintf( 1, '\n' );
@@ -195,7 +185,7 @@ end
     errs = checkUniqueRows( m.celledges );
     if ~isempty(errs)
         ok = false;
-        complainer( 'validmesh:dupcelledges', ...
+        complain2( severity, ...
             'Some cells have the same edges:' );
         fprintf( 1, ' %d', errs );
         fprintf( 1, '\n' );
@@ -204,7 +194,7 @@ end
     errs = checkUniqueRows( m.edgeends );
     if ~isempty(errs)
         ok = false;
-        complainer( 'validmesh:dupedgeends', ...
+        complain2( severity, ...
             'Some edges have the same ends:' );
         fprintf( 1, ' %d', errs );
         fprintf( 1, '\n' );
@@ -213,113 +203,112 @@ end
 % Check that the mesh is oriented.
 % This means that every edge that belongs to two cells should have its ends
 % occur in opposite orders in those cells.
-checkOrientation = 1;
-if checkOrientation
-    for ei=1:numedges
-        c2 = m.edgecells(ei,2);
-        if c2==0, continue; end
-        c1 = m.edgecells(ei,1);
-        n1 = m.edgeends(ei,1);
-        n2 = m.edgeends(ei,2);
-        c1n1 = find(m.tricellvxs(c1,:)==n1);
-        c1n2 = find(m.tricellvxs(c1,:)==n2);
-        c2n1 = find(m.tricellvxs(c2,:)==n1);
-        c2n2 = find(m.tricellvxs(c2,:)==n2);
-        fwd1 = mod(c1n2-c1n1,3)==1;
-        fwd2 = mod(c2n2-c2n1,3)==1;
-        if fwd1==fwd2
-            % Orientation error
-            ok = false;
-            complainer( 'validmesh:orientation', ...
-                'Cells %d [%d %d %d] and %d [%d %d %d] contain edge %d with nodes %d and %d in the same order.\n', ...
-                c1, m.tricellvxs(c1,1), m.tricellvxs(c1,2), m.tricellvxs(c1,3), ...
-                c2, m.tricellvxs(c2,1), m.tricellvxs(c2,2), m.tricellvxs(c2,3), ...
-                ei, n1, n2 );
+    checkOrientation = 1;
+    if checkOrientation
+        for ei=1:numedges
+            c2 = m.edgecells(ei,2);
+            if c2==0, continue; end
+            c1 = m.edgecells(ei,1);
+            n1 = m.edgeends(ei,1);
+            n2 = m.edgeends(ei,2);
+            c1n1 = find(m.tricellvxs(c1,:)==n1);
+            c1n2 = find(m.tricellvxs(c1,:)==n2);
+            c2n1 = find(m.tricellvxs(c2,:)==n1);
+            c2n2 = find(m.tricellvxs(c2,:)==n2);
+            fwd1 = mod(c1n2-c1n1,3)==1;
+            fwd2 = mod(c2n2-c2n1,3)==1;
+            if fwd1==fwd2
+                % Orientation error
+                ok = false;
+                complain2( severity, ...
+                    'Cells %d [%d %d %d] and %d [%d %d %d] contain edge %d with nodes %d and %d in the same order.', ...
+                    c1, m.tricellvxs(c1,1), m.tricellvxs(c1,2), m.tricellvxs(c1,3), ...
+                    c2, m.tricellvxs(c2,1), m.tricellvxs(c2,2), m.tricellvxs(c2,3), ...
+                    ei, n1, n2 );
+            end
         end
     end
-end
 
-% Check that every node belongs to some cell.
-allCellNodes = unique(reshape(m.tricellvxs,1,[]));
-checkallints( 'validmesh tricellvxs', allCellNodes, numnodes );
-% Check that every edge belongs to some cell.
-allCellEdges = unique(reshape(m.celledges,1,[]));
-checkallints( 'validmesh celledges', allCellEdges, numedges );
-% Check that every node belongs to some edge.
-allEdgeEnds = unique(reshape(m.edgeends,1,[]));
-checkallints( 'validmesh edgeends', allEdgeEnds, numnodes );
-% Check that every cell belongs to some edge.
-allEdgeCells = unique(reshape(m.edgecells,1,[]));
-if (~isempty(allEdgeCells)) && (allEdgeCells(1)==0)
-    allEdgeCells = allEdgeCells(2:end);
-end
-checkallints( 'validmesh edgecells', allEdgeCells, numelements );
+    % Check that every node belongs to some cell.
+    allCellNodes = unique(reshape(m.tricellvxs,1,[]));
+    checkallints( 'validmesh tricellvxs', allCellNodes, numnodes );
+    % Check that every edge belongs to some cell.
+    allCellEdges = unique(reshape(m.celledges,1,[]));
+    checkallints( 'validmesh celledges', allCellEdges, numedges );
+    % Check that every node belongs to some edge.
+    allEdgeEnds = unique(reshape(m.edgeends,1,[]));
+    checkallints( 'validmesh edgeends', allEdgeEnds, numnodes );
+    % Check that every cell belongs to some edge.
+    allEdgeCells = unique(reshape(m.edgecells,1,[]));
+    if (~isempty(allEdgeCells)) && (allEdgeCells(1)==0)
+        allEdgeCells = allEdgeCells(2:end);
+    end
+    checkallints( 'validmesh edgecells', allEdgeCells, numelements );
 
-% Check that nodecelledges is valid.
-badnodecelledges = false;
-if ~isfield( m, 'nodecelledges' )
-    badnodecelledges = true;
-    whiner( 'validmesh:nodecelledges', ...
-        'nodecelledges field is missing.\n' );
-else
-    if length(m.nodecelledges) ~= size(m.nodes,1)
+    % Check that nodecelledges is valid.
+    badnodecelledges = false;
+    if ~isfield( m, 'nodecelledges' )
         badnodecelledges = true;
-        whiner( 'validmesh:nodecelledges', ...
-            'nodecelledges has the wrong length: %d found, but %d nodes in the mesh.\n', ...
-            length(m.nodecelledges), size(m.nodes,1) );
+        complain2( severity, 'Nodecelledges field is missing.\n' );
     else
-        for vi = 1:length(m.nodecelledges)
-            nce = m.nodecelledges{vi};
-            if isempty(nce)
-                warning( 'validmesh:chains1', ...
-                    'Node %d has an empty array of neighbours.', ...
-                    vi );
-                ok = false;
-            else
-                nbedges = nce(1,:);
-                nbcells = nce(2,:);
-                % Check that vi is an end of every edge in nbedges
-                badnbedges = find( ~any( m.edgeends( nbedges, : )==vi, 2 ) );
-                if any( badnbedges )
-                    badnodecelledges = true;
-                    whiner( 'validmesh:nodecelledges', ...
-                        'node %d is not a neighbour of edges %s which are in its neighbour list %s.\n', ...
-                        vi, ...
-                        nums2string( nbedges(badnbedges), '%d' ), ...
-                        nums2string( nbedges, '%d' ) );
-                end
-                % Check that vi is an end of every cell in nbcells
-                nznbcells = find( nbcells ~= 0 );
-                badnbcells = find( ~any( m.tricellvxs( nbcells(nznbcells), : )==vi, 2 ) );
-                if any(badnbcells)
-                    badnodecelledges = true;
-                    whiner( 'validmesh:nodecelledges', ...
-                        'node %d is not a vertex of cells %s which are in its neighbour list %s.\n', ...
-                        vi, ...
-                        nums2string( nbcells(nznbcells(badnbcells)), '%d' ), ...
-                        nums2string( nbcells, '%d' ) );
-                end
-                % Check that the sequence of edges agrees with the sequence
-                % of cells.
-                ec = m.edgecells(nbedges,:);
-                ncec = [ nbcells; nbcells([end 1:(end-1)]) ]';
-                for nci=1:length(nbedges)
-                    if (~all(ec(nci,:)==ncec(nci,:))) && (~all(ec(nci,:)==ncec(nci,[2 1])))
-                        whiner( 'validmesh:nodecelledges', ...
-                            'node %d has inconsistent cell/edge numbering at edge %d (%d). Expected cells %d and %d, found %d and %d.\n', ...
-                            vi, nci, nbedges(nci), ec(nci,1), ec(nci,2), ncec(nci,1), ncec(nci,2) );
+        if length(m.nodecelledges) ~= size(m.nodes,1)
+            badnodecelledges = true;
+            complain2( severity, ...
+                'Nodecelledges has the wrong length: %d found, but %d nodes in the mesh.', ...
+                length(m.nodecelledges), size(m.nodes,1) );
+        else
+            for vi = 1:length(m.nodecelledges)
+                nce = m.nodecelledges{vi};
+                if isempty(nce)
+                    complain2( severuty, ...
+                        'Node %d has an empty array of neighbours.', ...
+                        vi );
+                    ok = false;
+                else
+                    nbedges = nce(1,:);
+                    nbcells = nce(2,:);
+                    % Check that vi is an end of every edge in nbedges
+                    badnbedges = find( ~any( m.edgeends( nbedges, : )==vi, 2 ) );
+                    if any( badnbedges )
                         badnodecelledges = true;
+                        complain2( severity, ...
+                            'Node %d is not a neighbour of edges %s which are in its neighbour list %s.', ...
+                            vi, ...
+                            nums2string( nbedges(badnbedges), '%d' ), ...
+                            nums2string( nbedges, '%d' ) );
+                    end
+                    % Check that vi is an end of every cell in nbcells
+                    nznbcells = find( nbcells ~= 0 );
+                    badnbcells = find( ~any( m.tricellvxs( nbcells(nznbcells), : )==vi, 2 ) );
+                    if any(badnbcells)
+                        badnodecelledges = true;
+                        complain2( severity, ...
+                            'Node %d is not a vertex of cells %s which are in its neighbour list %s.', ...
+                            vi, ...
+                            nums2string( nbcells(nznbcells(badnbcells)), '%d' ), ...
+                            nums2string( nbcells, '%d' ) );
+                    end
+                    % Check that the sequence of edges agrees with the sequence
+                    % of cells.
+                    ec = m.edgecells(nbedges,:);
+                    ncec = [ nbcells; nbcells([end 1:(end-1)]) ]';
+                    for nci=1:length(nbedges)
+                        if (~all(ec(nci,:)==ncec(nci,:))) && (~all(ec(nci,:)==ncec(nci,[2 1])))
+                            complain2( severity, ...
+                                'Node %d has inconsistent cell/edge numbering at edge %d (%d). Expected cells %d and %d, found %d and %d.', ...
+                                vi, nci, nbedges(nci), ec(nci,1), ec(nci,2), ncec(nci,1), ncec(nci,2) );
+                            badnodecelledges = true;
+                        end
                     end
                 end
             end
         end
     end
-end
-if badnodecelledges && ok
-    m = makeVertexConnections( m );
-    complainer( 'validmesh:nodecelledges', ...
-        'The nodecelledges structure has been repaired.' );
-end
+    if badnodecelledges && ok
+        m = makeVertexConnections( m );
+        complain2( severity, ...
+            'The nodecelledges structure has been repaired.' );
+    end
 
 end
 

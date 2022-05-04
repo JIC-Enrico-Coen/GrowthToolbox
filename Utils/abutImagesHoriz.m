@@ -20,11 +20,18 @@ function img = abutImagesHoriz( varargin )
             img = varargin{1};
             return;
         end
+        imgs = varargin{1};
     else
         imgs = varargin(1:(end-1));
     end
-
+    
     numimgs = numel(imgs);
+    for i=1:numimgs
+        if ischar( imgs{i} )
+            imgs{i} = imread( imgs{i} );
+        end
+    end
+
     imgheight = zeros(1,numimgs);
     for i=1:numimgs
         imgheight(i) = size(imgs{i}, 1);

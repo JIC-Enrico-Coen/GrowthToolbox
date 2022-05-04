@@ -1,5 +1,5 @@
-function m = splitSecondLayerCells( m, splitall )
-%m = splitSecondLayerCells( m )
+function m = splitSecondLayerCells( m, splitall, splitmethod )
+%m = splitSecondLayerCells( m, splitall, splitmethod )
 %   Split all second layer cells satisfying certain criteria.
 %   If SPLITALL is true, then all cells are split.
 %
@@ -35,10 +35,12 @@ function m = splitSecondLayerCells( m, splitall )
 %
 %   4.  Otherwise, no cell is excluded on the grounds of area.
 %
-%   USER SELECTION: If m.globalProps.bioApresplitproc is a function handle,
+%   USER SELECTION: If the interaction function defines a function
+%   GFtbox_Precelldivision_Callback, or if m.globalProps.bioApresplitproc
+%   is a function handle,
 %   that function will be called for each cell that passes the COMPETENCE
 %   and AREA criteria.  If its do_split result is false, the cell will not
-%   be split.  That procedure is also responsible for determing the
+%   be split.  That procedure is also responsible for determining the
 %   placement of the new cell wall for cells that should split.
 %
 %   The default for a new mesh is that:
@@ -57,10 +59,16 @@ function m = splitSecondLayerCells( m, splitall )
 %   growth is disabled, then this procedure is not called.
 
 
+    m.secondlayer.edgelineage = zeros(0,1,'int32');
+
     if ~hasNonemptySecondLayer( m )
         return;
     end
     
+    if size( m.secondlayer.vxFEMcell, 1 ) == 1
+        xxxx = 1;
+    end
+
     full3d = isVolumetricMesh( m );
 
     numsecondcells = length( m.secondlayer.cells );
@@ -68,7 +76,7 @@ function m = splitSecondLayerCells( m, splitall )
     
     if m.globalProps.maxBioAcells > 0
         maxsplits = m.globalProps.maxBioAcells - numsecondcells;
-        if  maxsplits <= 0
+        if maxsplits <= 0
             % No more cells can be created.
             return;
         end
@@ -76,13 +84,16 @@ function m = splitSecondLayerCells( m, splitall )
         maxsplits = -1;
     end
 
-    if nargin < 2, splitall = false; end
+    if nargin < 2
+        splitall = false;
+    end
 
+    if nargin < 3
+        % Alternatives are 'mindiam', 'polgrad', and 'ellipsoid'.
+        % Use the value set in m.
+        splitmethod = m.globalProps.bioAsplitmethod;
+    end
 
-    USEMINDIAM = true;
-    USEPOLGRAD = false;
-    USEELLIPSOID = false;
-    MINEIGRATIO = 1;
     numcells = length( m.secondlayer.cells );
     
     for ci=1:numcells
@@ -177,64 +188,42 @@ function m = splitSecondLayerCells( m, splitall )
             [m,dosplit,dividepoint,divideperp] = m.globalProps.bioApresplitproc( m, ci );
             usedCallback = true;
         end
-        if ~dosplit
+        if dosplit==0
             continue;
         end
         haveSplitCentre = usedCallback & ~isempty(dividepoint) & ~any(isnan(dividepoint(:)));
-        haveSplitPerp = usedCallback & (any(divideperp(:)) ~= 0) & ~any(isnan(divideperp(:)));
+        haveSplitPerp = usedCallback & (any(divideperp(:) ~= 0)) & ~any(isnan(divideperp(:)));
         haveSplitting = haveSplitCentre & haveSplitPerp;
-%         if usedCallback
-%             usedCallback = any(divideperp(:)) ~= 0;
-%             %If divideperp is empty or all zero, the callback did not calculate a splitting.
-%         end
         if ~haveSplitting
             % No splitting method specified, so use default.
-            if USEMINDIAM
-                % [dividepoint,v,distance] = polysplitdiameter( cellcoords(:,[1 2]) );
-                [dividepoint1,divideperp1,distance] = polysplitdiameter( cellcoords );
-                w = cross(divideperp1,cellNormal);
-                if m.globalProps.biosplitnoise > 0
-                    p = randInCircle2( m.globalProps.biosplitnoise*distance );
-                    dividepoint1 = dividepoint1 + p(1)*divideperp1 + p(2)*w;
-                end
-                divideperp1 = w;
-            elseif USEPOLGRAD
-                dividepoint1 = sum( cellcoords, 1 )/numcellvxs;
-                pg = m.gradpolgrowth( ...
-                        m.secondlayer.vxFEMcell( m.secondlayer.cells(ci).vxs(:) ), ...
-                        : );
-                divideperp1 = sum(pg,1)'/size(pg,1);
-                n = norm(divideperp1);
-                covariance = cov( cellcoords );
-                [eigs,e] = eig( covariance );
-                de = diag(e);
-                es = sort(de);
-                r = es(2)/es(3);
-                if (n <= 0) || (r < MINEIGRATIO)
-                    cellaxis = eigs(:,3);
-                    va = vecangle( divideperp1', cellaxis' );
-                    theta = abs(abs(va) - pi/2);
-                    if theta < pi/4
-                        divideperp1 = makeperp( divideperp1, cellaxis );
-                        divideperp1 = divideperp1/norm(divideperp1);
-                    elseif n > 0
-                        divideperp1 = divideperp1/n;
-                    else
-                        divideperp1 = cellaxis;
-                    end
-                else
-                    divideperp1 = divideperp1/n;
-                end
-            elseif USEELLIPSOID
-                % Split perpendicular to the longest axis of the best-fit
-                % ellipsoid.
-                dividepoint1 = sum( cellcoords, 1 )/numcellvxs;
-                covariance = cov( cellcoords );
-                [vv,e] = eig( covariance );
-                divideperp1 = vv(:,3);
-            else
-                % No splitting method, so do not split.
-                dosplit = false;
+            switch splitmethod
+                case 'mindiam'
+                    [dividepoint1,divideperp1] = splitPolyMinDiam( cellcoords, cellNormal, m.globalProps.biosplitnoise );
+                case 'polgradif'
+                    cellvxsFEM = m.secondlayer.vxFEMcell( m.secondlayer.cells(ci).vxs(:) );
+                    cellvxsPolGrad = m.gradpolgrowth( cellvxsFEM, : );
+                    [dividepoint1,divideperp1] = splitPolyDirection2( cellcoords, cellvxsPolGrad, 0.9, true );
+                case 'polgradbest'
+                    cellvxsFEM = m.secondlayer.vxFEMcell( m.secondlayer.cells(ci).vxs(:) );
+                    cellvxsPolGrad = m.gradpolgrowth( cellvxsFEM, : );
+                    [dividepoint1,divideperp1] = splitPolyDirection( cellcoords, cellvxsPolGrad, 1, false );
+                case 'polgradpar'
+                    cellvxsFEM = m.secondlayer.vxFEMcell( m.secondlayer.cells(ci).vxs(:) );
+                    cellvxsPolGrad = m.gradpolgrowth( cellvxsFEM, : );
+                    [dividepoint1,divideperp1] = splitPolyDirection( cellcoords, cellvxsPolGrad, 0, true );
+                case 'polgradperp'
+                    cellvxsFEM = m.secondlayer.vxFEMcell( m.secondlayer.cells(ci).vxs(:) );
+                    cellvxsPolGrad = m.gradpolgrowth( cellvxsFEM, : );
+                    [dividepoint1,divideperp1] = splitPolyDirection( cellcoords, cellvxsPolGrad, 0, false );
+                case 'ellipsoid'
+                    [dividepoint1,divideperp1] = splitEllipsoid( cellcoords, cellvxsPolGrad );
+                case 'minpolwalls'
+                    % Find the line parallel to polgrad through the centroid.
+                    % Find the two walls that it intersects.
+                    % Find the shortest path through the centroid between those walls.
+                otherwise
+                    % No splitting method, so do not split.
+                    dosplit = false;
             end
             if dosplit
                 if ~haveSplitCentre
@@ -263,16 +252,167 @@ function m = splitSecondLayerCells( m, splitall )
     
     cellsToDivide = cellsToDivide(1:numsplits);
     if numsplits > 0
-        fprintf( 1, 'splitSecondLayerCells: %d cells to split:', numsplits );
+        timedFprintf( 1, '%d cells to split:', numsplits );
         fprintf( 1, ' %d', cellsToDivide );
         fprintf( 1, '\n' );
     end
-    for i=1:numsplits
-        m = splitclonecell( m, cellsToDivide(i), splitdirs(i,:), splitcentres(i,:) );
+    
+    oldnumedges = getNumberOfCellEdges( m );
+    numnewedges = 3*numsplits;
+    m.secondlayer.edgelineage = [ int32(1:oldnumedges)'; zeros(numnewedges,1,'int32') ];
+    if ~isfield( m.secondlayer, 'edgeattriblength' ) || isempty( m.secondlayer.edgeattriblength )
+        m.secondlayer.edgeattriblength = celledgelengths(m);
     end
+    if any( m.secondlayer.edgeattriblength==0 )
+        xxxx = 1;
+    end
+    m.secondlayer.edgeattriblength = [ m.secondlayer.edgeattriblength; zeros(numnewedges,1) ];
+    
+    % m.secondlayer.edgeattriblength contains, for every edge of the
+    % current mesh, the length that it would have had in the mesh before
+    % growth. For new cell walls, that is their current length. For cell
+    % walls that have been split, we consider the proportion of the edge
+    % that each daughter edge takes up, multiplied by the length that the
+    % split edge had before growth.
+    
+    xxsplitdata = zeros(numsplits,5);
+    xxsplitalpha = zeros(numsplits,4);
+    numactualsplits = 0;
+    for i=1:numsplits
+        [m,edgesplitdata] = splitclonecell( m, cellsToDivide(i), splitdirs(i,:), splitcentres(i,:) );
+        if ~isempty(edgesplitdata)
+            numactualsplits = numactualsplits+1;
+            m.secondlayer.edgelineage( edgesplitdata.newei1 ) = edgesplitdata.sei1;
+            m.secondlayer.edgelineage( edgesplitdata.newei2 ) = edgesplitdata.sei2;
+            
+            els = sqrt( edgelengthsqs(m, ...
+                            [ edgesplitdata.sei1, ...
+                              edgesplitdata.sei2, ...
+                              edgesplitdata.newei1, ...
+                              edgesplitdata.newei2, ...
+                              edgesplitdata.newei3 ] ) );
+            ol1 = els(1)+els(3);
+            alpha1 = els(1)/ol1;
+            beta1 = 1 - alpha1;
+            ol2 = els(2)+els(4);
+            alpha2 = els(2)/ol2;
+            beta2 = 1 - alpha2;
+            
+            if any( [ alpha1, beta1, alpha2, beta2 ]==0 )
+                xxxx = 1;
+            end
+            
+            m.secondlayer.edgeattriblength(edgesplitdata.newei1) = m.secondlayer.edgeattriblength(edgesplitdata.sei1) * beta1;
+            m.secondlayer.edgeattriblength(edgesplitdata.sei1) = m.secondlayer.edgeattriblength(edgesplitdata.sei1) * alpha1;
+            m.secondlayer.edgeattriblength(edgesplitdata.newei2) = m.secondlayer.edgeattriblength(edgesplitdata.sei2) * beta2;
+            m.secondlayer.edgeattriblength(edgesplitdata.sei2) = m.secondlayer.edgeattriblength(edgesplitdata.sei2) * alpha2;
+            m.secondlayer.edgeattriblength(edgesplitdata.newei3) = celledgelengths( m, edgesplitdata.newei3 ); % New edges are not allowed to shrink.
+            
+            xxsplitdata(numactualsplits,:) = [ edgesplitdata.sei1, edgesplitdata.sei2, edgesplitdata.newei1, edgesplitdata.newei2, edgesplitdata.newei3 ];
+            xxsplitalpha(numactualsplits,:) = [ alpha1, beta1, alpha2, beta2 ];
+            xxxx = 1;
+        else
+            xxxx = 1;
+        end
+    end
+    if numactualsplits < numsplits
+        m.secondlayer.edgeattriblength( (oldnumedges + 3*numactualsplits + 1):end ) = [];
+    end
+    if any( m.secondlayer.edgeattriblength==0 )
+        xxxx = 1;
+    end
+    
+    xxxx = 1;
+    
     [ok,m.secondlayer] = checkclonesvalid( m.secondlayer );
+    if ok
+        m = leaf_refinebioedges( m );
+    end
     if ~ok
-        fprintf( 1, 'Invalid second layer in %s.\n', mfilename() );
-        % error( mfilename() );
+        timedFprintf( 1, 'Invalid second layer.\n' );
+        xxxx = 1;
+    end
+    
+    if size( m.secondlayer.vxFEMcell, 1 ) == 1
+        xxxx = 1;
+    end
+
+end
+
+function [dividepoint1,divideperp1] = splitPolyDirection( cellcoords, dir, mineigratio, par )
+    % Split parallel or perpendicular to the gradient of polariser.
+    % If the eigenvalue ratio for the cell is below mineigratio, then split
+    % either parallel or perpendicular to dir, depending on which is closer
+    % to the long axis. Otherwise, split along dir.
+    
+    numcellvxs = size( cellcoords, 1 );
+    dividepoint1 = sum( cellcoords, 1 )/numcellvxs;
+    divideperp1 = sum(dir,1)'/size(dir,1);
+    
+    covariance = cov( cellcoords );
+    [eigs,e] = eig( covariance );
+    de = diag(e);
+    es = sort(de);
+    if ~par
+        cellnormal = eigs(:,1);
+        divideperp1 = cross( divideperp1, cellnormal );
+    end
+    n = norm(divideperp1);
+    r = es(2)/es(3);
+    if r < mineigratio
+        cellaxis = eigs(:,3);
+        va = vecangle( divideperp1', cellaxis' );
+        theta = abs(abs(va) - pi/2);
+        if theta < pi/4
+            divideperp1 = makeperp( divideperp1, cellaxis );
+            divideperp1 = divideperp1/norm(divideperp1);
+        elseif n > 0
+            divideperp1 = divideperp1/n;
+        else
+            divideperp1 = cellaxis;
+        end
+    else
+        divideperp1 = divideperp1/n;
     end
 end
+
+function [dividepoint1,divideperp1] = splitPolyDirection2( cellcoords, dir, mineigratio, par )
+    % Split parallel or perpendicular to the gradient of polariser.
+    % If the eigenvalue ratio for the cell is below mineigratio, then split
+    % by the shortest wall, otherwise split parallel or perpendicular to
+    % dir.
+    
+    numcellvxs = size( cellcoords, 1 );
+    dividepoint1 = sum( cellcoords, 1 )/numcellvxs;
+    divideperp1 = sum(dir,1)'/size(dir,1);
+    
+    covariance = cov( cellcoords );
+    [eigs,e] = eig( covariance );
+    de = diag(e);
+    es = sort(de);
+    r = es(2)/es(3);
+    timedFprintf( 1, 'eigratio = %g\n', r );
+    cellnormal = eigs(:,1);
+    if r < mineigratio
+        % Split by shortest wall.
+        [dividepoint1,divideperp1] = splitPolyMinDiam( cellcoords, cellnormal, 0 );
+    else
+        % Split par or perp.
+        if ~par
+            divideperp1 = cross( divideperp1, cellnormal );
+        end
+        n = norm(divideperp1);
+        divideperp1 = divideperp1/n;
+    end
+end
+
+function [dividepoint1,divideperp1] = splitEllipsoid( cellcoords )
+    % Split perpendicular to the longest axis of the best-fit
+    % ellipsoid.
+    numcellvxs = size( cellcoords, 1 );
+    dividepoint1 = sum( cellcoords, 1 )/numcellvxs;
+    covariance = cov( cellcoords );
+    [vv,e] = eig( covariance );
+    divideperp1 = vv(:,3);
+end
+

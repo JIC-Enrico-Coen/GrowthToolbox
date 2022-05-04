@@ -24,7 +24,7 @@ function m = concludeGUIInteraction( handles, m, savedstate )
         return;
     end
     
-    fprintf( 1, '%s\n', mfilename() );
+    timedFprintf( 1, 'Beginning.\n' );
 
     if ~isempty( savedstate )
         updateM = false;
@@ -44,4 +44,6 @@ function m = concludeGUIInteraction( handles, m, savedstate )
         end
     end
     guiBusyEnd( handles, savedstate );
+    timedFprintf( 1, 'Ending.\n' );
+
 end

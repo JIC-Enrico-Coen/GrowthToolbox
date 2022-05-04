@@ -3,7 +3,7 @@ function b = findStopButton( m )
 %   Find the stop button in the GUI, if present.
 
     b = [];
-    if isfield( m, 'stopButton' ) && ishghandle( m.stopButton )
+    if isfield( m, 'stopButton' ) && ~isempty( m.stopButton ) && ishghandle( m.stopButton )
         b = m.stopButton;
     elseif hasPicture(m)
         f = m.pictures(1);

@@ -1,8 +1,10 @@
 function ca = raggedToCellArray( ra, nullvalue )
 %ca = raggedToCellArray( ra, nullvalue )
-%   Gziven an N*K array in which trailing occurrences of nullvalue
-%   represent missing values, produce an N*1 cell array, in which the Nth
-%   cell contains the Nth row excluding the null values.
+%   Given an N*K array in which occurrences of nullvalue represent
+%   missing values, produce an N*1 cell array, in which the Nth cell
+%   contains the Nth row excluding the null values.
+%
+%   See also: cellToRaggedArray
 
     nullIsNan = isnan(nullvalue);
     ca = cell( size(ra,1), 1 );

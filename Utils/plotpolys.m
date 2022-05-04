@@ -13,6 +13,11 @@ function p = plotpolys( ax, vxs, polys, varargin )
 %
 %   The result is a handle to the patch object.
 
+    if isempty(polys)
+        p = [];
+        return;
+    end
+
     if iscell(polys)
         numpolys = length(polys);
         maxlen = 0;

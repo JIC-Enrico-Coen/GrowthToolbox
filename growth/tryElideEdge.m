@@ -28,26 +28,27 @@ function [m,numElided] = tryElideEdge( m )
         pass = pass+1;
         fprintf( 1, 'Elide edges pass %d.\n', pass );
       % [eis,qualities] = findEdgesToElide( m, threshold );
-        [sharpedges,shallowedges] = findElidableEdges( m, 1.3*threshold );
+        [elidesharp,elideshallow] = findElidableEdges( m, 1.3*threshold );
         fprintf( 1, 'Sharp %d, shallow %d.\n', ...
-            numel(sharpedges), numel(shallowedges) );
-        if isempty(sharpedges)
+            numel(elidesharp), numel(elideshallow) );
+        if isempty(elidesharp)
             fprintf( 1, 'Elide edges: no candidates.\n' );
             break;
         end
         go_on = false;
         i = 1;
         numthispass = 0;
-        while i <= length(sharpedges)
-            ei = sharpedges(i);
+        while i <= length(elidesharp)
+            ei = elidesharp(i);
           % fprintf( 1, '%s: attempting edge %d\n ', mfilename(), ei );
             [m,elided,renumberedges] = elideEdge(m,ei,threshold);
             if elided
                 numthispass = numthispass+1;
-                sharpedges = renumberedges( sharpedges( (i+1):end ) );
-                sharpedges = sharpedges(sharpedges ~= 0);
+                elidesharp = renumberedges( elidesharp( (i+1):end ) );
+                elidesharp = elidesharp(elidesharp ~= 0);
                 i = 1;
                 go_on = true;
+%                 fprintf( 1, 'Num sharp remaining = %d\n', length( elidesharp ) );
             else
                 i = i+1;
             end

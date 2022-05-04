@@ -14,11 +14,11 @@ function m = collapseT4edges( m, eis )
         return;
     end
 
-    fprintf( 1, '%s: %d edges are candidates for elision.\n', mfilename(), numToElide );
+    timedFprintf( 1, '%d edges are candidates for elision.\n', numToElide );
     
     if ~exist('graph/conncomp','file')
         % Cannot proceed.
-        fprintf( 1, '**** %s: Requires Matlab functions graph() and conncomp(), available in Matlab version 8.6.0 (R2015b) or greater.\n', mfilename() );
+        timedFprintf( 1, '**** Requires Matlab functions graph() and conncomp(), available in Matlab version 8.6.0 (R2015b) or greater.\n' );
         return;
     end
 
@@ -47,7 +47,7 @@ function m = collapseT4edges( m, eis )
     cpts = conncomp( g );
     % graph and conncomp are Matlab functions.  The result of conncomp is a
     % vector listing for every vertex of g the index of its component.
-    fprintf( 1, '%s: %d clumps are candidates for elision.\n', mfilename(), max(cpts(:)) );
+    timedFprintf( 1, '%d clumps are candidates for elision.\n', max(cpts(:)) );
     
     
     % We now want to select a subset of the clumps, such that the resulting
@@ -90,7 +90,7 @@ function m = collapseT4edges( m, eis )
     if ~any(clumpmap)
         return;
     end
-    fprintf( 1, '%s: %d clumps will be elided.\n', mfilename(), sum(clumpmap) );
+    timedFprintf( 1, '%d clumps will be elided.\n', sum(clumpmap) );
     mungedcpts = mungedcpts( :, mungedcpts(1,:) ~= 0 );
     [starts,ends] = runends( mungedcpts(1,:) );
 
@@ -186,8 +186,7 @@ function m = collapseT4edges( m, eis )
     newnumedges = size( m.FEconnectivity.edgeends, 1 );
     newnumfaces = size( m.FEconnectivity.faces, 1 );
     newnumtetras = size( m.FEsets.fevxs, 1 );
-    fprintf( 1, '%s: Deleted %d elements, %d faces, %d edges, %d vertexes.\n', ...
-        mfilename(), ...
+    timedFprintf( 1, 'Deleted %d elements, %d faces, %d edges, %d vertexes.\n', ...
         oldnumtetras - newnumtetras, ...
         oldnumfaces - newnumfaces, ...
         oldnumedges - newnumedges, ...

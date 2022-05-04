@@ -1,10 +1,12 @@
 function temperatures = diffusionFE( nodecoords, cellvertexes, fe, conductivity, ...
     absorption, production, temperatures, dt, fixednodes, ...
     tolerance, tolerancemethod, maxtime, perturbation, m )
-%temperatures = tempdiff( nodecoords, cellvertexes, conductivity, ...
-%        absorption, production, temperatures, transportfield, dt, ...
-%        lengthscale, fixednodes, cellareas )
+%temperatures = diffusionFE( nodecoords, cellvertexes, fe, conductivity, ...
+%      absorption, production, temperatures, dt, fixednodes, ...
+%      tolerance, tolerancemethod, maxtime, perturbation, m )
+%
 %    Perform a finite-element computation of thermal diffusion.
+%
 %    nodecoords is a numnodes*3 array of coordinates.
 %    cellvertexes is a numFEs*K array of node indexes: each row
 %        lists the node indexes of the vertices of the cell.
@@ -38,8 +40,16 @@ function temperatures = diffusionFE( nodecoords, cellvertexes, fe, conductivity,
 % temperatures is uniform.
 % If there is no change from any of these then there is nothing to do.
 
+    timedFprintf( 1, 'Beginning.\n' );
     SPLAT = false;
     NOSPLAT = true;
+    % SPLAT means first making all of the vxsPerFE*vxsPerFE arrays, one per
+    % element, then assembling them in one go into the big matrix.
+    % NOSPLAT means inserting the per-element arrays one at a time as they
+    % are built.
+    % Turning both of these on does the calculation both ways, allowing
+    % them to be compared, in terms of both time taken and result. The
+    % results should be identical to within rounding error.
     
     verbose = true;
     sb = findStopButton( m );
@@ -48,8 +58,9 @@ function temperatures = diffusionFE( nodecoords, cellvertexes, fe, conductivity,
     numFEs = size(cellvertexes,1);
     vxsPerFE = size(cellvertexes,2);
     usecgs = true;  % 1: Use the conjugate gradient solver. 0: Use matrix inversion.
-    SPARSESIZE = 20000;  % Should somehow estimate from result of memory().
-    usesparse = numnodes >= SPARSESIZE;
+    SPARSESIZE = 10000;  % Should somehow estimate from result of memory(), but that function is only available on Windows.
+    usesparse = m.globalProps.alwayssparse || (numnodes >= SPARSESIZE);
+    timedFprintf( 1, 'Using %s matrices (%dx%d).\n', boolchar( usesparse, 'sparse', 'full' ), numnodes, numnodes );
     if SPLAT
         alldof = zeros( vxsPerFE, numFEs );
         Cparts = zeros( vxsPerFE, vxsPerFE, m.globalProps.solverprecision );
@@ -60,7 +71,9 @@ function temperatures = diffusionFE( nodecoords, cellvertexes, fe, conductivity,
         end
     end
     if NOSPLAT
+        timedFprintf( 1, 'Allocating matrices C, H, A.\n' );
         if ~usesparse
+            timedFprintf( 1, 'Using full %dx%d matrices for diffusion.\n', numnodes, numnodes );
             try
                 C = zeros(numnodes,numnodes,m.globalProps.solverprecision);
                 H = zeros(numnodes,numnodes,m.globalProps.solverprecision);
@@ -70,13 +83,12 @@ function temperatures = diffusionFE( nodecoords, cellvertexes, fe, conductivity,
                     Ad = zeros(numnodes,1,m.globalProps.solverprecision);
                 end
             catch
-                fprintf( 1, 'Cannot allocate full %dx%d matrices for diffusion, trying sparse.\n', numnodes, numnodes );
+                timedFprintf( 1, 'Cannot allocate full %dx%d matrices for diffusion, trying sparse.\n', numnodes, numnodes );
                 usesparse = true;
             end
-        else
-            fprintf( 1, 'Not attempting to allocate full %dx%d matrices for diffusion, trying sparse.\n', numnodes, numnodes );
         end
         if usesparse
+            timedFprintf( 1, 'Using sparse %dx%d matrices for diffusion.\n', numnodes, numnodes );
             fesPerVertex = 20; % Very rough estimate.
             estimatedSpace = numnodes*getNumVxsPerFE( m )*fesPerVertex;
             C = spalloc( numnodes, numnodes, estimatedSpace );
@@ -87,6 +99,7 @@ function temperatures = diffusionFE( nodecoords, cellvertexes, fe, conductivity,
                 Ad = spalloc(numnodes,1,numnodes);
             end
         end
+        timedFprintf( 1, 'Allocated matrices C, H, A.\n' );
     end
     
     totalproduction = production*dt - temperatures.*(1 - exp( -absorption*dt ));
@@ -103,6 +116,7 @@ function temperatures = diffusionFE( nodecoords, cellvertexes, fe, conductivity,
     else
         feconductivity = perVertextoperFE( m, conductivity, 'min' );
     end
+    timedFprintf( 1, 'About to build matrix for %d elements.\n', numFEs );
     for fei=1:numFEs
         % Need to make new computations of:
         %   cellC: twice the integrals of N(i)*N(j) over the cell
@@ -134,10 +148,16 @@ function temperatures = diffusionFE( nodecoords, cellvertexes, fe, conductivity,
             thiscellH2 = intgradNgradN;
         else
             thiscellH2 = intgradNgradN * feconductivity(fei);
+            % Elements through which diffusion is zero do not participate
+            % in the calculation.
+            if feconductivity(fei)==0
+                NN(:) = 0;
+            end
         end
         cellvolume = sum(weightedJacobians);
         
         renumber = cellvertexes(fei,:);
+        
         
         if SPLAT
             alldof(:,fei) = renumber(:);
@@ -174,12 +194,12 @@ function temperatures = diffusionFE( nodecoords, cellvertexes, fe, conductivity,
         % a first-order triangular mesh for foliate meshes and a
         % first-order tetrahedral mesh for volumetric meshes, the formula
         % is correct.
-        % I am not sure if the formula is correct for other types of FE.
+        % I am not sure that the formula is correct for other types of FE.
         
         if mod(fei,reportInterval)==0
-            fprintf( 1, 'Building matrix, processed %d of %d elements.\n', fei, numFEs );
+            timedFprintf( 1, 'Building matrix, processed %d of %d elements.\n', fei, numFEs );
             if userinterrupt( sb )
-                fprintf( 1, 'Simulation interrupted by user at step %d.\n', ...
+                timedFprintf( 1, 'Ending because simulation interrupted by user at step %d.\n', ...
                     m.globalDynamicProps.currentIter );
                 return;
             end
@@ -223,7 +243,7 @@ function temperatures = diffusionFE( nodecoords, cellvertexes, fe, conductivity,
     end
     
     elapsedtime = toc(starttime);
-    fprintf( 1, '%s: New method constructs matrices in %f seconds.\n', mfilename(), elapsedtime );
+    timedFprintf( 1, 'Matrices built in %f seconds.\n', elapsedtime );
     
     % The equation we must now solve is this:
     % (C+H*dt)*newT = C*T + f*dt
@@ -250,36 +270,42 @@ function temperatures = diffusionFE( nodecoords, cellvertexes, fe, conductivity,
     % The second can be rearranged thus:
     %
     % D22*newt2 = C21*t1 + C22*t2 - D21*t1 + f2*dt
-    %           = C22*t2 - H21*t1*dt + f2*dt
+    %           = C22*t2 - H21t1*dt + f2*dt
     %
     % and therefore
     %
-    % newt2 = inv(D22)*(C22*t2 - H21*t1*dt + f2*dt)
+    % newt2 = inv(D22)*(C22*t2 - H21t1*dt + f2*dt)
     %
     % f2 is assumed to be zero.
     %
     % If the substance T decays (except at the places where it is held
     % fixed) then t2 in the above should be replaced by t2.*exp(-a*dt)
     % for the absorption constant a.
-    remainingTemps = eliminateVals( numnodes, fixednodes ); 
-    numVarying = length(remainingTemps);
-    H21 = H(remainingTemps,fixednodes);
-    H = H(remainingTemps,remainingTemps);  % H22
-    % D = C + H*dt;
-    % D22 = D(remainingTemps,remainingTemps);
-    C = C(remainingTemps,remainingTemps);  % C22
-    D = C + H*dt;  % D22
-    A = A(remainingTemps,:);  % A2
-    if STEADYSTATE
-        % Ap = Ap(remainingTemps,:);  % Not used.  This has to do with production, which is not applicable to steady state diffusion.
-        Ad = Ad(remainingTemps,:);
+    if isempty( fixednodes )
+        t1 = zeros( 0, size(temperatures,2) );
+        t2 = temperatures;
+        H21 = zeros( size(H,1), 0 );
+        H21t1 = zeros( size(H,1), size(temperatures,2) );
+        F = -(H*temperatures)*dt + A;
+    else
+        timedFprintf( 1, 'Eliminating %d fixed values of %d and calculating matrices D and F.\n', length( fixednodes ), numnodes );
+        remainingTemps = eliminateVals( numnodes, fixednodes ); 
+        numVarying = length(remainingTemps);
+%         H21 = H(remainingTemps,fixednodes);
+%         t1 = temperatures(fixednodes,:);
+        H21t1 = H(remainingTemps,fixednodes) * temperatures(fixednodes,:);
+        H = H(remainingTemps,remainingTemps);  % H22
+        C = C(remainingTemps,remainingTemps);  % C22
+        A = A(remainingTemps,:);  % A2
+        if STEADYSTATE
+            % Ap = Ap(remainingTemps,:);  % Not used.  This has to do with production, which is not applicable to steady state diffusion.
+            Ad = Ad(remainingTemps,:);
+        end
+        t2 = temperatures(remainingTemps,:);
+        F = -(H*t2 + H21t1)*dt + A;
     end
-    t1 = temperatures(fixednodes,:);
-    t2 = temperatures(remainingTemps,:);
-    % F = C22*t2 - H21*(t1*dt) + A2;
-    % Solve D22*newt2 = F for newt2.
-    F = -(H*t2 + H21*t1)*dt + A;
-    % Solve D22*dt2 = F for dt2 = newt2-t2.
+    D = C + H*dt;  % D22
+    timedFprintf( 1, 'Eliminated fixed values and calculated D and F.\n' );
 %     
 %     dd = clearDiffusionFEData();
 %     dd = getDiffusionFEData( dd, fe, nodecoords, cellvertexes, true, false, fixednodes );
@@ -291,13 +317,15 @@ function temperatures = diffusionFE( nodecoords, cellvertexes, fe, conductivity,
         cgmaxiter = size(D,1)*40;
       % initestimate = t2 + rand(size(t2))*(0.0001*max(abs(t2(:))));
         initestimate = t2 + rand(size(t2))*(perturbation*max(abs(t2(:))));
+        timedFprintf( 1, 'About to call mycgs.\n' );
         starttic = tic;
         if STEADYSTATE
             for i=1:numVarying
                 H(i,i) = H(i,i) - Ad(i);
             end
+            timedFprintf( 1, 'Calling mycgs for steady state diffusion.\n' );
             [t2,cgflag,cgrelres,cgiter] = mycgs( sparse(H), ...
-                                                 - H21*t1, ...
+                                                 -H21t1, ...
                                                  tolerance, ...
                                                  tolerancemethod, ...
                                                  cgmaxiter, ...
@@ -307,23 +335,48 @@ function temperatures = diffusionFE( nodecoords, cellvertexes, fe, conductivity,
                                                  @teststopbutton, ...
                                                  m );
         else
-            [dt2,cgflag,cgrelres,cgiter] = mycgs( sparse(D), ...
-                                                 F, ...
-                                                 tolerance, ...
-                                                 tolerancemethod, ...
-                                                 cgmaxiter, ...
-                                                 maxtime, ...
-                                                 initestimate, ...
-                                                 verbose, ...
-                                                 @teststopbutton, ...
-                                                 m );
+            timedFprintf( 1, 'Determining redundant equations and variables.\n' );
+            zd1 = all( D==0, 2 ); % These equations have zero left hand sides.
+            zd2 = all( D==0, 1 ); % These variables are unconstrained by D.
+%             zf = F==0;  % If the equations are consistent, zf should
+%                         % include zd2.
+%             anyzd1 = any(zd1);
+%             anyzd2 = any(zd2);
+%             if anyzd1
+%                 if anyzd2
+%                     D = D(~zd1,~zd2);
+%                 else
+%                     D = D(~zd1,:);
+%                 end
+%             else
+%                 if anyzd2
+%                     D = D(~zd1,~zd2);
+%                 else
+%                     D = D(~zd1,~zd2);
+%                 end
+%             end
+                
+            
+            timedFprintf( 1, 'Calling mycgs for transient diffusion.\n' );
+            [dt2a,cgflag,cgrelres,cgiter] = mycgs( sparse(D(~zd1,~zd2)), ...
+                                                  F(~zd1), ...
+                                                  tolerance, ...
+                                                  tolerancemethod, ...
+                                                  cgmaxiter, ...
+                                                  maxtime, ...
+                                                  initestimate, ...
+                                                  verbose, ...
+                                                  @teststopbutton, ...
+                                                  m );
+            dt2 = zeros( size(F) );
+            dt2(~zd2) = dt2a;
             t2 = t2 + dt2;
         end
-        fprintf( 1, 'Computation time for diffusion (cgs,sparse,double) is %.6f seconds.\n', ...
+        timedFprintf( 1, 'Computation time for diffusion (cgs,sparse,double) is %.6f seconds.\n', ...
             toc(starttic) );
         if cgflag ~= 0
             if cgflag==20
-                fprintf( 1, 'CGS failed to converge to tolerance %g after %d seconds, %d of %d iterations.\n', ...
+                timedFprintf( 1, 'CGS failed to converge to tolerance %g after %d seconds, %d of %d iterations.\n', ...
                     cgrelres, round(maxtime), cgiter, cgmaxiter );
             else
                 cgsmsg( cgflag,cgrelres,cgiter,cgmaxiter );
@@ -331,7 +384,7 @@ function temperatures = diffusionFE( nodecoords, cellvertexes, fe, conductivity,
         end
         OTHERWAY = false;
         if OTHERWAY
-            F3 = -(H21*t1) + (C-H*dt)*t2;
+            F3 = -H21t1 + (C-H*dt)*t2;
             starttic = tic;
             [t3,cgflag3,cgrelres3,cgiter3] = mycgs( sparse(C), ...
                                                     F3, ...
@@ -343,7 +396,7 @@ function temperatures = diffusionFE( nodecoords, cellvertexes, fe, conductivity,
                                                     verbose, ...
                                                     @teststopbutton, ...
                                                     m );
-            fprintf( 1, 'Computation time for diffusion (cgs,sparse,double) is %.6f seconds.\n', ...
+            timedFprintf( 1, 'Computation time for diffusion (cgs,sparse,double) is %.6f seconds.\n', ...
                 toc(starttic) );
           % t2 = (t2+t3)/2;
           % t2 = t3
@@ -351,12 +404,17 @@ function temperatures = diffusionFE( nodecoords, cellvertexes, fe, conductivity,
     else
         starttic = tic;
         if STEADYSTATE
-            t2 = H\(-H21*t1);
+            t2 = H\(-H21t1);
         else
             t2 = temperatures(remainingTemps) + D\F;
         end
-        fprintf( 1, 'Computation time for diffusion (matrix inversion,full,double) is %.6f seconds.\n', ...
+        timedFprintf( 1, 'Computation time for diffusion (matrix inversion,full,double) is %.6f seconds.\n', ...
             toc(starttic) );
     end
-    temperatures(remainingTemps) = t2;
+    if isempty( fixednodes )
+        temperatures = t2;
+    else
+        temperatures(remainingTemps) = t2;
+    end
+    timedFprintf( 1, 'Ending.\n' );
 end

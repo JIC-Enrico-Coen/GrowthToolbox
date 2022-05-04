@@ -79,6 +79,7 @@ function m = renumberMesh( m, rnodes, redges, rfaces, ...
             m.displacements = m.displacements(pnodesmap,:);
         end
     end
+    
     if (~isempty(redges)) || (~isempty(rfaces))
         for i=1:length(m.nodecelledges)
             nce = m.nodecelledges{i};
@@ -126,10 +127,7 @@ function m = renumberMesh( m, rnodes, redges, rfaces, ...
     if ~isempty(rnodes)
         m.edgeends = rnodes(m.edgeends);
     end
-%     if ~isempty(rnodes)
-%         m.edgeends = rnodes(m.edgeends);
-%     end
-    
+
     % Per-cell data.
     if ~isempty(rfacesmap)
         m.tricellvxs = m.tricellvxs(rfacesmap,:);

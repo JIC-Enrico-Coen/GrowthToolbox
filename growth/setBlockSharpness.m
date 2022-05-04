@@ -1,7 +1,8 @@
 function m = setBlockSharpness( m )
 %m = setBlockSharpness( m )
-%   m is assumed ot be a volumetric rectangular block.
+%   m is assumed to be a volumetric rectangular block.
 %   This procedure sets m.sharpedges and m.sharpvxs.
+% NEVER USED.
 
     locorner = min( m.FEnodes,[],1);
     hicorner = max( m.FEnodes,[],1);

@@ -9,7 +9,7 @@ function [p1,bcs,d,nbcs] = pointToTriangle3D( vxs, p )
 %   bcs: the barycentric coordinates of p1
 %   d: the distance of p1 from p
 %   nbcs: the barycentric coordinates of the projection of p to the plane
-%       of the triangle.  This is the same as bcs if the project lies
+%       of the triangle.  This is the same as bcs if the projection lies
 %       within the triangle.
 
     NVXS = size(vxs,1);

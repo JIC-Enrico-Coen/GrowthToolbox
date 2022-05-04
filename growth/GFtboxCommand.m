@@ -1,4 +1,4 @@
-function GFtboxCommand( varargin )
+function bareExptID = GFtboxCommand( varargin )
     %function GFtboxCommand(...)
     %
     %For running growth models in batch mode. Results are filed in a
@@ -89,6 +89,8 @@ function GFtboxCommand( varargin )
     % Matlab session, it will always generate the same random run ID. To
     % prevent this we randomly initialise the generator.
     rng('shuffle');
+    
+    bareExptID = NaN;
 
     global ProjectName ...
            LocalProjectFullPath ...
@@ -96,6 +98,7 @@ function GFtboxCommand( varargin )
            RemoteProjectFullPath ...
            RemoteProjectsDirectory ...
            ExperimentID ...
+           ExperimentUserID ...
            LocalExperimentUniqueFullPath ...
            RemoteArchitecture ...
            DryRun ...
@@ -107,6 +110,7 @@ function GFtboxCommand( varargin )
     RemoteProjectFullPath = '';
     RemoteProjectsDirectory = '';
     ExperimentID = '';
+    ExperimentUserID = '';
     LocalExperimentUniqueFullPath = '';
     RemoteArchitecture = '';
     DryRun = false;
@@ -141,6 +145,8 @@ function GFtboxCommand( varargin )
                 RemoteProjectsDirectory=argvalue;
             case 'EXPID'
                 ExperimentID = argvalue;
+            case 'EXPUSERID'
+                ExperimentUserID = argvalue;
             case 'CLUSTERTYPE'
                 % The option should be 'PC' if the cluster is a Windows
                 % machine. Any other value implies a *nix machine.
@@ -359,7 +365,8 @@ function GFtboxCommand( varargin )
         end
         executeRemote( sprintf( 'touch ''%s''', 'ClusterBuffer.txt' ) );
         
-        exptID = sprintf('_e%06d',floor(1000000*rand()));
+        bareExptID = joinNonemptyStrings( '_', { ExperimentUserID, sprintf('%06d',floor(1000000*rand())) } );
+        exptID = ['_e' bareExptID ];
         fprintf( 1, 'Run ID %s\n', exptID );
         writefile( fullfile( LocalClusterProjectFiles, 'batchnumber.txt' ), [ exptID newline ] );
 
@@ -377,7 +384,7 @@ function GFtboxCommand( varargin )
         report_basefilename = [ProjectName, exptID,'.txt'];
         report_fullfilename = fullfile( LocalClusterProjectFiles, report_basefilename );
         
-        numruns = repetitions*(length(allmodeloptions));
+        numruns = repetitions * length(allmodeloptions);
         subfilename = cell( 1, numruns );
         runnum = 0;
         for i=1:length(allmodeloptions)
@@ -548,10 +555,10 @@ function [errors,local_sh_basefilename] = unixtemplate(n,argsstring,batchnumbers
     fprintf(h,'#SBATCH -o %s.out\n',outputDirBase);  % Specifies the file to receive the standard output of the job.
     fprintf(h,'#SBATCH -e %s.err\n',outputDirBase);  % Specifies the file to receive the standard error output of the job.
     fprintf(h,'. /etc/profile\n');
-    fprintf(h,'echo "Starting at `date` in directory `pwd`"\n');
+    fprintf(h,'echo "%s starting at `date` in directory `pwd`"\n', mfilename());
     fprintf(h,'module add %s\n', MatlabModule);
     fprintf(h,'matlab -nosplash -nodesktop -nodisplay -nojvm -singleCompThread -r "RunSilent(%s); exit(0)"\n',argsstring);
-    fprintf(h,'echo "Ending at `date`"\n');
+    fprintf(h,'echo "%s ending at `date`"\n', mfilename());
     fclose(h);
     
     ok = sendShellScript( local_sh_fullfilename, remote_sh_fullfilename, false );

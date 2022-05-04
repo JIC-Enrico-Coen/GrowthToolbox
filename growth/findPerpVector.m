@@ -19,12 +19,12 @@ function w = findPerpVector( v, trial )
             if haveTrial
                 u = trial(i,:);
                 w(i,:) = crossproc2( v(i,:), u );
-                ok = any(w(i,:)) ~= 0;
+                ok = any(w(i,:) ~= 0);
             end
             if ~ok
                 u = [ 1, 0, 0 ];
                 w(i,:) = crossproc2( v(i,:), u );
-                ok = any(w(i,:)) ~= 0;
+                ok = any(w(i,:) ~= 0);
             end
             if ~ok
                 u = [ 0, 1, 0 ];

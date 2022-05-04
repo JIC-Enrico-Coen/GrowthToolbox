@@ -41,7 +41,8 @@ function [m,ok] = leaf_reload( m, varargin )
 %   Topics: Project management.
 
     ok = true;
-    global gMISC_GLOBALS gFULLSTATICFIELDS
+    global gMISC_GLOBALS
+%     global gFULLSTATICFIELDS
     if isempty(m), return; end
     [ok,stage,args] = getTypedArg( mfilename(), {'numeric','char'}, varargin, 'reload' );
     if ~ok

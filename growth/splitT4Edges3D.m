@@ -33,7 +33,7 @@ function [m,splitdata] = splitT4Edges3D( m, eis )
     if islogical(eis)
         eis = find(eis);
     end
-    fprintf( 1, 'Splitting %d edges of %d requested.\n', length(eis), requestedsplits );
+    timedFprintf( 1, 'Splitting %d edges of %d requested.\n', length(eis), requestedsplits );
     numsplitedges = length(eis);
     
     % Get a boolean map of edges to split.
@@ -60,8 +60,7 @@ function [m,splitdata] = splitT4Edges3D( m, eis )
     % This should be empty:
     badedgecounts = setdiff( unique(numsplitsperFE), [1 2 3 6] );
     if ~isempty(badedgecounts)
-        fprintf( 1, '%s: some FEs have an unexpected number of edges to split (must be 0, 1, 2, 3, or 6).\n', ...
-            mfilename() );
+        timedFprintf( 1, 'Some FEs have an unexpected number of edges to split (must be 0, 1, 2, 3, or 6).\n' );
         xxxx = 1; %#ok<NASGU>
     end
     
@@ -109,7 +108,14 @@ function [m,splitdata] = splitT4Edges3D( m, eis )
     
     m.FEnodes = [ m.FEnodes; newnodes ];
     oldEdgeToNewVxs = zeros(1,numOldEdges);
-    oldEdgeToNewVxs(eis) = (numOldVxs+1):(numOldVxs+length(eis));
+    oldEdgeToNewVxs(eis) = newVxIndexes;
+
+    % Edge sharpness is inherited from the parent.
+    % DOES NOT WORK. The call of FEconnectivity later will scramble things.
+%     m.sharpedges = [ m.sharpedges; m.sharpedges( eis ) ];
+
+    % New vertexes are never sharp.
+    m.sharpvxs( newVxIndexes ) = false;
     
 
     % Split the FEs.
@@ -135,8 +141,7 @@ function [m,splitdata] = splitT4Edges3D( m, eis )
         absVxIndexes = [ m.FEsets(1).fevxs(fe,:), newAbsVxs ];
         [fevxs,ok1,bcs] = split1T4( edges, m.FEnodes(newAbsVxs,:) );
         if ~ok1
-            fprintf( 1, '%s: Something went wrong splitting tetrahedron %d on edges', ...
-                mfilename(), fe );
+            timedFprintf( 1, 'Something went wrong splitting tetrahedron %d on edges', fe );
             fprintf( 1, ' %d', edges );
             fprintf( 1, '\n' );
         end
@@ -174,8 +179,8 @@ function [m,splitdata] = splitT4Edges3D( m, eis )
     end
     
     if curFEIndex ~= numOldFEs + numNewFEs
-        fprintf( 1, '%s: Expected to have %d elements (%d old, %d new), but have %d.\n', ...
-            mfilename(), numOldFEs + numNewFEs, numOldFEs, numNewFEs, curFEIndex );
+        timedFprintf( 1, 'Expected to have %d elements (%d old, %d new), but have %d.\n', ...
+            numOldFEs + numNewFEs, numOldFEs, numNewFEs, curFEIndex );
     end
     
     
@@ -201,6 +206,10 @@ function [m,splitdata] = splitT4Edges3D( m, eis )
     m.polfrozen(newfesi) = m.polfrozen(oldfesi);
     m.effectiveGrowthTensor(newfesi,:) = m.effectiveGrowthTensor(oldfesi,:);
     m.cellFrames(:,:,newfesi) = m.cellFrames(:,:,oldfesi);
+    if isfield( m, 'unitcellnormals' ) && ~isempty( m.unitcellnormals )
+        m.unitcellnormals(newfesi,:) = m.unitcellnormals(oldfesi,:);
+    end
+        
     
     if hasNonemptySecondLayer( m )
         % Now we need to update the bio layer.

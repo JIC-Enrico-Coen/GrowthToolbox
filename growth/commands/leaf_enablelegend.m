@@ -13,16 +13,16 @@ function m = leaf_enablelegend( m, varargin )
     if nargin < 2
         enable = 1;
     elseif numel(varargin{1}) ~= 1
-        complain( '%s: ''enable'' argument is expected to be a single logical or numerical value, %d values supplied.\n', ...
-            mfilename(), numel(varargin{1}) );
+        complain2( '''enable'' argument is expected to be a single logical or numerical value, %d values supplied.', ...
+            numel(varargin{1}) );
         return;
     elseif ~islogical(varargin{1}) && ~isnumeric(varargin{1})
-        complain( '%s: ''enable'' argument is expected to be logical or numerical, value of type ''%s'' supplied.\n', ...
-            mfilename(), class(varargin{1}) );
+        complain2( '''enable'' argument is expected to be logical or numerical, value of type ''%s'' supplied.', ...
+            class(varargin{1}) );
         return;
     else
         if nargin > 2
-            fprintf( 1, '%s: %d extra arguments ignored.\n', nargin-2 );
+            complain2( '%d extra arguments ignored.', nargin-2 );
         end
         enable = varargin{1} ~= 0;
     end

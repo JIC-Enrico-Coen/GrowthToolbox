@@ -1,11 +1,11 @@
-function m = leaf_plot( m, varargin )
+function varargout = leaf_plot( m, varargin )
 %m = leaf_plot( m, ... )
 %   Plot the leaf.
 %   There are many options.
 %
 %   leaf_plot stores all of the plotting options in the mesh, so that a
-%   subsequent call to leaf_plot with only the mesh as an argument will plot
-%   the same thing.
+%   subsequent call to leaf_plot with only the mesh as an argument will
+%   plot the same thing.
 %
 %   One option is not stored in the mesh: 'figure'.  The argument to this
 %   is a figure handle or a positive integer (for which a figure will be
@@ -22,17 +22,25 @@ function m = leaf_plot( m, varargin )
 %   Topics: Plotting.
 
     % Sanity check.
-    if isempty(m), return; end
+    if isempty(m)
+        if nargout >= 1, varargout{1} = []; end
+        return;
+    end
     
     s = safemakestruct( mfilename(), varargin );
     
 %     if isfield( s, 'enableplot' ) && ~s.enableplot
 %         % Master switch for disabling all plotting.
+%         if nargout >= 1
+%             varargout{1} = m;
+%         end
 %         return;
 %     end
 
     % Discard invalid handles.
-    m.pictures = m.pictures( ishghandle( m.pictures ) );
+    if isfield( m, 'pictures' ) && ~isempty( m.pictures )
+        m.pictures = m.pictures( ishghandle( m.pictures ) );
+    end
     hnames = fieldnames( m.plothandles );
     for i=1:length(hnames)
         m.plothandles.(hnames{i}) = gobjects(0);
@@ -48,6 +56,7 @@ function m = leaf_plot( m, varargin )
         end
         if ~goodFigure
             fprintf( 1, '%s: Bad ''figure'' argument supplied. If supplied, it must be a figure handle or a positive integer.\n', mfilename() );
+            if nargout >= 1, varargout{1} = m; end
             return;
         end
         if goodFigure && ~ishghandle(s.figure)
@@ -60,7 +69,7 @@ function m = leaf_plot( m, varargin )
         theFigure = s.figure;
         pichandles = guidata( theFigure );
         s = rmfield( s, 'figure' );
-    elseif ~isempty( m.pictures )
+    elseif isfield( m, 'pictures') && ~isempty( m.pictures )
         % s does not specify a figure, and m does.
         theaxes = m.pictures(1);
         theFigure = ancestor( theaxes, 'figure' );
@@ -78,6 +87,7 @@ function m = leaf_plot( m, varargin )
         if ~isempty(theaxes)
             cla( theaxes );
         end
+        if nargout >= 1, varargout{1} = m; end
         return;
     end
     s = m.plotdefaults;
@@ -413,7 +423,7 @@ function m = leaf_plot( m, varargin )
         if ~full3d
             semithicknessvectors = 0.5*(m.prismnodes(2:2:end,:) - m.prismnodes(1:2:end,:));
         end
-        ccentres = cellcentres( m, [], 0 );
+        elcentres = elementCentres( m, [], 0 );
         cropped = false;
         if sparsedistance > 0
             if full3d
@@ -474,7 +484,7 @@ function m = leaf_plot( m, varargin )
             end
             selcc = (1:numcells)';
             selbc = ones( numcells, vxsPerFE ) / vxsPerFE;
-            decorptsmid = ccentres;
+            decorptsmid = elcentres;
             if full3d
                 selFaces = find( m.visible.surffaces );
                 selccSurf = m.FEconnectivity.facefes( m.visible.surffaces, : )';
@@ -800,6 +810,7 @@ function m = leaf_plot( m, varargin )
 
     hold( theaxes, 'off' );
     drawnow;
+    if nargout >= 1, varargout{1} = m; end
 end
     
     

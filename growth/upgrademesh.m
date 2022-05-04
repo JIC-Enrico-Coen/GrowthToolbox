@@ -67,6 +67,10 @@ function m = upgrademesh( m, checkValidity )
         m.globalProps = rmfield( m.globalProps, 'freezing' );
     end
     
+    if ~isfield( m, 'auxdata' )
+        m.auxdata = struct();
+    end
+    
     % Sometimes a new feature is introduced for which there is no method of
     % automatically distinguishing meshes that support them from meshes
     % that do not, nor of automatically upgrading one that does not.  To
@@ -442,6 +446,17 @@ function m = upgrademesh( m, checkValidity )
 
     if ~isfield( m.secondlayer, 'colorscale' )
         m.secondlayer.colorscale = [];
+    end
+
+    % Construct secondlayer.vxedges, first implemented 2022-01-25.
+    % Not done yet.
+    if false && (~isfield( m.secondlayer, 'vxedges' ) || isempty( m.secondlayer.vxedges ))
+        % Construct secondlayer.vxedges
+        ve = sort( [ m.secondlayer.edges(:,[1 2]), repmat( (1:getNumberOfCellEdges(m))', 2, i ) ], 'rows' );
+        vxedges = zeros( getNumberOfCellVertexes(m), 3, 'int32' );
+        for i=1:size(ve,1)
+            % ...
+        end
     end
 
     if all(m.displacements==0)

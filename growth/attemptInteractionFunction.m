@@ -10,7 +10,7 @@ function [m,ok] = attemptInteractionFunction( m )
             % Nothing.  Carry on anyway.
         end
         olddir = goToProjectDir( m );
-        fprintf( 1, 'Calling interaction function.\n' );
+        timedFprintf( 1, 'Calling interaction function.\n' );
         if isinteractive(m)
             h = ancestor(m.pictures(1),'figure');
             catchInteractionExceptions = isappdata( h, 'catchIFExceptions' ) ...
@@ -22,9 +22,9 @@ function [m,ok] = attemptInteractionFunction( m )
             try
                 m = dointeraction( m );
             catch
-                fprintf( 1, '%s: Interaction function raised an exception:\n', mfilename() );
+                timedFprintf( 1, 'Interaction function raised an exception:\n' );
                 simpleExceptionMessage();
-                fprintf( 1, 'Interaction disabled.  Simulation terminated.\n' );
+                timedFprintf( 1, 'Interaction disabled.  Simulation terminated.\n' );
                 m.globalProps.interactionValid = false;
                 m.stop = true;
                 ok = false;
@@ -38,9 +38,9 @@ function [m,ok] = attemptInteractionFunction( m )
         end
         if ~isempty(olddir), cd( olddir ); end
     elseif isa(m.globalProps.mgen_interaction,'function_handle')
-        fprintf( 1, 'Interaction function disabled.\n' );
+        timedFprintf( 1, 'Interaction function disabled.\n' );
     else
-        fprintf( 1, 'No interaction function to call.\n' );
+        timedFprintf( 1, 'No interaction function to call.\n' );
     end
 end
 

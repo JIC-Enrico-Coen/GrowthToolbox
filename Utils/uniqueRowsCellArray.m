@@ -2,7 +2,7 @@ function [suniqueindexes,ia,ic,sindexes] = uniqueRowsCellArray( s )
 %[suniqueindexes,ia,ic,sindexes] = uniqueRowsCellArray( s )
 %   This finds the unique rows of a two-dimensional cell array. The Matlab
 %   function unique() can be applied to a cell array only if all elements
-%   are numeric or all elements are strings. This function is slight more
+%   are numeric or all elements are strings. This function is slightly more
 %   flexible: it requires only that each column of the cell array has that
 %   property.
 

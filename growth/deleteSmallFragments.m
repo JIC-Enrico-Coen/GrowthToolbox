@@ -1,9 +1,10 @@
-function m = deleteSmallFragments( m, deleteNum )
-%m = deleteSmallFragments( m, deleteNum )
+function [m,delinfo] = deleteSmallFragments( m, deleteNum )
+%[m,delinfo] = deleteSmallFragments( m, deleteNum )
 %   Delete every connected component of m containing fewer than
 %   deleteNum elements. If this would delete the whole of m, then the
 %   a component of m containing the largest number of elements is retained.
 
+    delinfo = [];
     if deleteNum <= 0
         return;
     end
@@ -34,7 +35,7 @@ function m = deleteSmallFragments( m, deleteNum )
         for i=find(deleteCpts)
             elementsToDelete(m.componentinfo.cellsets{i}) = true;
         end
-        m = deleteFEs(m,find(elementsToDelete));
+        [m,delinfo] = deleteFEs(m,find(elementsToDelete));
     end
     
     m = rmfield( m, 'componentinfo' );

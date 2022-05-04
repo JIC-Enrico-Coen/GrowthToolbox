@@ -1,24 +1,30 @@
-function ok = validdictionary( d, complainer )
-%ok = validdictionary( d, complainer )
+function ok = validdictionary( d, severity )
+%ok = validdictionary( d, severity )
 %   Check the validity of a dictionary.
     
     if nargin < 2
-        complainer = @warning;
+        severity = 0;
     end
+    if severity==0
+        fid = 1;
+    else
+        fid = 2;
+    end
+    
     [ok,missingfields,extrafields] = checkFields( d, { 'case', 'name2IndexMap', 'index2NameMap' }, {} );
     if ~ok
-        complainer( 1, 'Invalid dictionary: ' );
+        complain2( severity, 'Invalid dictionary: ' );
         if ~isempty(missingfields)
-            complainer( 1, ' missing fields {' );
-            complainer( 1, ' %s', missingfields{:} );
-            complainer( 1, ' }' );
+            fprintf( fid, ' missing fields {' );
+            fprintf( fid, ' %s', missingfields{:} );
+            fprintf( fid, ' }' );
         end
         if ~isempty(extrafields)
-            complainer( 1, ' extra fields {' );
-            complainer( 1, ' %s', extrafields{:} );
-            complainer( 1, ' }' );
+            fprintf( fid, ' extra fields {' );
+            fprintf( fid, ' %s', extrafields{:} );
+            fprintf( fid, ' }' );
         end
-        complainer( 1, '\n' );
+        fprintf( fid, '\n' );
         if ~isempty(missingfields)
             return;
         end
@@ -27,9 +33,9 @@ function ok = validdictionary( d, complainer )
     % index2NameMap must not include repetitions.
     if length(unique(d.index2NameMap)) < length(d.index2NameMap)
         ok = false;
-        complainer( 1, 'Invalid dictionary: repeated names.  List of names is {' );
-        complainer( 1, ' %s', extrafields{:} );
-        complainer( 1, ' }\n' );
+        complain2( severity, 'Invalid dictionary: repeated names.  List of names is {' );
+        fprintf( fid, ' %s', extrafields{:} );
+        fprintf( fid, ' }\n' );
         return;
     end
 
@@ -37,18 +43,18 @@ function ok = validdictionary( d, complainer )
     n2inames = fieldnames( d.name2IndexMap );
     [ok,missingfields,extrafields] = checkFields( d.name2IndexMap, d.index2NameMap, {} );
     if ~ok
-        complainer( 1, 'Invalid dictionary: name2Index and index2Name are not consistent.\n' );
+        complain2( severity, 'Invalid dictionary: name2Index and index2Name are not consistent.\n' );
         if ~isempty(missingfields)
-            complainer( 1, '    In name2Index but not index2Name {' );
-            complainer( 1, ' %s', extrafields{:} );
-            complainer( 1, ' }\n' );
+            fprintf( fid, '    In name2Index but not index2Name {' );
+            fprintf( fid, ' %s', extrafields{:} );
+            fprintf( fid, ' }\n' );
         end
         if ~isempty(extrafields)
-            complainer( 1, '    In index2Name but not name2Index {' );
-            complainer( 1, ' %s', missingfields{:} );
-            complainer( 1, ' }\n' );
+            fprintf( fid, '    In index2Name but not name2Index {' );
+            fprintf( fid, ' %s', missingfields{:} );
+            fprintf( fid, ' }\n' );
         end
-        complainer( 1, '\n' );
+        fprintf( fid, '\n' );
         return;
     end
     
@@ -59,9 +65,9 @@ function ok = validdictionary( d, complainer )
         badrefs(i) = d.name2IndexMap.(d.index2NameMap{i}) ~= i;
     end
     if any(badrefs)
-        complainer( 'Invalid dictionary: inconsistent indexing.\n' );
+        complain2( severity, 'Invalid dictionary: inconsistent indexing.\n' );
         for i=find(badrefs)
-            complainer( '  i2n(%d) = %s,   n2i(%s) = %d\n', ...
+            fprintf( fid, '  i2n(%d) = %s,   n2i(%s) = %d\n', ...
                 i, d.index2NameMap{i}, d.index2NameMap{i}, d.name2IndexMap.(d.index2NameMap{i}) );
         end
     end
@@ -84,7 +90,7 @@ function ok = validdictionary( d, complainer )
             wrongcase = 'lower';
             % Carry on.
         otherwise
-            complainer( 1, 'Invalid dictionary: case field must be -1, 0 or 1, %g found.\n', d.case );
+            complain2( severity, 'Invalid dictionary: case field must be -1, 0 or 1, %g found.\n', d.case );
             ok = false;
             return;
     end
@@ -94,9 +100,9 @@ function ok = validdictionary( d, complainer )
     end
     if any(badnames)
         ok = false;
-        complainer( 'Invalid dictionary: %s case found where %s expected.\n', wrongcase, rightcase );
+        complain2( severity, 'Invalid dictionary: %s case found where %s expected.\n', wrongcase, rightcase );
         for i=find(badnames)
-            complainer( 1, '    Found %s, should be %s.\n', d.index2NameMap{i}, forcedcase{i} );
+            fprintf( fid, '    Found %s, should be %s.\n', d.index2NameMap{i}, forcedcase{i} );
         end
     end
 end

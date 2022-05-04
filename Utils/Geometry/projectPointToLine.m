@@ -1,5 +1,5 @@
 function [pp,bc,pbc] = projectPointToLine( vxs, p, segmentOnly )
-%[pp,bc,d,pbcs] = projectPointToLine( vxs, p )
+%[pp,bc,pbc] = projectPointToLine( vxs, p )
 %   Project P perpendicularly onto the line defined by the two vertexes
 %   VXS, giving point P1.  VXS is a 2*D matrix of two row vectors of any
 %   dimensionality D.  If the two points coincide, then PP is set equal to

@@ -6,6 +6,9 @@ function v = lineCutByPolygon( pv, vin, vout )
 %   outside, represented as column vectors.
 %   The result V is a point where the line V1 V2 intersects the boundary
 %   of the polygon, represented as a column vector.
+%
+%   NEVER USED.
+
     for i=1:size(pv,1)
         if i==1
             [b,v] = lineIntersection( pv(size(pv,1),:)', pv(1,:)', vin, vout );

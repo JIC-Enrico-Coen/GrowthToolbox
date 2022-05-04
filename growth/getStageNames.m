@@ -1,19 +1,19 @@
 function result = getStageNames( varargin )
-%result = getStageNames( projectname, meshesdir )
+%result = getStageNames( projectdir, meshesdir )
 %   In directory MESHESDIR, find the full path names of the stage files for
-%   project PROJECTNAME. If MESHESDIR is not a full path name, it will be
+%   project PROJECTDIR. If MESHESDIR is not a full path name, it will be
 %   looked for first in the project directory, then in the "runs"
 %   subdirectory of the project directory.
 %
-%result = getStageNames( projectname, meshesdir, tt )
+%result = getStageNames( projectdir, meshesdir, tt )
 %   In directory MESHESDIR, find the full path names of the stage files for
-%   project PROJECTNAME with time stamps TT.
+%   project PROJECTDIR with time stamps TT.
 %
-%result = getStageNames( projectname )
-%   In project PROJECTNAME, find the full path names of the stage files.
+%result = getStageNames( projectdir )
+%   In project PROJECTDIR, find the full path names of the stage files.
 %
-%result = getStageNames( projectname, tt )
-%   In project PROJECTNAME, find the full path names of the stage files
+%result = getStageNames( projectdir, tt )
+%   In project PROJECTDIR, find the full path names of the stage files
 %   with time stamps TT.
 %
 %result = getStageNames()
@@ -33,7 +33,7 @@ function result = getStageNames( varargin )
 %   projectname: The base name of the project.
 %   meshesdir: The full path name of the directory where the meshes were
 %       found.
-%   meshpaths: The full path names of the stage files.
+%   meshnames: The base names of the stage files.
 %   stagetimes: The times of the stage files.
 %
 %   An empty project name defaults to the project currently open in GFtbox,
@@ -55,36 +55,40 @@ function result = getStageNames( varargin )
 
     result = [];
     
-    haveProject = (nargin > 0) && ischar( varargin{1} ) && ~isempty( varargin{1} );
+    haveProjectDir = (nargin > 0) && ischar( varargin{1} ) && ~isempty( varargin{1} );
     haveMeshesDir = (nargin >= 2) && ischar( varargin{2} ) && ~isempty( varargin{2} );
     haveTimes = (nargin > 0) && isnumeric( varargin{end} ) && ~isempty( varargin{end} );
     
-    if haveProject
-        projectname = varargin{1};
+    if haveProjectDir
+        projectdir = varargin{1};
     else
-        projectname = [];
+        projectdir = [];
     end
     
-    fullprojectpath = findGFtboxProject( projectname, false, false );
-    if ~exist( fullprojectpath, 'dir' )
-        if isempty( projectname )
+    fullprojectpath = findGFtboxProject( projectdir, false, false );
+    haveProject = ~isempty( fullprojectpath ) && exist( fullprojectpath, 'dir' );
+    if ~isempty( fullprojectpath ) && ~haveProject
+        if isempty( projectdir )
             fprintf( 'No current project.\n' );
         else
-            fprintf( 'Cannot find project directory %s.\n', projectname );
+            fprintf( 'Cannot find project directory %s.\n', projectdir );
         end
         return;
     end
     
-    [~,projectbasename] = fileparts( fullprojectpath );
+    if haveProject
+        [~,projectbasename] = fileparts( fullprojectpath );
+    else
+        projectbasename = '';
+        if ~haveMeshesDir
+            fprintf( 1, 'No project dir and no meshes dir.\n' );
+            return;
+        end
+    end
     
     if haveMeshesDir
         meshesdir = varargin{2};
-        if isFullPathname( meshesdir )
-            if ~exist( meshesdir, 'dir' )
-                fprintf( 'Cannot find meshes directory %s.\n', meshesdir );
-                return;
-            end
-        else
+        if haveProject
             meshesdir1 = fullfile( fullprojectpath, meshesdir );
             if exist( meshesdir1, 'dir' )
                 meshesdir = meshesdir1;
@@ -97,9 +101,16 @@ function result = getStageNames( varargin )
                     return;
                 end
             end
+        else
+            meshesdir = fullpath( meshesdir );
         end
     else
         meshesdir = fullprojectpath;
+    end
+    
+    if ~exist( meshesdir, 'dir' )
+        fprintf( 'Cannot find meshes directory %s.\n', meshesdir );
+        return;
     end
     
     if haveTimes
@@ -145,13 +156,13 @@ function result = getStageNames( varargin )
         end
     end
     
-    for i=1:length(usingStagefilenames)
-        usingStagefilenames{i} = fullfile( meshesdir, usingStagefilenames{i} );
-    end
+%     for i=1:length(usingStagefilenames)
+%         usingStagefilenames{i} = fullfile( meshesdir, usingStagefilenames{i} );
+%     end
     
     result.projectdir = fullprojectpath;
     result.projectname = projectbasename;
     result.meshesdir = meshesdir;
-    result.meshpaths = usingStagefilenames;
+    result.meshnames = usingStagefilenames;
     result.stagetimes = stagetimes;
 end

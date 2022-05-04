@@ -63,6 +63,6 @@ function m = completeVolumetricMesh( m )
     m = calcFEvolumes( m );
     m.globalProps.initialVolume = m.globalDynamicProps.currentVolume;
     m.globalDynamicProps.cellscale = mean(m.FEsets(1).fevolumes)^(1/3);  %sqrt( m.globalDynamicProps.currentArea / length(m.cellareas) );
-    m.sharpedges = [];
-    m.sharpvxs = [];
+    m.sharpedges = zeros(0,1);
+    m.sharpvxs = zeros(0,1);
 end

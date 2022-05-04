@@ -58,7 +58,7 @@ function handles = plotGrowthCrosses( m, selcc, selbc, selpts, sparsedistance, .
     end
     
     % Find the cell centres.
-  % cc = cellcentres( m, selcc );
+  % cc = elementCentres( m, selcc );
     numselcells = length(selcc);
     
     % Find the unit gradient vectors and the cells with zero or low gradients.

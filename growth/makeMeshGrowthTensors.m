@@ -21,14 +21,15 @@ function m = makeMeshGrowthTensors( m )
     end
     
     allmgens = getEffectiveMgenLevels( m, growthmgens );  % Error: does not include thickness.
-    if false && all(allmgens(:)==0)
-        if isempty( m.cellFramesB )
-            z = zeros( vxsPerFE, 3 );
-        else
-            z = zeros( vxsPerFE, 6 );
-        end
+    if isVolumetric
+        vxsPerFE = 4;
+    else
+        vxsPerFE = 6;
+    end
+    if all(allmgens(:)==0)
         for ci=1:numcells
-            m.celldata(ci).Gglobal = z;
+            m.celldata(ci).Glocal = zeros( vxsPerFE, 3 );
+            m.celldata(ci).Gglobal = zeros( vxsPerFE, 6 );
         end
         return;
     end
@@ -58,17 +59,19 @@ function m = makeMeshGrowthTensors( m )
                         0 ); % m.globalProps.mingradient );
         end
         m.celldata(ci).Glocal = Glocal;
-        if isempty( m.cellFramesB )
+        if all(Glocal(:)==0)
+            m.celldata(ci).Gglobal = zeros( vxsPerFE, 6 );
+        elseif isempty( m.cellFramesB )
 %             m.celldata(ci).Gglobal = globalGrowthTensor( m.cellFrames(:,:,ci)', Glocal );
             m.celldata(ci).Gglobal = ...
-                rotateGrowthTensor( [ Glocal, zeros( size(Glocal,1), 3 ) ], ...
-                                    m.cellFrames(:,:,ci) );
+                    rotateGrowthTensor( [ Glocal, zeros( size(Glocal,1), 3 ) ], ...
+                                        m.cellFrames(:,:,ci) );
         else
             m.celldata(ci).Gglobal = ...
-                [ rotateGrowthTensor( [ Glocal(1:3,:), zeros( 3, 3 ) ], ...
-                                      m.cellFramesA(:,:,ci) );
-                  rotateGrowthTensor( [ Glocal(4:6,:), zeros( 3, 3 ) ], ...
-                                      m.cellFramesB(:,:,ci) ) ];
+                    [ rotateGrowthTensor( [ Glocal(1:3,:), zeros( 3, 3 ) ], ...
+                                          m.cellFramesA(:,:,ci) );
+                      rotateGrowthTensor( [ Glocal(4:6,:), zeros( 3, 3 ) ], ...
+                                          m.cellFramesB(:,:,ci) ) ];
         end
         xxxx = 1;
     end

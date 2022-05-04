@@ -1,4 +1,4 @@
-function [ r, seed ] = user ( dim_num, n, seed, usertype, varargin )
+function [ r, seed ] = user ( dim_num, n, seed, varargin )
 
 %% USER samples points in a user-specified region with given density.
 %
@@ -42,69 +42,77 @@ function [ r, seed ] = user ( dim_num, n, seed, usertype, varargin )
 %
 %    Output, integer SEED, the updated seed.  
 %
+
+    if isempty( varargin )
+        error( 'No usertype.' );
+        % This does not return.
+    end
+        
+    if isstruct( varargin{1} )
+        userparams = varargin{1};
+    else
+        userparams = cvt_convert_oldstyle_userargs( varargin{:} );
+        if isempty( userparams )
+            % Assumed to be new-style name-value pairs.
+            userparams = safemakestruct( mfilename(), varargin{:} );
+        end
+    end
     
-    switch usertype
+    if ~isfield( userparams, 'usertype' )
+        error( 'No usertype.' );
+        % This does not return.
+    end
+    
+    switch userparams.usertype
         case 'rectangle'
-            r = randInRectangle( n, varargin{1} )';
-            if dim_num > 2
-                r = [ r zeros( n, dim_num-2 ) ];
-            end
+            r = randInRectangle( n, userparams.bbox )';
+        case 'testrectangle'
+            r = randInRectangle( n, userparams.bbox )';
+            bbox = varargin{1};
+            xlo = bbox(1);
+            xhi = bbox(2);
+            xs = r(1,:);
+            xs = (xs-xlo)/2 + xlo;
+            r(1,:) = xs;
         case 'semiellipse'
-            r = randInSemiEllipse( n, varargin{1}, varargin{2} )';
-            if dim_num > 2
-                r = [ r zeros( n, dim_num-2 ) ];
-            end
+            r = randInSemiEllipse( n, userparams.bbox, userparams.axis )';
         case 'ellipse'
-            r = randInEllipse( n, varargin{1} )';
-            if dim_num > 2
-                r = [ r zeros( n, dim_num-2 ) ];
-            end
+            r = randInEllipse( n, userparams.bbox )';
         case 'polygon'
-            r = randInPoly( n, varargin{1} )';
-            if dim_num > 2
-                r = [ r zeros( n, dim_num-2 ) ];
-            end
+            r = randInPoly( n, userparams.poly )';
         case { '', 'unitcircle' }
             r = randInCircle( n, 1 );
-            if dim_num > 2
-                r = [ r zeros( n, dim_num-2 ) ];
-            end
         case { 'spheresurf' }
             r = randOnSphere( n )';
         case 'meshcells'
             % Following arguments are the mesh and an array of cells.
-            mesh = varargin{1};
-            cellIndexes = varargin{2};
-            r = randInFEMcells( mesh, cellIndexes, n )';
-            r = r(1:dim_num,:);
+%             mesh = varargin{1};
+%             cellIndexes = varargin{2};
+            r = randInFEMcells( userparams.mesh, userparams.elements, n )';
         %    cellAreas = mesh.cellareas( cellIndexes );
         %    [cells,bcs] = randInTriangles( cellAreas, n );
         %    r = meshBaryToGlobalCoords( mesh, cellIndexes(cells), bcs )';
-%         case 'polygon'
-%             % Following argument is a convex 2D polygon.
-%             if isempty(varargin)
-%                 userdata = [ [0 0];[2 -1];[2.5 1];[4 0.5];[3 2]; [1.5 4];[1 0]];
-%               % userdata = [ [0 0];[1 0];[1 1];[0 1]];
-%                 r = randInPoly( n, userdata )';
-%             else
-%                 r = randInPoly( n, varargin{1} )';
-%             end
-%             if dim_num > 2
-%                 r = [ r zeros( n, dim_num-2 ) ];
-%             end
         case 'triangles'
             % Following arguments represent a list of triangles.
             % varargin{1} is a list of node coordinates.
             % varargin{2} is a list of triples of node indexes.
             % varargin{3} is a list of areas of the triangles.
             % varargin{4} is a list of indexes into varargin{2}.
-            r = randInTriangles( n, varargin{:} );
-            if dim_num > 2
-                r = [ r zeros( n, dim_num-2 ) ];
-            end
+            % WARNING: THIS IS NOT COMPATIBLE WITH THE CURRENT DEFINITION
+            % OF randInTriangles().
+            r = randInTriangles( n, userparams.vxs, userparams.trivxs, userparams.triareas, userparams.whichtris );
         otherwise
-            % Do nothing. No result is returned. This will throw an error.
-            % This is intended behaviour.
+            error( 'Unknown usertype %d', userparams.usertype );
+            % This does not return.
+    end
+    
+    if size(r,2) > dim_num
+        r = r(1:dim_num,:);
+    elseif size(r,2) < dim_num
+        r(end,dim_num) = 0; % This fills all the missing columns with zeros.
+        % r = [ r zeros( n, dim_num-2 ) ];
     end
 end
+
+
 

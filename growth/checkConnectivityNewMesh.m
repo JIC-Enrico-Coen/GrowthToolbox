@@ -1,24 +1,9 @@
-function [ok,errs] = checkConnectivityNewMesh( m, verbose )
+function [ok,errs] = checkConnectivityNewMesh( m )
 %[ok,errs] = checkConnectivityNewMesh( m )
 %   Perform validity checks on the connectivity information for a mesh of
 %   general FEs.
 
-    if nargin < 2
-        verbose = true;
-    end
-
-    ERRORS = false;
-    if ERRORS
-        complainer = @error;
-    else
-        complainer = @warning;
-    end
-    if verbose
-        whiner = @warning;
-    else
-        whiner = @donothing;
-    end
-
+    severity = 0;
     ok = true;
 %{
     m.FEconnectivity has the following fields:
@@ -43,7 +28,7 @@ vertexloctype: [27×1 double]
     
     errs = 0;
     
-    [ok1,errs] = checkBasicConnectivity3DMesh( m, verbose );
+    [ok1,errs] = checkBasicConnectivity3DMesh( m );
     ok = ok && ok1;
 
     numVxs = getNumberOfVertexes( m );
@@ -113,13 +98,13 @@ vertexloctype: [27×1 double]
             if ~isempty(x1)
                 if ~all(reshape(x1(:,1:2:end)==x1(:,2:2:end),[],1))
                     errs = errs+1;
-                    complainer( 'faceedges->edgeends: vertexes do not occur in pairs' );
+                    complain2( severity, 'faceedges->edgeends: vertexes do not occur in pairs.' );
                 end
                 x1a = x1(:,1:2:end);
                 x2 = sort( c.faces(hasNedges(:,i),1:edgesPerFace), 2 );
                 if any(x1a(:) ~= x2(:))
                     errs = errs+1;
-                    complainer( 'faceedges->edgeends is not consistent with faces' );
+                    complain2( severity, 'faceedges->edgeends is not consistent with faces.' );
                 end
             end
         end
@@ -133,13 +118,13 @@ vertexloctype: [27×1 double]
         if ~isempty(x1)
             if ~all(reshape(x1(:,1:2:(vxsPerFace*2))==x1(:,2:2:(vxsPerFace*2)),[],1))
                 errs = errs+1;
-                complainer( 'faceedges->edgeends: vertexes do not occur in pairs' );
+                complain2( severity, 'faceedges->edgeends: vertexes do not occur in pairs.' );
             end
             x1 = x1(:,1:2:(vxsPerFace*2));
             x2 = sort( c.faces, 2 );
             if any(x1(:) ~= x2(:))
                 errs = errs+1;
-                complainer( 'faceedges->edgeends is not consistent with faces' );
+                complain2( severity, 'faceedges->edgeends is not consistent with faces.' );
             end
         end
     end
@@ -160,7 +145,7 @@ vertexloctype: [27×1 double]
     end
     if facefeErrs > 0
         errs = errs+1;
-        complainer( 'fefaces is not consistent with facefes and facefefaces, %d errors', facefeErrs );
+        complain2( severity, 'fefaces is not consistent with facefes and facefefaces, %d errors.', facefeErrs );
         ok = false;
     end
     
@@ -172,7 +157,7 @@ vertexloctype: [27×1 double]
     x2 = sort( permute( reshape( m.FEsets.fevxs( :, m.FEsets.fe.edges ), numFEs, 2, edgesPerFE ), [3 1 2] ), 3 );
     if any(x1(:) ~= x2(:))
         errs = errs+1;
-        complainer( 'Inconsistent listing of edges in m.FEconnectivity.feedges vs. m.FEsets.fe.edges' );
+        complain2( severity, 'Inconsistent listing of edges in m.FEconnectivity.feedges vs. m.FEsets.fe.edges.' );
     end
     
 % Check consistency of listing faces compared with fe.faces.
@@ -182,7 +167,7 @@ vertexloctype: [27×1 double]
 %     x2 = sort( permute( reshape( m.FEsets.fevxs( :, m.FEsets.fe.faces ), numFEs, vxsPerFace, facesPerFE ), [3 1 2] ), 3 );
 %     if any(x1(:) ~= x2(:))
 %         errs = errs+1;
-%         complainer( 'Inconsistent listing of faces in m.FEconnectivity.fefaces vs. m.FEsets.fe.faces' );
+%         complain2( severity, 'Inconsistent listing of faces in m.FEconnectivity.fefaces vs. m.FEsets.fe.faces.' );
 %     end
 
 % Check consistency of classification of faces, edges, and vertexes.
@@ -194,7 +179,7 @@ vertexloctype: [27×1 double]
 %     bad = find(any(surfaceFaceEdgeTypes==0,2));
 %     if ~isempty(bad)
 %         errs = errs+1;
-%         complainer( '%d surface faces have interior edges', length(bad) );
+%         complain2( severity, '%d surface faces have interior edges.', length(bad) );
 %         bad
 %     end
 
@@ -203,15 +188,17 @@ vertexloctype: [27×1 double]
 %     bad = find(any(surfaceFaceVxTypes==0,2));
 %     if ~isempty(bad)
 %         errs = errs+1;
-%         complainer( '%d surface faces have interior vertexes', length(bad) );
+%         complain2( severity, '%d surface faces have interior vertexes.', length(bad) );
 %         bad
 %     end
     surfaceEdgeVxTypes = unique( c.vertexloctype(c.edgeends( c.edgeloctype>0, : )) );
     bad = find(any(surfaceEdgeVxTypes==0,2));
     if ~isempty(bad)
         errs = errs+1;
-        complainer( '%d surface edges have interior vertexes', length(bad) );
-        bad
+        timedFprintf( '%d surface edges have interior vertexes.\n', length(bad) );
+        fprintf( 1, 'Bad edges:      ' );
+        fprintf( 1, ' %d', bad );
+        fprintf( 1, '\n' );
     end
     
     % Every surface edge must belong to at least two surface faces.  % Why
@@ -222,9 +209,13 @@ vertexloctype: [27×1 double]
     bad = find(surfaceFacesPerSurfaceEdge ~= 2);
     if ~isempty(bad)
         errs = errs+1;
-        complainer( '%d surface edges belong to other than two surface faces', length(bad) );
-        bad
-        surfaceEdgeFaces_bad = surfaceEdgeFaces(bad)
+        timedFprintf( '%d surface edges belong to other than two surface faces.\n', length(bad) );
+        fprintf( 1, 'Bad edges:      ' );
+        fprintf( 1, ' %d', bad );
+        fprintf( 1, '\n' );
+        fprintf( 1, 'Number of faces:' );
+        fprintf( 1, ' %d', surfaceEdgeFaces(bad) );
+        fprintf( 1, '\n' );
         xxxx = 1;
     end
     
@@ -236,8 +227,10 @@ vertexloctype: [27×1 double]
     badfefaces = any(repeatedfefaces,2);
     if any(badfefaces)
         errs = errs+1;
-        complainer( '%d elements contain one or more repeated faces', sum(badfefaces) );
-        badfefaces'
+        timedFprintf( '%d elements contain one or more repeated faces.\n', sum(badfefaces) );
+        fprintf( 1, 'Bad elements:' );
+        fprintf( 1, ' %d', badfefaces );
+        fprintf( 1, '\n' );
     end
         
     % Each element must have distinct edges.
@@ -246,16 +239,20 @@ vertexloctype: [27×1 double]
     badfeedges = any(repeatedfeedges,2);
     if any(badfeedges)
         errs = errs+1;
-        complainer( '%d elements contain one or more repeated faces', sum(badfeedges) );
-        badfeedges'
+        timedFprintf( '%d elements contain one or more repeated faces.\n', sum(badfeedges) );
+        fprintf( 1, 'Bad elements:' );
+        fprintf( 1, ' %d', badfeedges );
+        fprintf( 1, '\n' );
     end
         
     % Each edge must have distinct ends.
     badedges = m.FEconnectivity.edgeends(:,1) == m.FEconnectivity.edgeends(:,2);
     if any(badedges)
         errs = errs+1;
-        complainer( '%d edges have identical ends', sum(badedges) );
-        badedges'
+        timedFprintf( '%d edges have identical ends.\n', sum(badedges) );
+        fprintf( 1, 'Bad edges:' );
+        fprintf( 1, ' %d', badedges );
+        fprintf( 1, '\n' );
     end
     
     % Each face must have distinct edges.
@@ -268,8 +265,10 @@ vertexloctype: [27×1 double]
     badfacevxs = any(repeatedfacevxs,2);
     if any(badfacevxs)
         errs = errs+1;
-        complainer( '%d faces contain one or more repeated vertexes', sum(badfacevxs) );
-        badfacevxs'
+        timedFprintf( '%d faces contain one or more repeated vertexes.\n', sum(badfacevxs) );
+        fprintf( 1, 'Bad facevxs:' );
+        fprintf( 1, ' %d', badfacevxs );
+        fprintf( 1, '\n' );
     end
     
     
@@ -281,7 +280,10 @@ vertexloctype: [27×1 double]
     runlengths = ends-starts;
     if any(runlengths >= 2)
         errs = errs+1;
-        complainer( '%d faces belong to more than two elements', sum(runlengths >= 2) );
+        timedFprintf( '%d faces belong to more than two elements.\n', sum(runlengths >= 2) );
+        fprintf( 1, 'Bad faces:' );
+        fprintf( 1, ' %d', sortfefaces(starts(runlengths)) );
+        fprintf( 1, '\n' );
     end
     
     % Two tetrahedra cannot share more than one face.
@@ -305,12 +307,12 @@ vertexloctype: [27×1 double]
         if mx > maxval
             errs = errs+1;
             % Error
-            complainer( '%s maximum is %d, exceeds allowed %d', field, mx, maxval );
+            timedFprintf( '%s maximum is %d, exceeds allowed %d.\n', field, mx, maxval );
         end
         if (mn < 0) || (~allowzero && (mn < 1))
             errs = errs+1;
             % Error
-            complainer( '%s minimum is %d, below allowed %d', field, mn, ~allowzero );
+            timedFprintf( '%s minimum is %d, below allowed %d.\n', field, mn, ~allowzero );
         end
     end
 
@@ -327,17 +329,17 @@ vertexloctype: [27×1 double]
         sz = size( data );
         if length(sz) > 2
             errs = errs+1;
-            complainer( '%s has %d dimensions, expect 2', field, length(sz) );
+            timedFprintf( '%s has %d dimensions, expect 2.\n', field, length(sz) );
         end
         if sz1 ~= sz(1)
             % error
             errs = errs+1;
-            complainer( '%s has %d rows, expect %d', field, sz1, sz(1) );
+            timedFprintf( '%s has %d rows, expect %d.\n', field, sz1, sz(1) );
         end
         if (sz2 ~= 0) && (sz2 ~= sz(2))
             % error
             errs = errs+1;
-            complainer( '%s has %d columns, expect %d', field, sz2, sz(2) );
+            timedFprintf( '%s has %d columns, expect %d.\n', field, sz2, sz(2) );
         end
     end
 end

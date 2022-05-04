@@ -1,6 +1,6 @@
 function sl = deleteUnusedVerts( sl )
 % Takes a structure with fields sl.pts and sl.cellvxs, representing a set
-% of polygons, and removes from sl.pts all pts not referenced by any of the
+% of polygons, and removes from sl.pts all poits not referenced by any of the
 % polygons, and reindexes sl.cellvxs to refer to the reduced set of points.
 
     [retainedvxindexes,ia,ic] = unique( sl.cellvxs(:) );

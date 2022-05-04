@@ -27,6 +27,9 @@ function secondlayer = keepBioElements( secondlayer, cellsToKeep, edgesToKeep, v
 
     for i = 1:length(gPerBioCellFields)
         fn = gPerBioCellFields{i};
+        if ~isfield( secondlayer, fn )
+            continue;
+        end
         if strcmp( fn, 'cells' )
             secondlayer.(fn) = secondlayer.(fn)(cellsToKeep);
         else
@@ -44,6 +47,9 @@ function secondlayer = keepBioElements( secondlayer, cellsToKeep, edgesToKeep, v
 
     for i = 1:length(gPerBioEdgeFields)
         fn = gPerBioEdgeFields{i};
+        if ~isfield( secondlayer, fn )
+            continue;
+        end
         x = secondlayer.(fn);
         if size(x,1) > 1
             x = x(edgesToKeep,:);
@@ -53,6 +59,9 @@ function secondlayer = keepBioElements( secondlayer, cellsToKeep, edgesToKeep, v
 
     for i = 1:length(gPerBioVertexFields)
         fn = gPerBioVertexFields{i};
+        if ~isfield( secondlayer, fn )
+            continue;
+        end
         x = secondlayer.(fn);
         if size(x,1) > 1
             x = x(vertexesToKeep,:);

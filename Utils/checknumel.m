@@ -1,7 +1,10 @@
-function result = checknumel( m, field, num, complainer )
+function result = checknumel( m, field, num, severity )
+    if nargin < 4
+        severity = 0;
+    end
     if isfield( m, field ) && (numel(m.(field)) ~= num)
         result = 0;
-        complainer( ['validmesh:' field], ...
+        complain2( severity, ...
             'Wrong size of %s: %d, expected %d.', ...
             field, numel(m.(field)), num );
     else

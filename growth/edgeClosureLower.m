@@ -26,8 +26,6 @@ function edges = edgeClosureLower( m, edges )
     %   new potentially bad triangles.
     % Otherwise, drop A.
     
-    
-
     numiters = 0;
     edgelengthsq = zeros( size(m.FEconnectivity.edgeends,1), 1 );
     while true
@@ -35,9 +33,9 @@ function edges = edgeClosureLower( m, edges )
         faceedgemap = edgemap( m.FEconnectivity.faceedges );
         numedgesperface = sum( faceedgemap, 2 );
         twoedgedfaces = numedgesperface==2;
-        fprintf( 1, 'Iteration %d.  Edges to split: %d, two-edged faces: %d\n', numiters, sum(edgemap), sum(twoedgedfaces) );
+        timedFprintf( 1, 'Iteration %d. Edges to split: %d, two-edged faces: %d\n', numiters, sum(edgemap), sum(twoedgedfaces) );
         if ~any(twoedgedfaces)
-            fprintf( 1, 'Iteration finished at step %d.\n', numiters );
+            timedFprintf( 1, 'Iteration finished at step %d.\n', numiters );
             break;
         end
         
@@ -57,7 +55,4 @@ function edges = edgeClosureLower( m, edges )
     end
     
     edges = find(edgemap);
-    
-    
-    
 end

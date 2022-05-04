@@ -13,7 +13,8 @@ function m = leaf_refinebioedges( m, varargin )
 %
 %   'abslength'    The maximum length of any edge. Every edge will be
 %           subdivided enough times for its subedges to be no more than
-%           this length.  A value of zero will be ignored.
+%           this length.  A value of zero or Inf will be ignored. The
+%           default value is m.globalProps.bioAsublength.
 %
 %   If both 'refinement' and 'abslength' are given, each edge will be
 %   subdivided enough times to satisfy both requirements.
@@ -22,34 +23,41 @@ function m = leaf_refinebioedges( m, varargin )
 %             refine the walls of the specified cells.
 %
 %   'edges'   A list of indexes of cell wall segments (by default all of
-%             them).  Only refine the specified wall segments.
+%             them). Only refine the specified wall segments.
 %
 %   If both 'cells' and 'edges' are specified, the sets of wall segments
-%   they specify are combined.  If just one is specified, the other is
-%   taken to be empty.  If neither is specified, all wall segments are
+%   they specify are combined. If just one is specified, the other is
+%   taken to be empty. If neither is specified, all wall segments are
 %   refined.
 
     if ~hasNonemptySecondLayer(m)
         return;
     end
+    
+    if size( m.secondlayer.vxFEMcell, 1 ) == 1
+        xxxx = 1;
+    end
 
     [s,ok] = safemakestruct( mfilename(), varargin );
     if ~ok, return; end
     setGlobals();
-    s = defaultfields( s, 'refinement', 0, 'abslength', 0, 'cells', [], 'edges', [] );
+    s = defaultfields( s, 'refinement', 0, 'abslength', m.globalProps.bioAsublength, 'cells', [], 'edges', [] );
     ok = checkcommandargs( mfilename(), s, 'exact', ...
         'refinement', 'abslength', 'cells', 'edges' );
     if ~ok, return; end
     
     s.refinement = mean(s.refinement(:)); % In case of a mistaken multiple-value argument.
     
-    if isempty(s.refinement) || (s.refinement <= 1)
+    haveRefinement = ~isempty(s.refinement) && (s.refinement > 1);
+    haveAbslength = ~isempty(s.abslength) && (s.abslength < Inf) && (s.abslength ~= 0);
+    
+    if ~haveRefinement && ~haveAbslength
+        % Nothing to do.
         return;
     end
     
-%     [m.secondlayer,subvxs] = refineCellularLayer( m.secondlayer, s, m );
     numcells = length(m.secondlayer.cells);
-    numoldvertexes = size( m.secondlayer.vxFEMcell, 1 );
+    numoldvertexes = length( m.secondlayer.vxFEMcell );
     numoldedges = size( m.secondlayer.edges, 1 );
 
     % Determine which edges we are to operate on.
@@ -57,13 +65,31 @@ function m = leaf_refinebioedges( m, varargin )
         relEdgeMap = true(1,numoldedges);
         relCellIndexes = 1:numcells;
     else
-        relEdgeMap = false(1,numoldedges);
-        relEdgeMap(s.edges) = true;
+        if islogical( s.cells )
+            cellIndexes = reshape( find( s.cells ), [], 1 );
+        else
+            cellIndexes = s.cells;
+        end
+        if islogical( s.edges )
+            edgeMap = s.edges;
+        else
+            edgeMap = false(1,numoldedges);
+            edgeMap(s.edges) = true;
+        end
+%         relEdgeMap = false(1,numoldedges);
+%         relEdgeMap(s.edges) = true;
+        relEdgeMap = edgeMap;
+        
         relEdgeMap( [ m.secondlayer.cells(s.cells).edges ] ) = true;
-        relCellIndexes = reshape( unique( [ s.cells(); reshape( m.secondlayer.edges(s.edges,[3 4]), [], 1 ) ] ), 1, [] );
+        relCellIndexes = reshape( unique( [ cellIndexes; reshape( m.secondlayer.edges(s.edges,[3 4]), [], 1 ) ] ), 1, [] );
         if relCellIndexes(1)==0
             relCellIndexes(1) = [];
         end
+    end
+    
+    if isempty( relEdgeMap )
+        % Nothing to do.
+        return;
     end
     
     % Calculate the number of new vertexes and edges to be added to every
@@ -74,19 +100,19 @@ function m = leaf_refinebioedges( m, varargin )
     edgelengths = sqrt( sum( edgevecs.^2, 2 ) );
     
     segmentlength = Inf;
-    if s.refinement > 0
+    if haveRefinement
         sortededgelengths = sort(edgelengths);
         medianlength = sortededgelengths(ceil(length(sortededgelengths)/2));
 %         averagelength = sum(edgelengths)/numRelEdges;
         segmentlength = min( segmentlength, medianlength/s.refinement );
     end
-    if s.abslength > 0
+    if haveAbslength
         segmentlength = min( segmentlength, s.abslength );
     end
     
-    newperRelEdge = max( 1, round( edgelengths/segmentlength ) ) - 1;
+    newVxsPerRelEdge = max( 1, round( edgelengths/segmentlength ) ) - 1;
     
-    numNewVxsEdges = sum(newperRelEdge);
+    numNewVxsEdges = sum(newVxsPerRelEdge);
     % This is both the number of new vertexes and the number of new edges.
     
     if numNewVxsEdges==0
@@ -96,7 +122,7 @@ function m = leaf_refinebioedges( m, varargin )
     
     % All the other edges get no new subedges.
     newperedge = zeros( numoldedges, 1 );
-    newperedge(relEdgeMap) = newperRelEdge;
+    newperedge(relEdgeMap) = newVxsPerRelEdge;
     relEdgeMap = newperedge' > 0;
     
     % Henceforth we deal with all edges.  Edges that are not to be refined
@@ -114,6 +140,7 @@ function m = leaf_refinebioedges( m, varargin )
     
     % Extend all the per-vertex and per-edge arrays to hold the new data.
     m.secondlayer.edges = [ m.secondlayer.edges; zeros( numNewVxsEdges, size(m.secondlayer.edges,2) ) ];
+    m.secondlayer.vxFEMcell = m.secondlayer.vxFEMcell(:);
     m.secondlayer.vxFEMcell = [ m.secondlayer.vxFEMcell; zeros( numNewVxsEdges, size(m.secondlayer.vxFEMcell,2), 'int32' ) ];
     m.secondlayer.vxBaryCoords = [ m.secondlayer.vxBaryCoords; zeros( numNewVxsEdges, size(m.secondlayer.vxBaryCoords,2), 'single' ) ];
     m.secondlayer.cell3dcoords = [ m.secondlayer.cell3dcoords; zeros( numNewVxsEdges, size(m.secondlayer.cell3dcoords,2), 'single' ) ];
@@ -145,7 +172,7 @@ function m = leaf_refinebioedges( m, varargin )
     subedges = numoldedges + (1:numNewVxsEdges);
     subvxs = numoldvertexes + (1:numNewVxsEdges);
     
-    for ei=find(relEdgeMap) % 1:numoldedges % 
+    for ei=find(relEdgeMap)
         ss = starts(ei);
         es = ends(ei);
         % The positions of the new vertexes are distributed evenly along
@@ -166,7 +193,7 @@ function m = leaf_refinebioedges( m, varargin )
         m.secondlayer.edges( ei, 2 ) = subvxs(ss);
     end
     
-    for ci=relCellIndexes % 1:numcells % 
+    for ci=relCellIndexes
         vxs = m.secondlayer.cells(ci).vxs;
         edges = m.secondlayer.cells(ci).edges;
         sense = m.secondlayer.edges( edges, 1 )==vxs';
@@ -193,6 +220,7 @@ function m = leaf_refinebioedges( m, varargin )
         m.secondlayer.cells(ci).vxs = newvxs;
     end
     
+    % Find which cell each new vertex belongs to.
     n = 0;
     for ei=1:numoldedges
         if newperedge(ei)==0
@@ -211,6 +239,9 @@ function m = leaf_refinebioedges( m, varargin )
         else
             if hint(2)==0
                 hint = hint(1);
+                if hint==0
+                    xxxx = 1;
+                end
             end
             for vi=vxs
                 [ ci, bc, ~, ~ ] = findFE( m, m.secondlayer.cell3dcoords(vi,:), 'hint', hint );

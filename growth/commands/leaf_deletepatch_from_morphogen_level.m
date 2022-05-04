@@ -15,13 +15,13 @@ function    m=leaf_deletepatch_from_morphogen_level(m,wound)
     % Modified by RK 2009 Feb for elegance and efficiency.
 
 %    ind=find(wound>0.5);
-%    listcells=[];
+%    listelements=[];
 %    for i=1:size(m.tricellvxs,1)
 %        if length(intersect(m.tricellvxs(i,:),ind'))==3
-%            listcells(end+1)=i;
+%            listelements(end+1)=i;
 %       end
 %    end
     if isempty(m), return; end
-    listcells = find( cellMapFromNodeMap( m, wound>0.5, 'all' ) );
-    m = leaf_deletepatch( m, listcells );
+    listelements = find( elementMapFromNodeMap( m, wound>0.5, 'all' ) );
+    m = leaf_deletepatch( m, listelements );
 end

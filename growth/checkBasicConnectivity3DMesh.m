@@ -1,25 +1,10 @@
-function [ok,errs] = checkBasicConnectivity3DMesh( m, verbose )
+function [ok,errs] = checkBasicConnectivity3DMesh( m )
 %[ok,errs] = checkBasicConnectivity3DMesh( m )
 %   Check the consistency of m.FEsets.fevxs.  Passing this test is a
 %   precondition for connectivity3D to function correctly.
 
 
-    if nargin < 2
-        verbose = true;
-    end
-
-    ERRORS = false;
-    if ERRORS
-        complainer = @error;
-    else
-        complainer = @warning;
-    end
-    if verbose
-        whiner = @warning;
-    else
-        whiner = @donothing;
-    end
-
+    severity = 0;
     ok = true;
     errs = 0;
     numFEs = getNumberOfFEs( m );
@@ -31,12 +16,12 @@ function [ok,errs] = checkBasicConnectivity3DMesh( m, verbose )
     nonexistentvxs = setdiff( usedvxs, 1:size(m.FEnodes,1) );
     if ~isempty(unusedvxs)
         errs = errs+1;
-        complainer( '%d vertexes are not members of any element', length(unusedvxs) );
+        complain2( severity, '%d vertexes are not members of any element', length(unusedvxs) );
         unusedvxs
     end
     if ~isempty(nonexistentvxs)
         errs = errs+1;
-        complainer( '%d vertexes are members of an element but have no coordinates', length(nonexistentvxs) );
+        complain2( severity, '%d vertexes are members of an element but have no coordinates', length(nonexistentvxs) );
         nonexistentvxs'
     end
 
@@ -47,7 +32,7 @@ function [ok,errs] = checkBasicConnectivity3DMesh( m, verbose )
     badfevxs = any(repeatedvxs,2);
     if any(badfevxs)
         errs = errs+1;
-        complainer( '%d elements contain one or more repeated vertexes', sum(badfevxs) );
+        complain2( severity, '%d elements contain one or more repeated vertexes', sum(badfevxs) );
         badfevxs'
     end
     
@@ -56,7 +41,7 @@ function [ok,errs] = checkBasicConnectivity3DMesh( m, verbose )
     duplicateFEs = all( sortedsortedfevxs(1:(end-1),:)==sortedsortedfevxs(2:end,:), 2 );
     if any( duplicateFEs )
         errs = errs+1;
-        complainer( 'At least %d elements have identical vertexes', sum(duplicateFEs) );
+        complain2( severity, 'At least %d elements have identical vertexes', sum(duplicateFEs) );
         perm( [duplicateFEs;false] | [false;duplicateFEs] )
     end
     
@@ -70,7 +55,7 @@ function [ok,errs] = checkBasicConnectivity3DMesh( m, verbose )
     runlengths = badends-badstarts;
     if any(runlengths >= 2)
         errs = errs+1;
-        complainer( '%d faces belong to three or more elements', sum(runlengths >= 2) );
+        complain2( severity, '%d faces belong to three or more elements', sum(runlengths >= 2) );
     end
     
     

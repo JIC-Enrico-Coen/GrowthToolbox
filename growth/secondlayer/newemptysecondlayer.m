@@ -21,6 +21,9 @@ function sl = newemptysecondlayer( oldsl )
 %       vxBaryCoords(vi,1:3)   Its FEM cell barycentric coordinates.
 %       cell3dcoords(vi,1:3)   Its 3D coordinates (which can be calculated
 %                              from the other data).
+%       vxedges(vi,1:3)        The list of edges incident on the vertex.
+%                              There are always either 2 or 3 of these.
+%                              When there are 2, the third value is zero.
 % For each clone edge ei:
 %       edges(ei,1:4)          The indexes of the clone vertexes at its ends
 %                              and the clone cells on either side (the
@@ -59,6 +62,7 @@ function sl = newemptysecondlayer( oldsl )
     sl.vxFEMcell = zeros(0,1, 'int32');
     sl.vxBaryCoords = zeros(0,0, 'single');
     sl.cell3dcoords = zeros(0,3, 'single');
+    sl.vxedges = zeros(0,3, 'int32');
     
     sl.edges = zeros(0,4);
     sl.interiorborder = false(0,1);

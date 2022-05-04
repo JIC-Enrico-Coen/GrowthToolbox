@@ -1,5 +1,5 @@
-function cc = cellcentres( m, cells, side )
-%cc = cellcentres( m, cells, side )
+function cc = elementCentres( m, cells, side )
+%cc = elementCentres( m, cells, side )
 %   Find the centres of all the finite elements, on either the A side, the
 %   B side, or the midplane.  side==-1 is the A side, 0 is the midplane,
 %   and 1 is the B side.  If side is omitted, it is determined from the

@@ -74,11 +74,11 @@ function [projectfullpath,status] = findGFtboxProject( projectname, create, crea
     
     if isempty( projectname )
         [~,~,projectsdir,modelname,~] = GFtboxFindWindow();
-        projectname = fullfile( projectsdir, modelname );
-        if isempty( projectname )
+        if isempty(modelname)
             status = 'No open project';
             return;
         end
+        projectname = fullfile( projectsdir, modelname );
     end
     
     if isrootpath( projectname )

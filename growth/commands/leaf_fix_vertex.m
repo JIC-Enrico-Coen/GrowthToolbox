@@ -23,7 +23,7 @@ function m = leaf_fix_vertex( m, varargin )
 %                   string 'all'.
 %
 %       'dfs'       The degrees of freedom to be constrained.  This can be
-%                   either a subset of 'xyz,  or a string consisting of
+%                   either a subset of 'xyz',  or a string consisting of
 %                   substrings each beginning with '+' or '-' followed by a
 %                   subset of 'xyz'.  In the first case the specifed
 %                   degrees of freedom are made fixed and all others made

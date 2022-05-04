@@ -1,4 +1,5 @@
 function [m.secondlayer,subvxs,m] = refineCellularLayer( m.secondlayer, s, m )
+% NOT USED.
     numcells = length(m.secondlayer.cells);
     numoldvertexes = size( m.secondlayer.vxFEMcell, 1 );
     numoldedges = size( m.secondlayer.edges, 1 );

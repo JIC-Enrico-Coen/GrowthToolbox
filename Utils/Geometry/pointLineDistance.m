@@ -1,5 +1,5 @@
 function [d,pp,bc] = pointLineDistance( vxs, p, wholeLine )
-%[d,pp] = pointLineDistance( vxs, p, wholeLine )
+%[d,pp,bc] = pointLineDistance( vxs, p, wholeLine )
 %   Find the distance of a point from a line segment.  VXS is a 2*D vector
 %   containing the ends of the segment, where D is the number of dimensions.
 %   pp is the foot of the perpendicular from p to the line.  bc is the

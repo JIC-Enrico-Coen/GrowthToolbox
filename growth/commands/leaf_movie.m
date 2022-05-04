@@ -131,7 +131,6 @@ function [m,ok,moviefile] = leaf_movie( m, varargin )
         'keyframe', 5 );
     s.fps = double(s.fps);  % Because it generates a bad movie file if
                             % it's an integer type.
-    useNewMethod = true;
     if ~(exist( 'VideoWriter.m', 'file' )==2)
         if isinteractive(m)
             queryDialog( 1, 'Unable to perform operation', ...
@@ -187,10 +186,6 @@ function [m,ok,moviefile] = leaf_movie( m, varargin )
             fileext = xfileext;
         end
     end
-    
-%     if isempty(fileext)
-%         fileext = '.avi';
-%     end
     
     if ~asked
         if isrootpath( filepath )

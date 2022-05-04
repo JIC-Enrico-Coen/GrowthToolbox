@@ -1,4 +1,5 @@
-function m = splitclonecell( m, ci, v, splitpoint )
+function [m,edgesplitdata] = splitclonecell( m, ci, v, splitpoint )
+%[m,edgesplitdata] = splitclonecell( m, ci, v, splitpoint )
 %m = splitclonecell( m, ci, v )
 %   Split cell ci perpendicular to direction v, through splitpoint.
 %   splitpoint defaults to the centroid of the vertexes.
@@ -7,6 +8,8 @@ function m = splitclonecell( m, ci, v, splitpoint )
 
 %   dumpsecondlayer( m.secondlayer );
 
+    edgesplitdata = [];
+    
     if all(v==0) || any(isnan(v))
         return;
     end
@@ -18,10 +21,11 @@ function m = splitclonecell( m, ci, v, splitpoint )
     % Force edges to be split at least this distance from their endpoints.
     min_d = 0.05 * sqrt(m.secondlayer.averagetargetarea/1.4);
 
-VERBOSE = 0;
-if VERBOSE
-fprintf( 1, 'splitclonecell: splitting cell %d.\n', ci );
-end
+    VERBOSE = 0;
+    if VERBOSE
+        fprintf( 1, 'splitclonecell: splitting cell %d.\n', ci );
+    end
+    
     % Find out how many of everything there is, and get the cell vertex
     % coordinates.
     numcells = length( m.secondlayer.cells );
@@ -52,6 +56,16 @@ end
     newei1 = numedges+1;
     newei2 = numedges+2;
     newei3 = numedges+3;
+    
+    % Edges sei1 and sei2 were split. Each is the index of one of its
+    % daughter edges, and newei1 and newei2 are their respective other
+    % daughter edges. newei3 is the new cell wall.
+    edgesplitdata = struct( 'sei1', splitedgeindexes(1), ...
+                            'sei2', splitedgeindexes(2), ...
+                            'newei1', newei1, ...
+                            'newei2', newei2, ...
+                            'newei3', newei3 );
+    
     lastGeneration = m.secondlayer.generation( length(m.secondlayer.generation) );
     m.secondlayer.generation([newei1,newei2,newei3]) = ...
          [ m.secondlayer.generation(splitedgeindexes(1));
@@ -102,9 +116,9 @@ end
     % new vertex.
     % Find which FEM cells the edge endpoints are in.
     femCells = m.secondlayer.vxFEMcell( splitvxs );
-if VERBOSE
-    fprintf( 1, 'femCells %d %d\n', femCells );
-end
+    if VERBOSE
+        fprintf( 1, 'femCells %d %d\n', femCells );
+    end
     if 0
         [ testvi1, testbc1 ] = splitcloneedge( m, splitedgeindexes(1) );
         [ testvi2, testbc2 ] = splitcloneedge( m, splitedgeindexes(2) );
@@ -120,9 +134,9 @@ end
         else
             [ newcell1, bc1, err ] = findFE( m, newvx3d1, 'hint', femCells(1:2) );
         end
-if VERBOSE
-        fprintf( 1, 'newcell1 %d\n', newcell1 );
-end
+        if VERBOSE
+            fprintf( 1, 'newcell1 %d\n', newcell1 );
+        end
     end
     
     if isempty(bc1)
@@ -144,9 +158,9 @@ end
         else
             [ newcell2, bc2, err ] = findFE( m, newvx3d2, 'hint', femCells(3:4) );
         end
-if VERBOSE
-        fprintf( 1, 'newcell2 %d\n', newcell2 );
-end
+        if VERBOSE
+            fprintf( 1, 'newcell2 %d\n', newcell2 );
+        end
     end
     
     if isempty(bc2)
@@ -186,51 +200,51 @@ end
     else 
         newrange = [split1cv2:numcellvxs, 1:split2cv1];
     end
-if VERBOSE
-    fprintf( 1, 'newei1 %d data [ %d %d %d %d ]\n', newei1, m.secondlayer.edges(newei1,:) );
-    fprintf( 1, 'newei2 %d data [ %d %d %d %d ]\n', newei2, m.secondlayer.edges(newei2,:) );
-    fprintf( 1, 'newei3 %d data [ %d %d %d %d ]\n', newei3, m.secondlayer.edges(newei3,:) );
-end
+    if VERBOSE
+        fprintf( 1, 'newei1 %d data [ %d %d %d %d ]\n', newei1, m.secondlayer.edges(newei1,:) );
+        fprintf( 1, 'newei2 %d data [ %d %d %d %d ]\n', newei2, m.secondlayer.edges(newei2,:) );
+        fprintf( 1, 'newei3 %d data [ %d %d %d %d ]\n', newei3, m.secondlayer.edges(newei3,:) );
+    end
     % Create the new cell's vertex and edge lists.
     m.secondlayer.cells(newci).vxs = ...
-        [ m.secondlayer.cells(ci).vxs( newrange ), newvi2, newvi1 ];
+        [ reshape( m.secondlayer.cells(ci).vxs( newrange ), 1, [] ), newvi2, newvi1 ];
     m.secondlayer.cells(newci).edges = ...
-        [ m.secondlayer.cells(ci).edges( newrange ), newei3, newei1 ];
-if VERBOSE
-fprintf( 1, 'newci %d vxs [', newci );
-fprintf( 1, ' %d', m.secondlayer.cells(newci).vxs );
-fprintf( 1, ' ]\n' );
-fprintf( 1, 'newci %d edges [', newci );
-fprintf( 1, ' %d', m.secondlayer.cells(newci).edges );
-fprintf( 1, ' ]\n' );
-end
+        [ reshape( m.secondlayer.cells(ci).edges( newrange ), 1, [] ), newei3, newei1 ];
+    if VERBOSE
+        fprintf( 1, 'newci %d vxs [', newci );
+        fprintf( 1, ' %d', m.secondlayer.cells(newci).vxs );
+        fprintf( 1, ' ]\n' );
+        fprintf( 1, 'newci %d edges [', newci );
+        fprintf( 1, ' %d', m.secondlayer.cells(newci).edges );
+        fprintf( 1, ' ]\n' );
+    end
 
     % Make the new cell's edges refer to the new cell.
     neis = m.secondlayer.cells(ci).edges( newrange );
     ed = m.secondlayer.edges(neis,3:4);
     ed(ed==ci) = newci;
     m.secondlayer.edges(neis,3:4) = ed;
-if VERBOSE
-fprintf( 1, 'newci %d edge data [\n', newci );
-fprintf( 1, '    v %d e %d: %d %d %d %d\n', ...
-    [ m.secondlayer.cells(newci).vxs; ...
-      m.secondlayer.cells(newci).edges; ...
-      m.secondlayer.edges(m.secondlayer.cells(newci).edges,:)' ] );
-fprintf( 1, ' ]\n' );
-end
+    if VERBOSE
+        fprintf( 1, 'newci %d edge data [\n', newci );
+        fprintf( 1, '    v %d e %d: %d %d %d %d\n', ...
+            [ m.secondlayer.cells(newci).vxs; ...
+              m.secondlayer.cells(newci).edges; ...
+              m.secondlayer.edges(m.secondlayer.cells(newci).edges,:)' ] );
+        fprintf( 1, ' ]\n' );
+    end
     % Modify the old cell's vertex and edge lists.
     m.secondlayer.cells(ci).vxs = ...
         [ m.secondlayer.cells(ci).vxs( oldrange ), newvi1, newvi2 ];
     m.secondlayer.cells(ci).edges = ...
         [ m.secondlayer.cells(ci).edges( oldrange ), newei3, newei2 ];
-if VERBOSE
-fprintf( 1, 'ci %d edge data [\n', ci );
-fprintf( 1, '    v %d e %d: %d %d %d %d\n', ...
-    [ m.secondlayer.cells(ci).vxs(:); ...
-      m.secondlayer.cells(ci).edges; ...
-      m.secondlayer.edges(m.secondlayer.cells(ci).edges,:)' ] );
-fprintf( 1, ' ]\n' );
-end
+    if VERBOSE
+        fprintf( 1, 'ci %d edge data [\n', ci );
+        fprintf( 1, '    v %d e %d: %d %d %d %d\n', ...
+            [ m.secondlayer.cells(ci).vxs(:); ...
+              m.secondlayer.cells(ci).edges; ...
+              m.secondlayer.edges(m.secondlayer.cells(ci).edges,:)' ] );
+        fprintf( 1, ' ]\n' );
+    end
 
     % Insert the new vertexes and edges into otherci1 and otherci2.
     % Find splitvxs(1:2) in otherci1.vxs.  Insert newvi1 between.
@@ -240,9 +254,9 @@ end
         i = find( m.secondlayer.cells(otherci1).vxs==splitvxs(2), 1 );
         i1 = mod(i,numouter1vxs) + 1;
         if m.secondlayer.cells(otherci1).vxs(i1) == splitvxs(1)
-if VERBOSE
-            fprintf( 1, 'Same orientation for cell otherci1 %d.\n', otherci1 );
-end
+            if VERBOSE
+                fprintf( 1, 'Same orientation for cell otherci1 %d.\n', otherci1 );
+            end
             m.secondlayer.cells(otherci1).vxs = ...
                 [ m.secondlayer.cells(otherci1).vxs(1:i), ...
                   newvi1, ...
@@ -252,9 +266,9 @@ end
                   newei1, ...
                   m.secondlayer.cells(otherci1).edges(i:numouter1vxs) ];
         else
-if VERBOSE
-            fprintf( 1, 'Opposite orientation for cell otherci1 %d.\n', otherci1 );
-end
+            if VERBOSE
+                fprintf( 1, 'Opposite orientation for cell otherci1 %d.\n', otherci1 );
+            end
             m.secondlayer.cells(otherci1).vxs = ...
                 [ m.secondlayer.cells(otherci1).vxs(1:i-1), ...
                   newvi1, ...
@@ -273,59 +287,8 @@ end
         i = find( m.secondlayer.cells(otherci2).vxs==splitvxs(4), 1 );
         i1 = mod(i,numouter2vxs) + 1;
         if m.secondlayer.cells(otherci2).vxs(i1) == splitvxs(3)
-if VERBOSE
-            fprintf( 1, 'Same orientation for cell otherci2 %d.\n', otherci2 );
-end
-            m.secondlayer.cells(otherci2).vxs = ...
-                [ m.secondlayer.cells(otherci2).vxs(1:i), ...
-                  newvi2, ...
-                  m.secondlayer.cells(otherci2).vxs(i+1:numouter2vxs) ];
-            m.secondlayer.cells(otherci2).edges = ...
-                [ m.secondlayer.cells(otherci2).edges(1:i-1), ...
-                  newei2, ...
-                  m.secondlayer.cells(otherci2).edges(i:numouter2vxs) ];
-        else
-if VERBOSE
-            fprintf( 1, 'Opposite orientation for cell otherci2 %d.\n', otherci2 );
-fprintf( 1, 'otherci2 %d cellvxs [', otherci2 );
-fprintf( 1, ' %d', m.secondlayer.cells(otherci2).vxs );
-fprintf( 1, ' ]\n' );
-fprintf( 1, 'otherci2 %d celledges [', otherci2 );
-fprintf( 1, ' %d', m.secondlayer.cells(otherci2).edges );
-fprintf( 1, ' ]\n' );
-fprintf( 1, 'otherci2 %d edge data [\n', otherci2 );
-fprintf( 1, '    %d %d %d %d\n', m.secondlayer.edges(m.secondlayer.cells(otherci2).edges,:)' );
-fprintf( 1, ' ]\n' );
-end
-            m.secondlayer.cells(otherci2).vxs = ...
-                [ m.secondlayer.cells(otherci2).vxs(1:i-1), ...
-                  newvi2, ...
-                  m.secondlayer.cells(otherci2).vxs(i:numouter2vxs) ];
-            m.secondlayer.cells(otherci2).edges = ...
-                [ m.secondlayer.cells(otherci2).edges(1:i-1), ...
-                  newei2, ...
-                  m.secondlayer.cells(otherci2).edges(i:numouter2vxs) ];
-if VERBOSE
-fprintf( 1, 'otherci2 %d cellvxs [', otherci2 );
-fprintf( 1, ' %d', m.secondlayer.cells(otherci2).vxs );
-fprintf( 1, ' ]\n' );
-fprintf( 1, 'otherci2 %d celledges [', otherci2 );
-fprintf( 1, ' %d', m.secondlayer.cells(otherci2).edges );
-fprintf( 1, ' ]\n' );
-fprintf( 1, 'otherci2 %d edge data [\n', otherci2 );
-fprintf( 1, '    %d %d %d %d\n', m.secondlayer.edges(m.secondlayer.cells(otherci2).edges,:)' );
-fprintf( 1, ' ]\n' );
-end
-        end
-        if 0
-            if m.secondlayer.cells(otherci2).vxs(i1) ~= splitvxs(3)
-                i1 = i-1;  if i1==0, i1 = numouter2vxs; end
-                if m.secondlayer.cells(otherci2).vxs(i1) == splitvxs(3)
-                    fprintf( 1, 'Warning: orientation violation for cells %d and %d.\n', ci, otherci2 );
-                    i = i1;
-                else
-                    fprintf( 1, 'Warning: inconsistency for cells %d and %d.\n', ci, otherci2 );
-                end
+            if VERBOSE
+                fprintf( 1, 'Same orientation for cell otherci2 %d.\n', otherci2 );
             end
             m.secondlayer.cells(otherci2).vxs = ...
                 [ m.secondlayer.cells(otherci2).vxs(1:i), ...
@@ -335,7 +298,58 @@ end
                 [ m.secondlayer.cells(otherci2).edges(1:i-1), ...
                   newei2, ...
                   m.secondlayer.cells(otherci2).edges(i:numouter2vxs) ];
+        else
+            if VERBOSE
+                fprintf( 1, 'Opposite orientation for cell otherci2 %d.\n', otherci2 );
+                fprintf( 1, 'otherci2 %d cellvxs [', otherci2 );
+                fprintf( 1, ' %d', m.secondlayer.cells(otherci2).vxs );
+                fprintf( 1, ' ]\n' );
+                fprintf( 1, 'otherci2 %d celledges [', otherci2 );
+                fprintf( 1, ' %d', m.secondlayer.cells(otherci2).edges );
+                fprintf( 1, ' ]\n' );
+                fprintf( 1, 'otherci2 %d edge data [\n', otherci2 );
+                fprintf( 1, '    %d %d %d %d\n', m.secondlayer.edges(m.secondlayer.cells(otherci2).edges,:)' );
+                fprintf( 1, ' ]\n' );
+            end
+            m.secondlayer.cells(otherci2).vxs = ...
+                [ m.secondlayer.cells(otherci2).vxs(1:i-1), ...
+                  newvi2, ...
+                  m.secondlayer.cells(otherci2).vxs(i:numouter2vxs) ];
+            m.secondlayer.cells(otherci2).edges = ...
+                [ m.secondlayer.cells(otherci2).edges(1:i-1), ...
+                  newei2, ...
+                  m.secondlayer.cells(otherci2).edges(i:numouter2vxs) ];
+            if VERBOSE
+                fprintf( 1, 'otherci2 %d cellvxs [', otherci2 );
+                fprintf( 1, ' %d', m.secondlayer.cells(otherci2).vxs );
+                fprintf( 1, ' ]\n' );
+                fprintf( 1, 'otherci2 %d celledges [', otherci2 );
+                fprintf( 1, ' %d', m.secondlayer.cells(otherci2).edges );
+                fprintf( 1, ' ]\n' );
+                fprintf( 1, 'otherci2 %d edge data [\n', otherci2 );
+                fprintf( 1, '    %d %d %d %d\n', m.secondlayer.edges(m.secondlayer.cells(otherci2).edges,:)' );
+                fprintf( 1, ' ]\n' );
+            end
         end
+%         if 0
+%             if m.secondlayer.cells(otherci2).vxs(i1) ~= splitvxs(3)
+%                 i1 = i-1;  if i1==0, i1 = numouter2vxs; end
+%                 if m.secondlayer.cells(otherci2).vxs(i1) == splitvxs(3)
+%                     fprintf( 1, 'Warning: orientation violation for cells %d and %d.\n', ci, otherci2 );
+%                     i = i1;
+%                 else
+%                     fprintf( 1, 'Warning: inconsistency for cells %d and %d.\n', ci, otherci2 );
+%                 end
+%             end
+%             m.secondlayer.cells(otherci2).vxs = ...
+%                 [ m.secondlayer.cells(otherci2).vxs(1:i), ...
+%                   newvi2, ...
+%                   m.secondlayer.cells(otherci2).vxs(i+1:numouter2vxs) ];
+%             m.secondlayer.cells(otherci2).edges = ...
+%                 [ m.secondlayer.cells(otherci2).edges(1:i-1), ...
+%                   newei2, ...
+%                   m.secondlayer.cells(otherci2).edges(i:numouter2vxs) ];
+%         end
     end
     
     m = calcCloneVxCoords( m, [newvi1,newvi2] );
@@ -389,10 +403,10 @@ end
     m.secondlayer.celldata.values(newci,:) = m.secondlayer.celldata.values(ci,:);
     m.secondlayer.edgedata.values(newei1,:) = m.secondlayer.edgedata.values(splitedgeindexes(1),:);
     m.secondlayer.edgedata.values(newei2,:) = m.secondlayer.edgedata.values(splitedgeindexes(2),:);
+    m.secondlayer.edgedata.values(newei3,:) = 0;
     m.secondlayer.edgepropertyindex([newei1,newei2]) = m.secondlayer.edgepropertyindex(splitedgeindexes([1 2]));
     m.secondlayer.edgepropertyindex(newei3) = m.secondlayer.newedgeindex;
     m.secondlayer.interiorborder(newei1) = m.secondlayer.interiorborder(splitedgeindexes(1));
-    % Values for newei3, the completely new edge, are left at zero.
     
     % Update the cell id and lineage fields.
     timeAtMidStep = m.globalDynamicProps.currenttime + m.globalProps.timestep/2;
@@ -420,6 +434,38 @@ end
         xxxx = 0;
     end
     
+%     % At this point the following variables are valid:
+%     % newvx3d1, newvx3d2: 3d locations of the new vertexes.
+%     % ci, newci: the indexes of the two daughter cells. ci was also the
+%     % index of the parent cell.
+%     % newvi1, newvi2: indexes of the two new vertexes.
+%     % newei3: index of the new edge.
+%     
+%     % Subdivide the new edge if necessary.
+%     newedgevec = newvx3d1 - newvx3d2;
+%     newedgelength = norm( newedgevec );
+%     numdivs = round( newedgelength/m.globalProps.bioAsublength );
+%     if numdivs >= 2
+%         % Find the 3d positions of the new vertexes.
+%         b = linspace( 0, 1, numdivs+1 )';
+%         b([0 end] ) = [];
+%         a = 1-b;
+%         newvxs3d = newvx3d1 * a + newvx3d2 * b;
+%         
+%         % Find the elements and barycoords of the new vertexes.
+%         % If the edge lies within a single element, then the barycentric
+%         % coords of the new vertexes can be found by interpolation.
+%         % Otherwise they must be found by findFE.
+%         % In this case the hint elements will be those of newvx3d1,
+%         % newvx3d2, and then of all the other vertexes of the two cells.
+%         
+%         % Add the new vertexes.
+%         
+%         % Make and add the new edges.
+%         
+%         % In each of the cells that the new edge belongs to, insert the new
+%         % edges and vertexes into the cells.
+%     end
 
     if m.globalProps.newcallbacks
         [m,~] = invokeIFcallback( m, 'Postcelldivision', ...

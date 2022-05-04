@@ -13,11 +13,11 @@ if nargin < 8
     verbose = true;
 end
 
-if verbose, fprintf( 1, '%s: beginning.\n', mfilename() ); end
+timedFprintf( 1, 'Beginning.\n' );
 
 neednewline = true;
 havecallback = (nargin >= 9) && ~isempty(callback);
-useGPU = strcmp( class(A), 'gpuArray' );
+useGPU = isa( A, 'gpuArray' );
 
 if (nargin < 2)
    error('MATLAB:cgs:NotEnoughInputs', 'Not enough input arguments.');
@@ -43,8 +43,8 @@ if (nargin < 4) || isempty(maxit)
 end
 
 % Check for all zero right hand side vector => all zero solution
-n2b = mynorm2(b);                      % Norm of rhs vector, b
-if (n2b == 0)                       % if    rhs vector is all zeros
+n2b = mynorm2(b);                   % Norm of rhs vector, b
+if n2b == 0                         % if rhs vector is all zeros
    x = zeros(n,1);                  % then  solution is all zeros
    flag = 0;                        % a valid solution has been obtained
    relres = 0;                      % the relative residual is actually 0/0
@@ -53,12 +53,10 @@ if (n2b == 0)                       % if    rhs vector is all zeros
    if (nargout < 2)
       myItermsg(mfilename(),tol,maxit,0,flag,iter,NaN);
    end
-   if verbose
-       if neednewline
-           fprintf( 1, '\n' );
-       end
-       fprintf( 1, '%s returning: right hand side is zero.\n', mfilename() );
+   if neednewline
+       fprintf( 1, '\n' );
    end
+   timedFprintf( 1, 'Ending: right hand side is zero.\n' );
    return
 end
 
@@ -74,7 +72,7 @@ else
    x = zeros(n,1);
 end
 if useGPU
-    fprintf( 1, '%s: calling gpuArray.\n', mfilename() );
+    timedFprintf( 1, 'Calling gpuArray.\n' );
     x = gpuArray(x);
 end
 
@@ -102,8 +100,8 @@ if endcondition                 % Initial guess is a good enough solution
    if (nargout < 2)
       myItermsg(mfilename(),tol,maxit,0,flag,iter,relres);
    end
-   fprintf( 1, '%s returning: initial guess was close enough: normr %f, tolb %f.\n', ...
-       mfilename(), normr, tolb );
+   timedFprintf( 1, 'Returning: initial guess was close enough: normr %f, tolb %f.\n', ...
+       normr, tolb );
    return
 end
 
@@ -128,7 +126,7 @@ relerr = 0;
 itersPerDot = 20;
 dotsPerLine = 50;
 itersPerLine = itersPerDot*dotsPerLine;
-if verbose, fprintf( 1, '%s: performing up to %d iterations.\n', mfilename(), maxit ); end
+if verbose, timedFprintf( 1, 'Performing up to %d iterations.\n', maxit ); end
 for i = 1 : maxit
    rho1 = rho;
    rho = rt' * r;
@@ -219,7 +217,7 @@ for i = 1 : maxit
           if neednewline
               fprintf( 1, '\n' );
           end
-          fprintf( 1, 'mycgs: detected stop on iteration %d\n', i );
+          timedFprintf( 1, 'Detected stop on iteration %d\n', i );
       end
       flag = 8;
       break;
@@ -232,7 +230,9 @@ for i = 1 : maxit
        if maxtime > 0
            elapsedTime = etime( clock(), startTime );
            if elapsedTime > maxtime
-              if verbose,  fprintf( 1, 'mycgs: time %f exceeded limit on iteration %d\n', elapsedTime, i ); end
+               if verbose
+                   timedFprintf( 1, 'Time %f exceeded limit on iteration %d\n', elapsedTime, i );
+               end
                flag = ETIMEFLAG;
                break;
            end
@@ -256,12 +256,12 @@ for i = 1 : maxit
     end
 end                                % for i = 1 : maxit
 if verbose
-    fprintf( 1, '%s: completed after %d iterations .\n', mfilename(), i );
     if neednewline
         fprintf( 1, ' %.3g\n', relerr );
     else
         fprintf( 1, '%6.3g\n', relerr );
     end
+    timedFprintf( 1, 'Completed after %d iterations .\n', i );
 end
 
 % returned solution is first with minimal residual
@@ -289,7 +289,7 @@ if verbose && (nargout < 2)
    myItermsg(mfilename(),tol,maxit,i,flag,iter,relres);
 end
 
-if verbose, fprintf( 1, '%s: returning. flag %d relres %g, iter %d\n', mfilename, flag, relres, iter ); end
+timedFprintf( 1, 'Ending. flag %d relres %g, iter %d\n', flag, relres, iter );
 end
 
 function n = mynormInf( v )

@@ -31,4 +31,6 @@ function m = extrapolatePerVertexSplits( m, ends )
         m.growthTensorPerVertex = extendSplit( m.growthTensorPerVertex, pends, 'ave' );
     end
     m.displacements = extendSplit( m.displacements, pends, 'ave' );
+    newsharpvxs = false( size(ends,1), 1 ); % splitVals( m.sharpvxs, ends, 'min' );
+    m.sharpvxs = [ m.sharpvxs(:); newsharpvxs ];
 end

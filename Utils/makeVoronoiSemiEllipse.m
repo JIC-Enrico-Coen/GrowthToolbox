@@ -5,7 +5,8 @@ function [cells,cellvxs,centres] = makeVoronoiSemiEllipse( numcells, numiters, b
 %   yhi].
 
     % Choose the initial centres uniformly at random.
-    centres = randInSemiEllipse( numcells, bbox )';
+    ax = '+Y';
+    centres = randInSemiEllipse( numcells, bbox, ax )';
 
     % Use CVT to arrange them into a centroidal Voronoi tesselation.
     for i=1:numiters
@@ -21,7 +22,8 @@ function [cells,cellvxs,centres] = makeVoronoiSemiEllipse( numcells, numiters, b
                     centres, ... % The current centres.
                     1, ... % Between 0 and 1. Sets the allowed amount of change on each step.
                     'semiellipse', ... % 
-                    bbox ... % 
+                    bbox, ... % 
+                    ax ... % 
                 );
     end
     centres = centres';

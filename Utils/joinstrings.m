@@ -2,6 +2,8 @@ function js = joinstrings( s, varargin )
 %js = joinstrings( s, ss )
 %   ss is a cell array of strings.  Concatenate all members of ss together,
 %   separated by the string s.
+%
+%   See also: joinNonEmptyStrings
 
     if nargin < 2
         js = '';

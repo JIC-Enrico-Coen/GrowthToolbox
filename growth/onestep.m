@@ -57,6 +57,20 @@ function [m,ok,splitdata] = onestep( m, useGrowthTensors, useMorphogens )
             if any( any( m.morphogens(:,1:3) ~= 0 ) )
                 growthByFE = true;
             end
+            STRAINRET_MGEN = FindMorphogenRole( m, 'STRAINRET', false );
+            if STRAINRET_MGEN==0
+                useResidStrain = false;
+            elseif all( m.morphogens( :, STRAINRET_MGEN ) == 0 )
+                useResidStrain = false;
+            elseif all( reshape( [ m.celldata.residualStrain ], 1, [] ) == 0 )
+                useResidStrain = false;
+            else
+                useResidStrain = true;
+            end
+            if useResidStrain
+                growthByFE = true;
+            end
+            
             if any( reshape( [ m.celldata.residualStrain ], 1, [] ) ~= 0 )
                 growthByFE = true;
             end
@@ -64,11 +78,11 @@ function [m,ok,splitdata] = onestep( m, useGrowthTensors, useMorphogens )
     end
     
     if growthByFE
-        fprintf( 1, '%s: Growth computation beginning for iteration %d (time %g - %g).\n', ...
-            datestring(), m.globalDynamicProps.currentIter, m.globalDynamicProps.currenttime, m.globalDynamicProps.currenttime + m.globalProps.timestep );
+        timedFprintf( 1, 'Growth computation beginning for iteration %d (time %g - %g).\n', ...
+            m.globalDynamicProps.currentIter, m.globalDynamicProps.currenttime, m.globalDynamicProps.currenttime + m.globalProps.timestep );
     else
-        fprintf( 1, '%s: No growth specified for iteration %d (time %g - %g).\n', ...
-            datestring(), m.globalDynamicProps.currentIter, m.globalDynamicProps.currenttime, m.globalDynamicProps.currenttime + m.globalProps.timestep );
+        timedFprintf( 1, 'No growth or residual strain for iteration %d (time %g - %g).\n', ...
+            m.globalDynamicProps.currentIter, m.globalDynamicProps.currenttime, m.globalDynamicProps.currenttime + m.globalProps.timestep );
     end
     
     if growthByFE
@@ -105,11 +119,11 @@ function [m,ok,splitdata] = onestep( m, useGrowthTensors, useMorphogens )
                 [m,u] = totalK( m, useGrowthTensors, useMorphogens );
             end
             ok = ~isempty(u);
-            fprintf( 1, '%s %s: Allocating m.effectiveGrowthTensor.\n', datestring(), mfilename() );
+            timedFprintf( 1, 'Allocating m.effectiveGrowthTensor.\n' );
 
             m.effectiveGrowthTensor = zeros( getNumberOfFEs(m), ...
                                              size(m.effectiveGrowthTensor,2) );
-            fprintf( 1, '%s %s: Allocated m.effectiveGrowthTensor.\n', datestring(), mfilename() );
+            timedFprintf( 1, 'Allocated m.effectiveGrowthTensor.\n' );
         end
         % If the computation failed, u may have been returned as empty.
         
@@ -211,7 +225,7 @@ function [m,ok,splitdata] = onestep( m, useGrowthTensors, useMorphogens )
         m.displacements = [];
     end
     
-    fprintf( 1, '%s s: Calculating polgrad.\n', datestring(), mfilename() );
+    timedFprintf( 1, 'Calculating polgrad.\n' );
     m = calcPolGrad( m );
   % maxgrad2 = max(abs(m.gradpolgrowth(:,1)))
 
@@ -222,6 +236,6 @@ function [m,ok,splitdata] = onestep( m, useGrowthTensors, useMorphogens )
     if m.stop
         ok = false;
     end
-    fprintf( 1, '%s %s: Completed.\n', datestring(), mfilename() );
+    timedFprintf( 1, 'Completed.\n' );
 end
     

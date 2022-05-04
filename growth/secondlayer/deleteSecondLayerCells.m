@@ -68,11 +68,14 @@ function secondlayer = deleteSecondLayerCells( secondlayer, cellsToDelete, t )
         secondlayer.cells(ci).edges = oldToNewEdge( secondlayer.cells(ci).edges );
     end
     
-%     secondlayer.celldata = keepitems( secondlayer.celldata, cellMap );
-%     secondlayer.edgedata = keepitems( secondlayer.edgedata, testEdge );
-%     secondlayer.vxdata = keepitems( secondlayer.vxdata, retainedVxMap );
+    secondlayer.celldata = keepitems( secondlayer.celldata, retainedCellMap );
+    secondlayer.edgedata = keepitems( secondlayer.edgedata, retainedEdgeMap );
+    secondlayer.vxdata = keepitems( secondlayer.vxdata, retainedVxMap );
+    
 
     % Deleted cells no longer have an index.
+    
+    secondlayer1 = secondlayer;
     
     if deleteall
         secondlayer.cellid = zeros(0,1,'int32');
@@ -83,20 +86,22 @@ function secondlayer = deleteSecondLayerCells( secondlayer, cellsToDelete, t )
     else
         cellidtodelete = secondlayer.cellid( cellsToDelete );
         secondlayer.cellid( cellsToDelete ) = [];
-        secondlayer.cellidtoindex(cellidtodelete) = 0;  % one entry for each id that has ever existed.
+        secondlayer.cellidtoindex(:) = 0;
+        secondlayer.cellidtoindex( secondlayer.cellid ) = (1:numcells)';
         secondlayer.cellidtotime( cellidtodelete, 2 ) = t;
     end
 
-    [ok,secondlayer] = checkclonesvalid( secondlayer );
+    [ok,secondlayer2] = checkclonesvalid( secondlayer );
+    secondlayer = secondlayer2;
 %     if ~ok
 %         xxxx = 1;
 %     end
 end
 
-% function d = keepitems( d, keep )
-%     d.genindex = d.genindex( keep );
-%     d.parent = d.parent( keep, : );
-%     d.values = d.values( keep, : );
-% end
+function d = keepitems( d, keep )
+    d.genindex = d.genindex( keep );
+    d.parent = d.parent( keep, : );
+    d.values = d.values( keep, : );
+end
 
 

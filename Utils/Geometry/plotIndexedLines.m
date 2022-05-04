@@ -9,6 +9,16 @@ function h = plotIndexedLines( edges, v1, v2, varargin )
 %   The remaining arguments after v2 specify plotting options which are the
 %   same for all the lines to be plotted.
 
+    if length(varargin)==1
+        options = varargin{1};
+    else
+        options = struct(varargin{:});
+    end
+    dataOnly = isfield( options, 'doplot' ) && options.doplot;
+    if dataOnly
+        options = rmfield( options, 'doplot' );
+    end
+    
     numlines = size( edges, 1 );
     xx = [v1(edges(:,1),1)'; v2(edges(:,2),1)'; nan(1,numlines)];
     yy = [v1(edges(:,1),2)'; v2(edges(:,2),2)'; nan(1,numlines)];

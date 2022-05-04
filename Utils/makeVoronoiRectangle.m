@@ -1,32 +1,51 @@
-function [cells,cellvxs,centres] = makeVoronoiRectangle( numcells, numiters, bbox, subdivideedge )
-%[cells,cellvxs,centres] = makeVoronoiRectangle( numcells, numiters, bbox, subdivideedge )
+function [cells,cellvxs,centres] = makeVoronoiRectangle( numcells, numiters, bbox, subdivideedge, fixedCentres )
+%[cells,cellvxs,centres] = makeVoronoiRectangle( numcells, numiters, bbox, subdivideedge, fixedCentres )
 %   Make a centroidal Voronoi tessellation of the given rectangle, with n
 %   cells. bbox gives the rectangle as [xlo, xhi, ylo, yhi].
+%
+%   The SUBDIVIDEEDGE argument is never used.
+%
+%   FIXEDCENTRES is a K*2 array of points which are required to be included
+%   as cell centres. If absent it is taken to be empty. Their number is
+%   included in the number of cells.
+
+    if (nargin < 5) || isempty( fixedCentres )
+        fixedCentres = zeros(0, 2);
+    end
+    fixedCentres = fixedCentres'; % For compatibility with cvt_iterate.
+    numfixedcentres = size( fixedCentres, 2 );
+    nummovingcentres = max( 0, numcells-size(fixedCentres,2) );
+    numcells = numfixedcentres + nummovingcentres;
 
     % Choose the initial centres uniformly at random.
-    centres = randInRectangle( numcells, bbox )';
+    centres = [ fixedCentres, randInRectangle( nummovingcentres, bbox )' ];
 
-    % Use CVT to arrange them into a centroidal Voronoi tesselation.
-    for i=1:numiters
-        centres = ...
-                cvt_iterate( ...
-                    2, ...    % Dimensions.
-                    numcells, ...      % Number of points? Why does it need this, when n is just size(pts,1)?
-                    1000, ...   % Batch size.
-                    3, ... % Sampling method code. 3 is 'USER'.
-                    0, ... % Do not reset the random seed, to get a different result every time.
-                    40, ... % 10000, ... % Sample points per generator.
-                    0, ... % Random seed (if used).
-                    centres, ... % The current centres.
-                    1, ... % Between 0 and 1. Sets the allowed amount of change on each step.
-                    'rectangle', ... % 
-                    bbox ... % 
-                );
+    if nummovingcentres > 0
+        % Use CVT to arrange them into a centroidal Voronoi tessellation.
+        for i=1:numiters
+            centres = ...
+                    cvt_iterate( ...
+                        2, ...    % Dimensions.
+                        numcells, ...      % Number of points? Why does it need this, when numcells is just size(pts,1)?
+                        1000, ...   % Batch size.
+                        3, ... % Sampling method code. 3 is 'USER'.
+                        0, ... % Do not reset the random seed, to get a different result every time.
+                        40, ... % 10000, ... % Sample points per generator.
+                        0, ... % Random seed (if used).
+                        centres, ... % The current centres.
+                        1, ... % Between 0 and 1. Sets the allowed amount of change on each step.
+                        'usertype', 'rectangle', ...
+                        'bbox', bbox ...
+                    );
+            if ~isempty(fixedCentres)
+                centres = [ fixedCentres, centres(:,(numfixedcentres+1):end) ];
+            end
+        end
+        centres = centres';
     end
-    centres = centres';
     
     
-    % Construct the Voronoi cells.
+    % Add protection points.
     vmin = bbox([1 3]);  % min( pts(:,1:2) );
     vmax = bbox([2 4]);  % max( pts(:,1:2) );
     vcentre = (vmin + vmax)/2;
@@ -37,9 +56,13 @@ function [cells,cellvxs,centres] = makeVoronoiRectangle( numcells, numiters, bbo
     e = b*1.2;
     d = (e+c)*0.6;
     vprotect = [ (vcentre(1) + [0; d; -d]), (vcentre(2) + [-c; e; e]) ];
+    
+    % Construct the Voronoi cells.
     [cellvxs,cells] = voronoin( [ centres; vprotect ] );
+    
     % Remove the cells containing the protection points.
     cells = cells(1:(length(cells)-3));
+    
     % Ensure that all polygons are listed in anticlockwise order.
     ac = isAnticlockwisePoly2D( cellvxs, cells );
     for i=find(~ac')

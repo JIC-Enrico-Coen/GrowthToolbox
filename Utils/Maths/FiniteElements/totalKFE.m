@@ -1,5 +1,5 @@
 function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
-%[m,U,K,F] = totalKFE( m, useGrowthTensors )
+%[m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
 %    Solve the FEM model for the mesh (volumetric meshes only).
 %    The mesh already contains the temperature at each node and the residual
 %    displacements of the nodes.  After the computation, the mesh will contain
@@ -34,10 +34,11 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
     F = [];
     
     if ~isVolumetricMesh(m)
-        fprintf( 1, '%s is only applicable to volumetric meshes.\n', mfilename() );
+        timedFprintf( 1, 'Only applicable to volumetric meshes and this mesh is foliate.\n' );
         return;
     end
 
+    timedFprintf( 1, 'Beginning.\n' );
     global CANUSEGPUARRAY
     if nargin < 2, useGrowthTensors = false; end
     if nargin < 3, useMorphogens = ~useGrowthTensors; end
@@ -71,13 +72,14 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
     if userinterrupt( sb )
         m.displacements = [];
         U = [];
-        fprintf( 1, 'Simulation interrupted by user at step %d.\n', ...
+        timedFprintf( 1, 'Ending because simulation interrupted by user at step %d.\n', ...
             m.globalDynamicProps.currentIter );
         return;
     end
 
-    SPARSE_LIMIT = 20000;  % Should be some value estimated from the result of memory(), or user-settable.
-    useSparse = numDFs >= SPARSE_LIMIT;
+    SPARSE_LIMIT = 10000;  % Should be some value estimated from the result of memory(), or user-settable.
+    useSparse = m.globalProps.alwayssparse || (numDFs >= SPARSE_LIMIT);
+    timedFprintf( 1, 'Using %s matrices.\n', boolchar( useSparse, 'sparse', 'full' ) );
     useSingle = strcmp(m.globalProps.solverprecision,'single') && ~useSparse;
     if SPLAT
         if useSingle
@@ -111,11 +113,12 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
                 else
                     usingsparse = '';
                 end
-                fprintf( 1, 'Cannot allocate a %d by %d full array.\n%s\n%s', ...
+                timedFprintf( 1, 'Cannot allocate a %d by %d full array.\n%s\n%s', ...
                     numDFs, numDFs, reason, usingsparse );
                 if m.globalProps.allowsparse
                     useSparse = true;
                 else
+                    timedFprintf( 1, 'Ending because memory cannot be allocated.\n' );
                     return;
                 end
             end
@@ -125,7 +128,7 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
             % third argument is numDFs*dfsPerNode times the average number of nodes
             % in all the cells that a typical node is a member of.
             estimatedSpace = numDFs*dfsPerCell*4;
-            % fprintf( 1, 'totalK.m: allocating %d entries.\n', estimatedSpace );
+            % timedFprintf( 1, 'Allocating %d entries.\n', estimatedSpace );
             K = spalloc( numDFs, numDFs, estimatedSpace );
         end
         % We always allocate F as a full matrix, because it is far smaller than
@@ -252,7 +255,7 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
         if any(isnan(k1(:))) || any(isnan(f1))
             m.displacements(:) = [];
             U = [];
-            fprintf( 1, 'Warning: growth cannot be calculated due to singularities.\n' );
+            timedFprintf( 1, 'Ending: growth cannot be calculated due to singularities.\n' );
             return;
         end
         dfBase = cellvxs*3;
@@ -269,7 +272,7 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
         end
         
         if mod(ci,reportInterval)==0
-            fprintf( 1, 'Building matrix, processed %d of %d elements.\n', ci, numFEs );
+            timedFprintf( 1, 'Building matrix, processed %d of %d elements.\n', ci, numFEs );
             if userinterrupt( sb )
                 U = abandon( m );
                 return;
@@ -300,7 +303,7 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
     end
     
     elapsedtime = toc(starttime);
-    fprintf( 1, '%s: New method constructs matrices in %f seconds.\n', mfilename(), elapsedtime );
+    timedFprintf( 1, 'New method constructs matrices in %f seconds.\n', elapsedtime );
     
     if ELIMINATERIGIDMOTION
       % rR = rank(R)
@@ -335,7 +338,7 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
     if userinterrupt( sb )
         m.displacements(:) = [];
         U = [];
-        fprintf( 1, 'Simulation interrupted by user at step %d.\n', ...
+        timedFprintf( 1, 'Ending because simulation interrupted by user at step %d.\n', ...
             m.globalDynamicProps.currentIter );
         return;
     end
@@ -356,10 +359,10 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
                             || (~m.globalProps.usePrevDispAsEstimate) ...
                             || (m.globalDynamicProps.currentIter <= 0) ...
                             || all(m.displacements(:)==0)
-                        fprintf( 1, 'Using random displacement as initial guess.\n' );
+                        timedFprintf( 1, 'Using random displacement as initial guess.\n' );
                         initestimate = randomiseDisplacements( m );
                     else
-                        fprintf( 1, 'Using previous displacement as initial guess.\n' );
+                        timedFprintf( 1, 'Using previous displacement as initial guess.\n' );
                         initestimate = reshape( m.displacements', [], 1 );
                         if m.globalProps.resetRand
                             rng(5489,'twister');  % rand('twister',5489);
@@ -376,7 +379,7 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
                 if ~isempty(renumber)
                     initestimate = initestimate(renumber);
                 end
-                fprintf( 1, 'Growth: ' );
+                timedFprintf( 1, 'Growth: ' );
                 USEJACKET = false;
               % solvertolerancemethod = m.globalProps.solvertolerancemethod
                 if CANUSEGPUARRAY
@@ -392,7 +395,7 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
                               @teststopbutton, ...
                               m);
                     UC = gather( UC );
-                    fprintf( 1, 'Computation time for growth (cgs,full,GPUArray) is %.6f seconds.\n', toc(starttic) );
+                    timedFprintf( 1, 'Computation time for growth (cgs,full,GPUArray) is %.6f seconds.\n', toc(starttic) );
                 elseif USEJACKET
                     starttic = tic;
                     [UC,cgflag,cgrelres,m.globalProps.cgiters] = ...
@@ -405,7 +408,7 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
                               verbose, ...
                               @teststopbutton, ...
                               m);
-                    fprintf( 1, 'Computation time for growth (cgs,full,single,JACKET) is %.6f seconds.\n', toc(starttic) );
+                    timedFprintf( 1, 'Computation time for growth (cgs,full,single,JACKET) is %.6f seconds.\n', toc(starttic) );
                 elseif sparseSolve || useSparse
                     starttic = tic;
                     [UC,cgflag,cgrelres,m.globalProps.cgiters] = ...
@@ -418,7 +421,7 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
                               verbose, ...
                               @teststopbutton, ...
                               m);
-                    fprintf( 1, 'Computation time for growth (cgs,sparse,double) is %.6f seconds.\n', toc(starttic) );
+                    timedFprintf( 1, 'Computation time for growth (cgs,sparse,double) is %.6f seconds.\n', toc(starttic) );
                 else
                     starttic = tic;
                     [UC,cgflag,cgrelres,m.globalProps.cgiters] = ...
@@ -431,7 +434,7 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
                               verbose, ...
                               @teststopbutton, ...
                               m);
-                    fprintf( 1, 'Computation time for growth (cgs,full,double) is %.6f seconds.\n', toc(starttic) );
+                    timedFprintf( 1, 'Computation time for growth (cgs,full,double) is %.6f seconds.\n', toc(starttic) );
                 end
               % if false && m.globalProps.usePrevDispAsEstimate
               %     testestimate = (UC-initestimate)./initestimate;
@@ -444,7 +447,7 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
                                m.globalProps.solvertolerance, ...
                                cgmaxiter, ...
                                m.globalProps.maxsolvetime);
-                    fprintf( 1, 'Computation time for growth (lsqr,sparse,double) is %.6f seconds.\n', toc(starttic) );
+                    timedFprintf( 1, 'Computation time for growth (lsqr,sparse,double) is %.6f seconds.\n', toc(starttic) );
                 else
                     starttic = tic;
                     [UC,cgflag,cgrelres,m.globalProps.cgiters] = ...
@@ -452,21 +455,21 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
                                m.globalProps.solvertolerance, ...
                                cgmaxiter, ...
                                m.globalProps.maxsolvetime);
-                    fprintf( 1, 'Computation time for growth (lsqr,full,double) is %.6f seconds.\n', toc(starttic) );
+                    timedFprintf( 1, 'Computation time for growth (lsqr,full,double) is %.6f seconds.\n', toc(starttic) );
                 end
             case 'dgelsy'
                 UC = F;
-                fprintf( 1, 'Growth by %s, size %d ... ', m.globalProps.solver, size(K,1) );
+                timedFprintf( 1, 'Growth by %s, size %d ... ', m.globalProps.solver, size(K,1) );
                 starttic = tic;
                 C = test_gels( K, UC );
-                fprintf( 1, 'Computation time for growth (dgelsy,full,double) is %.6f seconds.\n', toc(starttic) );
+                timedFprintf( 1, 'Computation time for growth (dgelsy,full,double) is %.6f seconds.\n', toc(starttic) );
                 cgflag = 0;
                 cgrelres = 0;
                 m.globalProps.cgiters = 0;
             case 'culaSgesv'
                 starttic = tic;
                 [C,UC] = use_culaSgesv( K, F );
-                fprintf( 1, 'Computation time for growth (culaSgesv,full,double) is %.6f seconds.\n', toc(starttic) );
+                timedFprintf( 1, 'Computation time for growth (culaSgesv,full,double) is %.6f seconds.\n', toc(starttic) );
                 if C ~= 0
                     cgflag = -1;
                     switch C
@@ -493,7 +496,7 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
                         case 10
                             culaerr = 'A runtime error has occurred';
                     end
-                    fprintf( 1, 'CULA error %d: %s.\n', C, culaerr );
+                    timedFprintf( 1, 'CULA error %d: %s.\n', C, culaerr );
                     UC = zeros( size(UC), 'double' );
                 else
                     UC = double(UC);
@@ -524,7 +527,7 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
         F = reshape(F, dfsPerNode, numnodes )';
     end
     if cgflag ~= 0
-        fprintf( 1, 'totalK: cgs error: ' );
+        timedFprintf( 1, 'CGS error: ' );
         if cgflag==20
             fprintf( 1, 'CGS failed to converge to tolerance %g after %d seconds, %d of %d iterations.\n', ...
                 cgrelres, round(m.globalProps.maxsolvetime), m.globalProps.cgiters, cgmaxiter );
@@ -563,6 +566,7 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
         if dolocate
             translation = -U(locnode,:);
             translation( ~locDFs ) = 0;
+            m.auxdata.locateTranslation = translation;
             U = U + repmat( translation, size( U, 1 ), 1 );
         end
         m.displacements = U;
@@ -578,11 +582,13 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
     if nargout < 4
         clear F;
     end
+    
+    timedFprintf( 1, 'Ending.\n' );
 end
 
 function U = abandon( m )
     m.displacements(:) = [];
     U = [];
-    fprintf( 1, 'Simulation interrupted by user at step %d.\n', ...
+    timedFprintf( 1, 'Ending because simulation interrupted by user at step %d.\n', ...
         m.globalDynamicProps.currentIter );
 end

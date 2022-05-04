@@ -22,19 +22,15 @@ end
 if (nargin < 4) || isempty(warningsareerrors)
     warningsareerrors = false;
 end
+
+errorseverity = [0 0 0];
 if fatalerrors
-    complainer = @error;
-else
-    complainer = @warning;
+    errorseverity(3) = 2;
 end
 if warningsareerrors
-    whiner = @error;
-elseif verbose
-    whiner = @warning;
-else
-    whiner = @donothing;
+    errorseverity(1) = errorseverity(2);
 end
-    
+
 result = true;
 if isfield( m, 'globalProps' ) ...
         && isfield( m.globalProps, 'validateMesh' ) ...
@@ -42,7 +38,7 @@ if isfield( m, 'globalProps' ) ...
     return;
 end
 
-fprintf( 1, '%s: Checking mesh validity.\n', datestring() );
+timedFprintf( 1, 'Checking mesh validity.\n' );
 
 
 full3d = usesNewFEs( m );
@@ -52,6 +48,7 @@ if full3d
 else
     numallnodes = numnodes*2;
 end
+numedges = getNumberOfEdges( m );
 numelements = getNumberOfFEs(m);
 cptsPerTensor = getComponentsPerSymmetricTensor();
 
@@ -67,21 +64,20 @@ else
     missingfields = setdiff( missingfields, gVOLUMETRICONLYFIELDS );
 end
 if ~isempty(missingfields)
-    complainer( 'Mesh has missing fields:' );
+    complain2( errorseverity(1), 'Mesh has missing fields:' );
     for ci=1:length(missingfields)
-        fprintf( 1, '\n    %s', missingfields{ci} );
+        fprintf( 1, '    %s\n', missingfields{ci} );
     end
-    fprintf( 1, '\n' );
 end
 if ~isempty(extrafields)
-    complainer( 'Mesh has extra fields:' );
+    complain2( errorseverity(1), 'Mesh has extra fields:' );
     for ci=1:length(extrafields)
         fprintf( 1, '\n    %s', extrafields{ci} );
     end
     fprintf( 1, '\n' );
 end
 
-if ~checknumel( m, 'celldata', numelements, complainer )
+if ~checknumel( m, 'celldata', numelements )
     result = 0;
 end
 
@@ -107,22 +103,22 @@ if full3d
     if ~all(havefields)
         m.FEconnectivity = connectivity3D( m );
     end
-    [ok,errs] = checkConnectivityNewMesh( m, verbose );
+    [ok,errs] = checkConnectivityNewMesh( m );
 else
-    [ok,m] = checkConnectivityOldMesh( m, verbose );
+    [ok,m] = checkConnectivityOldMesh( m );
 end
 
 % The angles of each FEM element should not be very small or very close to
 % 180 degrees.
 ANGLE_THRESHOLD = m.globalProps.mincellangle/4;  % 4 is a fudge factor.
 if full3d
-    fprintf( 1, '%s: Checking angle quality for general FEs is not yet supported.\n', mfilename() );
+    timedFprintf( 1, 'Checking angle quality for general FEs is not yet supported.\n' );
 else
     alltriangles = permute( reshape( m.nodes( m.tricellvxs', : ), 3, [], 3 ), [1 3 2] );
     allAngles = trianglesAngles( alltriangles );
     badAngles = allAngles < ANGLE_THRESHOLD;
     if any(badAngles(:))
-        complainer( 'validmesh:poorcells', ...
+        complain2( errorseverity(1), ...
             'There are %d very small angles (below %f radians), smallest is %.3g radians.', ...
             sum(badAngles(:)), ANGLE_THRESHOLD, min(abs(allAngles(:))) );
         if false
@@ -142,8 +138,8 @@ end
 % The morphogens must be defined per vertex.
 if isfield(m,'morphogens') && (size(m.morphogens,1) ~= numnodes)
     result = 0;
-    complainer( 'validmesh:badgrowth', ...
-        'Morphogens are defined for %d nodes, but the mesh has %d nodes.\n', ...
+    complain2( errorseverity(1), ...
+        'Morphogens are defined for %d nodes, but the mesh has %d nodes.', ...
         size(m.morphogens,1), numnodes );
     delta = size(m.morphogens,1) - numnodes;
     if delta > 0
@@ -159,10 +155,7 @@ if length(cssize) < 3
     cssize((end+1):3) = 1;
 end
 if ~samesize(cssize, [cptsPerTensor cptsPerTensor numelements])
-    complainer( 'validmesh:badcellstiffness', ...
-        'cellstiffness has size [%d %d %d], expected [%d %d %d]\n', ...
-        cssize(1), cssize(2), cssize(3), cptsPerTensor, cptsPerTensor, numelements );
-    complainer( 'validmesh:badcellstiffness', ...
+    complain2( errorseverity(1), ...
         'cellstiffness has size [%d %d %d], expected [%d %d %d]\n', ...
         cssize(1), cssize(2), cssize(3), cptsPerTensor, cptsPerTensor, numelements );
     if all(cssize([1 2])==[cptsPerTensor cptsPerTensor])
@@ -176,11 +169,36 @@ if ~samesize(cssize, [cptsPerTensor cptsPerTensor numelements])
         ok = false;
     end
 end
+
+if isfield( m, 'sharpvxs' ) && ~isempty( m.sharpvxs ) && ~samesize(size(m.sharpvxs), [numnodes 1])
+    complain2( errorseverity(1), ...
+        'sharpvxs has size [%d %d], expected [%d %d]\n', ...
+        size(m.sharpvxs,1), size(m.sharpvxs,2), numnodes, 1 );
+    if size(m.sharpvxs,1) > numnodes
+        m.sharpvxs = m.sharpvxs(1:numnodes,1);
+    else
+        m.sharpvxs((end+1):numnodes,1) = false;
+    end
+end
+
+% Disabled for the moment. 2022-01-25
+if false && isfield( m, 'sharpedges' ) && ~isempty( m.sharpedges ) && ~samesize(size(m.sharpedges), [numedges 1])
+    complain2( errorseverity(1), ...
+        'sharpedges has size [%d %d], expected [%d %d]\n', ...
+        size(m.sharpedges,1), size(m.sharpedges,2), numedges, 1 );
+    if size(m.sharpedges,1) > numedges
+        m.sharpedges = m.sharpedges(1:numedges);
+    else
+        m.sharpedges((end+1):numedges) = false;
+    end
+end
+
+
     
 % Check that cellbulkmodulus is the right size.
 cbmsize = length(m.cellbulkmodulus);
 if cbmsize ~= numelements
-    complainer( 'validmesh:badcellbulkmodulus', ...
+    complain2( errorseverity(1), ...
         'cellbulkmodulus has size %d, expected %d\n', ...
         cbmsize, numelements );
     if cbmsize > numelements
@@ -193,7 +211,7 @@ end
 % Check that cellpoisson is the right size.
 cpsize = length(m.cellpoisson);
 if cpsize ~= numelements
-    complainer( 'validmesh:badcellpoisson', ...
+    complain2( errorseverity(1), ...
         'cellpoisson has size %d, expected %d\n', ...
         cpsize, numelements );
     if cpsize > numelements
@@ -226,27 +244,27 @@ end
     if m.globalProps.prismnodesvalid
         if size(m.prismnodes,1) ~= size(m.nodes,1)*2
             result = 0;
-            complainer( 'validmesh:badprisms', ...
+            complain2( errorseverity(2), ...
                 'Wrong number of prism nodes: %d, expected twice %d.', ...
                 size(m.prismnodes,1), size(m.nodes,1) );
         end
     end
     
     
-    if (~isempty(m.displacements)) && ~checkheight( m, 'displacements', getTotalNumberOfVertexes(m), complainer )
+    if (~isempty(m.displacements)) && ~checkheight( m, 'displacements', getTotalNumberOfVertexes(m) )
         result = 0;
     end
-    if (~isempty(m.effectiveGrowthTensor)) && ~checkheight( m, 'effectiveGrowthTensor', getNumberOfFEs( m ), complainer )
+    if (~isempty(m.effectiveGrowthTensor)) && ~checkheight( m, 'effectiveGrowthTensor', getNumberOfFEs( m ) )
         m.effectiveGrowthTensor = procrustesHeight( m.effectiveGrowthTensor, getNumberOfFEs( m ), 0 );
         result = 0;
     end
     if ~isempty( m.directGrowthTensors ) ...
-            && ~checksize( [numelements,cptsPerTensor], size(m.directGrowthTensors), 'directGrowthTensors', complainer )
+            && ~checksize( [numelements,cptsPerTensor], size(m.directGrowthTensors), 'directGrowthTensors' )
      result = 0;
     end
 
   
-    if ~checkheight( m, 'fixedDFmap', numallnodes, complainer )
+    if ~checkheight( m, 'fixedDFmap', numallnodes )
         result = 0;
     end
     
@@ -259,42 +277,44 @@ end
         % For volumetric meshes, seams will be reimplemented.  This has not
         % yet been done.
     elseif length(m.seams) ~= size(m.edgeends,1)
-        whiner( 'validmesh:badseams', ...
+        complain2( errorseverity(1), ...
             'Seams bitmap has %d elements but there are %d edges.', ...
             length(m.seams), size(m.edgeends,1) );
     end
     
 % Validate the second layer.
-badvxFEMcell = find( ...
-    (m.secondlayer.vxFEMcell > numelements)...
-    | (m.secondlayer.vxFEMcell <= 0) );
-if ~isempty(badvxFEMcell)
-    result = 0;
-    complainer( 'validmesh:badvxFEMcell', ...
-        '%d invalid values found in secondlayer.vxFEMcell:', ...
-        length(badvxFEMcell) );
-    fprintf( 1, ' %d', badvxFEMcell );
-    fprintf( 1, '\n' );
-    fprintf( 1, ' %d', m.secondlayer.vxFEMcell(badvxFEMcell) );
-    fprintf( 1, '\n' );
-end
-[ok,m.secondlayer] = checkclonesvalid( m.secondlayer );
-% ok = validateLineage( m ) && ok;  % DOESN'T FUCKING WORK BECAUSE SOME
+    badvxFEMcell = find( ...
+        (m.secondlayer.vxFEMcell > numelements)...
+        | (m.secondlayer.vxFEMcell <= 0) );
+    if ~isempty(badvxFEMcell)
+        result = 0;
+        complain2( errorseverity(2), ...
+            '%d invalid values found in secondlayer.vxFEMcell.', ...
+            length(badvxFEMcell) );
+        fprintf( 1, ' %d', badvxFEMcell );
+        fprintf( 1, '\n' );
+        fprintf( 1, ' %d', m.secondlayer.vxFEMcell(badvxFEMcell) );
+        fprintf( 1, '\n' );
+    end
+
+    [ok,m.secondlayer] = checkclonesvalid( m.secondlayer );
+% ok = validateLineage( m ) && ok;  % DOESN'T WORK BECAUSE SOME
 % LINEAGE DATA ISN'T BEING UPDATED PROPERLY.
     
 % Check that there is the right amount of other 3D data.
     if ~full3d
-        result = checksize( numelements, length(m.cellareas), 'cellareas', complainer ) && result;
-        result = checksize( numelements, size(m.unitcellnormals,1), 'unitcellnormals', complainer ) && result;
+        result = checksize( numelements, length(m.cellareas), 'cellareas' ) && result;
+        result = checksize( numelements, size(m.unitcellnormals,1), 'unitcellnormals' ) && result;
         numedges = size(m.edgeends,1);
-        result = checksize( numedges, length(m.currentbendangle), 'currentbendangle', complainer ) && result;
-        result = checksize( numedges, length(m.initialbendangle), 'initialbendangle', complainer ) && result;
+        result = checksize( numedges, length(m.currentbendangle), 'currentbendangle' ) && result;
+        result = checksize( numedges, length(m.initialbendangle), 'initialbendangle' ) && result;
         if isfield( m, 'vertexnormals' ) && ~isempty( m.vertexnormals )
             if full3d
-                complainer( 'vertexnormals should not exist in foliate meshes' );
+                complain2( errorseverity(1), ...
+                    'vertexnormals should not exist in foliate meshes' );
                 m.vertexnormals = [];
             else
-                result = checksize( size(m.nodes), size(m.vertexnormals), 'vertexnormals', complainer ) && result;
+                result = checksize( size(m.nodes), size(m.vertexnormals), 'vertexnormals' ) && result;
                 if ~result
                     m.vertexnormals = [];
                 end
@@ -302,11 +322,11 @@ end
         end
     end
     if ~isempty(m.displacements)
-        result = checksize( numallnodes, size(m.displacements,1), 'displacements', complainer ) && result;
+        result = checksize( numallnodes, size(m.displacements,1), 'displacements' ) && result;
     end
     % Check that m.conductivity is the right size.
     if length(m.conductivity) ~= size(m.morphogens,2)
-        complainer( 'validmesh:badconductivity', ...
+        complain2( errorseverity(1), ...
             'conductivity has length %d, expected %d\n', ...
             length(m.conductivity), size(m.morphogens,2) );
     else
@@ -317,10 +337,10 @@ end
             if (nDpar > 1) && (nDpar ~= numelements)
                 if nDpar==numnodes
                     m.conductivity(ci).Dpar = perVertextoperFE( m, m.conductivity(ci).Dpar );
-                    complainer( 'validmesh:vxconductivity', ...
+                    complain2( errorseverity(1), ...
                         'Dpar %d was per-vertex, converted to per-element\n', ci );
                 else
-                    complainer( 'validmesh:badconductivity', ...
+                    complain2( errorseverity(1), ...
                         'Dpar %d has length %d, expected %d\n', ...
                         ci, nDpar, numelements );
                 end
@@ -328,10 +348,10 @@ end
             if (nDper > 1) && (nDper ~= numelements)
                 if nDper==numnodes
                     m.conductivity(ci).Dper = perVertextoperFE( m, m.conductivity(ci).Dper );
-                    complainer( 'validmesh:vxconductivity', ...
+                    complain2( errorseverity(1), ...
                         'Dper %d was per-vertex, converted to per-element\n', ci );
                 else
-                    complainer( 'validmesh:badconductivity', ...
+                    complain2( errorseverity(1), ...
                         'Dper %d has length %d, expected %d\n', ...
                         ci, nDper, numelements );
                 end
@@ -342,44 +362,48 @@ end
 
     numpol = size(m.gradpolgrowth,3);
     okpol = true;
-    okpol = checksize( [numelements,3,numpol], size(m.gradpolgrowth), 'gradpolgrowth', complainer ) && okpol;
+    okpol = checksize( [numelements,3,numpol], size(m.gradpolgrowth), 'gradpolgrowth' ) && okpol;
     if full3d
-        okpol = checksize( size(m.FEsets(1).fevxs), size(m.polfreeze), 'polfreeze', complainer ) && okpol;
+        okpol = checksize( size(m.FEsets(1).fevxs), size(m.polfreeze), 'polfreeze' ) && okpol;
     else
-        okpol = checksize( [numelements,3,numpol], size(m.polfreeze), 'polfreeze', complainer ) && okpol;
-        okpol = checksize( [numelements,3,numpol], size(m.polfreezebc), 'polfreezebc', complainer ) && okpol;
+        okpol = checksize( [numelements,3,numpol], size(m.polfreeze), 'polfreeze' ) && okpol;
+        okpol = checksize( [numelements,3,numpol], size(m.polfreezebc), 'polfreezebc' ) && okpol;
     end
-    okpol = checksize( [numelements,numpol], size(m.polfrozen), 'polfrozen', complainer ) && okpol;
+    okpol = checksize( [numelements,numpol], size(m.polfrozen), 'polfrozen' ) && okpol;
     if size(m.polsetfrozen,1) > 1
-        okpol = checksize( [numelements,numpol], size(m.polsetfrozen), 'polsetfrozen', complainer ) && okpol;
+        okpol = checksize( [numelements,numpol], size(m.polsetfrozen), 'polsetfrozen' ) && okpol;
     end
     if ~okpol
-        complainer( 'validmesh:badpolgrad', 'Polariser gradient errors fixed.\n' );
+        complain2( errorseverity(1), 'Polariser gradient errors fixed.' );
         m = calcPolGrad( m );
         result = false;
     end
     
     if ~isempty( m.growthanglepervertex )
-        result = checksize( numnodes, size(m.growthanglepervertex,1), 'growthanglepervertex', complainer ) && result;
+        result = checksize( numnodes, size(m.growthanglepervertex,1), 'growthanglepervertex' ) && result;
     end
     if ~isempty( m.growthangleperFE )
-        result = checksize( numelements, size(m.growthangleperFE,1), 'growthangleperFE', complainer ) && result;
+        result = checksize( numelements, size(m.growthangleperFE,1), 'growthangleperFE' ) && result;
     end
     if ~isempty( m.decorFEs )
         if length(m.decorFEs) ~= size(m.decorBCs,1)
-            complainer( 'validmesh:baddecorpts', ...
-                'length(m.decorFEs) = %d but size(m.decorBCs,1) = %d.\n', ...
+            complain2( errorseverity(1), ...
+                'length(m.decorFEs) = %d but size(m.decorBCs,1) = %d.', ...
                 length(m.decorFEs), size(m.decorBCs,1) );
             m.decorFEs = [];
             m.decorBCs = [];
         end
         if any(m.decorFEs > numelements)
-            complainer( 'validmesh:invalid decor FEs:' );
-            m.decorFEs(m.decorFEs > numelements);
+            complain2( errorseverity(1), ...
+                '%d values in m.decorFEs refer to non-existent FEs.', sum(m.decorFEs > numelements) );
+            m.decorFEs = [];
+            m.decorBCs = [];
         end
         if any(m.decorFEs < 1)
-            complainer( 'validmesh:invalid decor FEs:' );
-            m.decorFEs(m.decorFEs < 5);
+            complain2( errorseverity(1), ...
+                '%d values in m.decorFEs refer to invalid FEs.', sum(m.decorFEs < 1) );
+            m.decorFEs = [];
+            m.decorBCs = [];
         end
     end
 
@@ -391,14 +415,14 @@ end
         fn = fns{ci};
         numfound = size(m.(fn),2);
         if numfound > numMorphogens
-            complainer( ['validmesh:bad',fn], ...
-                '%d extra columns found in %s:', ...
+            complain2( errorseverity(1), ...
+                '%d extra columns found in %s.', ...
                 numfound - numMorphogens, fn );
             x = m.(fn);
             m.(fn) = x(:,1:numMorphogens);
         elseif numfound < numMorphogens
-            complainer( ['validmesh:bad',fn], ...
-                '%d missing columns found in %s:', ...
+            complain2( errorseverity(1), ...
+                '%d missing columns found in %s.', ...
                 numMorphogens - numfound, fn );
             m.(fn) = [ m.(fn), ...
                        repmat( gPerMgenDefaults.(fn), 1, numMorphogens - numfound ) ];
@@ -408,16 +432,16 @@ end
     numIndexedMgens = length(m.mgenIndexToName);
     if numIndexedMgens < numMorphogens
         % Well, fuck.
-        complainer( 'validmesh:badmorphogennames', ...
-            '%d unnamed morphogens found in mgenIndexToName:', ...
+        complain2( errorseverity(1), ...
+            '%d unnamed morphogens found in mgenIndexToName.', ...
             numMorphogens - numIndexedMgens );
         for ci=(numIndexedMgens+1):numMorphogens
             m.mgenIndexToName{ci} = sprintf( 'UNK_%03d', ci );
         end
         m.mgenNameToIndex = invertNameArray( m.mgenIndexToName );
     elseif numIndexedMgens > numMorphogens
-        complainer( 'validmesh:badmorphogennames', ...
-            '%d extra morphogens names in mgenIndexToName:', ...
+        complain2( errorseverity(1), ...
+            '%d extra morphogens names in mgenIndexToName.', ...
             numIndexedMgens - numMorphogens );
         m.mgenIndexToName = m.mgenIndexToName( 1:numMorphogens );
         m.mgenNameToIndex = invertNameArray( m.mgenIndexToName );
@@ -425,6 +449,6 @@ end
     m.mgenNameToIndex = invertNameArray( m.mgenIndexToName );
     
     
-    fprintf( 1, '%s: Finished mesh validity check.\n', datestring() );
+    timedFprintf( 1, 'Finished mesh validity check.\n' );
 end
 

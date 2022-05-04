@@ -34,38 +34,58 @@ function nearest = find_closest ( dim_num, n, sample_num, s, r, w )
 %    Output, integer NEAREST(SAMPLE_NUM), the index of the nearest cell generators.
 %
 
-  if ~exist('w','var')
-      w = ones(1,n);
-    % w(1:2:n) = 0.2;
-  end
-  nearest = -ones(1,sample_num);  % Added by RK 2006 Oct 03.
-  for js = 1 : sample_num
-
-    distance = Inf;
-  % nearest(js) = -1;  % Removed by RK 2006 Oct 03.
-
-    for jr = 1 : n
-
-      if 0  % Conventional wisdom is that built-in operations are faster than
-            % explicit loops.  However, this proves not to be the case
-            % here, where the explicit loop is an order of magnitude
-            % faster than any of these methods.
-        rs = r(:,jr) - s(:,js);
-        dist_sq = rs'*rs;
-      % dist_sq = dot(rs,rs);
-      else
-          dist_sq = 0.0;
-          for i = 1 : dim_num
-            dist_sq = dist_sq + ( r(i,jr) - s(i,js) )^2;
-          end
-          dist_sq = dist_sq * w(jr);
-      end
-
-      if ( dist_sq < distance )
-        distance = dist_sq;
-        nearest(js) = jr;
-      end
-
+    if ~exist('w','var')
+        w = ones(1,n);
+        % w(1:2:n) = 0.2;
     end
+%     nearest = -ones(1,sample_num);  % Added by RK 2006 Oct 03.
+    
+%     tic;
+% This is faster than any mixture of explicit loops and built-in
+% operations. It transiently uses memory proportional to
+% size(r,2) * size(s,2), but this is typically not too large.
+% the use of a subroutine does not increase the time.
+    alldsq = dsqs( r, s );
+    [~, nearest] = min( alldsq, [], 1 );
+%     toc;
+%     tic;
+%     for js = 1 : sample_num
+% 
+%         distance = Inf;
+%         % nearest(js) = -1;  % Removed by RK 2006 Oct 03.
+% 
+%         for jr = 1 : n
+% 
+%             if 0  % Conventional wisdom is that built-in operations are faster than
+%                 % explicit loops.  However, this proves not to be the case
+%                 % here, where the explicit loop is an order of magnitude
+%                 % faster than any of these methods.
+%                 rs = r(:,jr) - s(:,js);
+%                 dist_sq = rs'*rs;
+%                 % dist_sq = dot(rs,rs);
+%             else
+%                 dist_sq = 0.0;
+%                 for i = 1 : dim_num
+%                     dist_sq = dist_sq + ( r(i,jr) - s(i,js) )^2;
+%                 end
+%                 dist_sq = dist_sq * w(jr);
+%             end
+% 
+%             if ( dist_sq < distance )
+%                 distance = dist_sq;
+%                 nearest(js) = jr;
+%             end
+% 
+%         end
+%     end
+%     toc;
+end
 
-  end
+function alldsq = dsqs( r, s )
+    alldsq = sum( (permute( r, [2 3 1] ) - permute( s, [3 2 1] )).^2, 3 );
+end
+
+    
+    
+    
+    

@@ -14,5 +14,5 @@ function [is,stagetime] = isCurrentStage( m, tolerance )
         stagetime = [];
     end
     
-    fprintf( 1, '%s: dt %g, mini %d, is %d, stagetime %g\n', mfilename(), dt, mini, is, stagetime );
+%     timedFprintf( 1, '%s: dt %g, mini %d, is %d, stagetime %g\n', dt, mini, is, stagetime );
 end

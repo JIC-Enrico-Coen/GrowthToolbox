@@ -34,11 +34,11 @@ function m = diffusegrowth( m )
     end
     
     if ~any( diffusibleMgens | transportableMgens | producibleMgens | absorbableMgens )
-        fprintf( 1, 'No diffusion, production, absorption, or transport.\n' );
+        timedFprintf( 1, 'No diffusion, production, absorption, or transport.\n' );
         return;
     end
     
-    fprintf( 1, 'diffusegrowth: lengthscale %.3f, lengthscale^2 %.3f\n', ...
+    timedFprintf( 1, 'diffusegrowth: lengthscale %.3f, lengthscale^2 %.3f\n', ...
         m.globalProps.lengthscale, m.globalProps.lengthscale^2 );
 
     for i=1:nummgens
@@ -105,8 +105,7 @@ function m = diffusegrowth( m )
             else
                 s = 'Transporting';
             end
-            fprintf( 1, '%s: %s %s (diffusion %.3g %.3g %s %s, mean absorption %.3g):\n', ...
-                     datestring(), ...
+            timedFprintf( 1, '%s %s (diffusion %.3g %.3g %s %s, mean absorption %.3g):\n', ...
                      s, ...
                      m.mgenIndexToName{i}, ...
                      sum(Dpar)/length(Dpar), ...
@@ -155,8 +154,10 @@ function m = diffusegrowth( m )
                         m.globalProps.maxsolvetime, ...
                         m );
                 end
-                m.morphogens(m.morphogenclamp(:,i)==0,i) = ...
-                    newM(m.morphogenclamp(:,i)==0);
+%                 m.morphogens(m.morphogenclamp(:,i)==0,i) = ...
+%                     newM(m.morphogenclamp(:,i)==0);
+                m.morphogens(:,i) = m.morphogenclamp(:,i) .* m.morphogens(:,i) ...
+                                    + (1 - m.morphogenclamp(:,i)) .* newM;
             end
         elseif all(m.mgen_absorption(:,i) <= 0)
             m.morphogens(~fixedmap,i) = m.morphogens(~fixedmap,i) + m.mgen_production(~fixedmap,i)*m.globalProps.timestep;
@@ -181,5 +182,5 @@ function m = diffusegrowth( m )
 %     end
 
     m.saved = 0;
-    fprintf( 1, '%s %s: Completed.\n', datestring(), mfilename() );
+    timedFprintf( 1, 'Completed.\n' );
 end

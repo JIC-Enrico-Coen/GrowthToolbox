@@ -28,6 +28,17 @@ global gPlotOptionNames gABfields gPlotPriorities gAxisNames
 
     % Ensure the globals we need have been set up.
     setGlobals();
+    
+    isGFtboxMesh = strcmpi( m, 'Gftbox' );
+    
+    if isGFtboxMesh
+        m = getGFtboxMesh();
+        if isempty(m), return; end
+    end
+    
+    if ~isfield( m, 'pictures' )
+        m.pictures = [];
+    end
 
     % Discard any invalid picture handles from m.
     m.pictures = m.pictures( ishandle( m.pictures ) );
@@ -438,6 +449,9 @@ global gPlotOptionNames gABfields gPlotPriorities gAxisNames
         saveStaticPart( m );
     end
     
+    if isGFtboxMesh
+        setGFtboxMesh( m );
+    end
     
 function markProcessed( varargin )
     unprocessedFields = rmfield( unprocessedFields, varargin );

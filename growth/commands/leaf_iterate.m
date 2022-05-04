@@ -111,7 +111,7 @@ function [m,ok] = leaf_iterate( m, varargin )
     
     m = invalidateLineage( m );
     
-    fprintf( 1, '%s: About to perform %d iterations.\n', mfilename(), numsteps );
+    timedFprintf( 1, 'About to perform %d iterations.\n', numsteps );
 
     step = 1;
     interrupted = false;
@@ -123,10 +123,10 @@ function [m,ok] = leaf_iterate( m, varargin )
         end
         startTime = cputime;
         starttic = tic;
-        fprintf( 1, '%s: Starting iteration %d, time %.3f.\n', ...
-        	datestring(), m.globalDynamicProps.currentIter+1, m.globalDynamicProps.currenttime );
-        fprintf( 2, '%s: Starting iteration %d, time %.3f.\n', ...
-        	datestring(), m.globalDynamicProps.currentIter+1, m.globalDynamicProps.currenttime );
+        timedFprintf( 1, 'Starting iteration %d, time %.3f.\n', ...
+        	m.globalDynamicProps.currentIter+1, m.globalDynamicProps.currenttime );
+        timedFprintf( 2, 'Starting iteration %d, time %.3f.\n', ...
+        	m.globalDynamicProps.currentIter+1, m.globalDynamicProps.currenttime );
         if teststopbutton(m)
             ok = false;
             break;
@@ -138,7 +138,7 @@ function [m,ok] = leaf_iterate( m, varargin )
                 [m,ok] = attemptInteractionFunction( m ); %, handles );
                 if ~ok, break; end
             else
-                fprintf( 1, 'Interaction function disabled.\n' );
+                timedFprintf( 1, 'Interaction function disabled.\n' );
             end
         end
         m = disallowNegativeGrowth( m );
@@ -173,6 +173,13 @@ function [m,ok] = leaf_iterate( m, varargin )
         end
         
         stepstarttime = m.globalDynamicProps.currenttime;
+        if isfield( m.secondlayer, 'edgeattriblength' ) && any( m.secondlayer.edgeattriblength==0 )
+            xxxx = 1;
+        end
+        m.secondlayer.edgeattriblength = celledgelengths(m);
+        if any( m.secondlayer.edgeattriblength==0 )
+            xxxx = 1;
+        end
         [m,ok,splitdata] = onestep( m, m.globalProps.useGrowthTensors, m.globalProps.useMorphogens );
         m.globalDynamicProps.currentIter = m.globalDynamicProps.currentIter + 1;
         m.globalDynamicProps.currenttime = ...
@@ -182,14 +189,14 @@ function [m,ok] = leaf_iterate( m, varargin )
                 enableMutations( handles, 'off' );
             end
             if testAndClear( handles.plotFlag )
-                fprintf( 1, 'Change (plot) flag detected during iteration %d.\n', ...
+                timedFprintf( 1, 'Change (plot) flag detected during iteration %d.\n', ...
                     m.globalDynamicProps.currentIter );
                 m = getPlotOptionsFromDialog( m, handles );
             end
             c = get( handles.commandFlag, 'UserData' );
             set( handles.commandFlag, 'UserData', struct([]) );
             if ~isempty(c)
-                fprintf( 1, 'User commands detected during iteration %d.\n', ...
+                timedFprintf( 1, 'User commands detected during iteration %d.\n', ...
                     m.globalDynamicProps.currentIter );
                 m = executeCommands( m, c, false, handles );
             end
@@ -230,11 +237,15 @@ function [m,ok] = leaf_iterate( m, varargin )
         if m.globalProps.newcallbacks
             [m,~] = invokeIFcallback( m, 'Postiterate' );
         elseif isa( m.globalProps.userpostiterateproc, 'function_handle' )
-            fprintf( 1, '%s: Calling user post-iterate procedure %s.\n', ...
-                datestring(), func2str( m.globalProps.userpostiterateproc ) );
+            timedFprintf( 1, 'Calling user post-iterate procedure %s.\n', ...
+                func2str( m.globalProps.userpostiterateproc ) );
             m = m.globalProps.userpostiterateproc( m );
         end
         m = updateValidityTime( m, stepstarttime );
+        if any( m.secondlayer.edgeattriblength==0 )
+            xxxx = 1;
+        end
+        m.secondlayer.edgeattriblength = [];
     
         % Update cell data display factors.
         if hasNonemptySecondLayer(m)
@@ -301,30 +312,28 @@ function [m,ok] = leaf_iterate( m, varargin )
         [isstagetime,stagetime] = isCurrentStage( m );
         if isstagetime || m.globalProps.recordAllStages
             if m.globalProps.recordAllStages
-                fprintf( 1, 'Recording all stages, so recording stage %f for time %f.\n', stagetime, m.globalDynamicProps.currenttime );
+                timedFprintf( 1, 'Recording all stages, so recording stage %f for time %f.\n', stagetime, m.globalDynamicProps.currenttime );
             else
-                fprintf( 1, 'Stage time %f reached at model time %f, so recording stage file.\n', stagetime, m.globalDynamicProps.currenttime );
+                timedFprintf( 1, 'Stage time %f reached at model time %f, so recording stage file.\n', stagetime, m.globalDynamicProps.currenttime );
             end
             if isempty( m.globalProps.currentrun )
-                fprintf( 1, 'No current run, so saving stage to project directory.\n' );
+                timedFprintf( 1, 'No current run, so saving stage to project directory.\n' );
                 [m,ok] = leaf_savestage( m );
             else
-                fprintf( 1, 'Saving stage to run directory %s.\n', m.globalProps.currentrun );
+                timedFprintf( 1, 'Saving stage to run directory %s.\n', m.globalProps.currentrun );
                 [m,ok] = leaf_savestage( m, fullfile( m.globalProps.currentrun, 'meshes' ) );
             end
             if ~ok
-                fprintf( 1, '%s: Problem saving stage %f.\n', ...
-                    mfilename(), ...
+                timedFprintf( 1, 'Problem saving stage %f.\n', ...
                     m.globalDynamicProps.currenttime );
             end
         end
         
         fwrite( 1, [simStatusString(m), newline()] );
-        ds = datestring();
-        fprintf( 2, '%s: Completed iteration %d, sim time %g.\n', ...
-        	ds, m.globalDynamicProps.currentIter, m.globalDynamicProps.currenttime );
-        fprintf( 1, '%s: Completed iteration %d, sim time %g.\n', ...
-        	ds, m.globalDynamicProps.currentIter, m.globalDynamicProps.currenttime );
+        timedFprintf( 2, 'Completed iteration %d, sim time %g.\n', ...
+        	m.globalDynamicProps.currentIter, m.globalDynamicProps.currenttime );
+        timedFprintf( 1, 'Completed iteration %d, sim time %g.\n', ...
+        	m.globalDynamicProps.currentIter, m.globalDynamicProps.currenttime );
         m.timeForIter = cputime() - startTime;
         m.ticForIter = toc( starttic );
     end
@@ -366,27 +375,27 @@ end
 
 function f = finished( m, step, numsteps, targettime, starttime, targetduration, targetarea )
     if isfield( m, 'stop' ) && m.stop
-        fprintf( 1, '%s: Simulation terminated by interaction function.\n', datestring() );
+        timedFprintf( 1, 'Simulation terminated by interaction function.\n' );
         f = true;
         return;
     end
     if (numsteps > 0) && (step > numsteps)
-        fprintf( 1, '%s: Simulation terminated after %d steps.\n', datestring(), numsteps );
+        timedFprintf( 1, 'Simulation terminated after %d steps.\n', numsteps );
         f = true;
         return;
     end
     if ~isempty(targettime) && ((targettime - m.globalDynamicProps.currenttime) <= m.globalProps.timestep/2)
-        fprintf( 1, '%s: Simulation terminated on reaching time %f.\n', datestring(), targettime );
+        timedFprintf( 1, 'Simulation terminated on reaching time %f.\n', targettime );
         f = true;
         return;
     end
     if ~isempty(targetduration) && ((starttime + targetduration - m.globalDynamicProps.currenttime) <= m.globalProps.timestep/2)
-        fprintf( 1, '%s: Simulation terminated after duration %f at time %f.\n', datestring(), targetduration, targettime );
+        timedFprintf( 1, 'Simulation terminated after duration %f at time %f.\n', targetduration, targettime );
         f = true;
         return;
     end
     if ~isempty(targetarea) && (m.globalDynamicProps.currentArea/m.globalProps.initialArea >= targetarea)
-        fprintf( 1, '%s: Simulation terminated on reaching area multiple %f.\n', datestring(), targetarea );
+        timedFprintf( 1, 'Simulation terminated on reaching area multiple %f.\n', targetarea );
         f = true;
         return;
     end
