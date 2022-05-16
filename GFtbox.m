@@ -18,7 +18,7 @@ function varargout = GFtbox(varargin)
 
 % Edit the above text to modify the response to help GFtbox
 
-% Last Modified by GUIDE v2.5 10-Jun-2020 12:14:11
+% Last Modified by GUIDE v2.5 10-May-2022 14:12:07
 
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -4492,7 +4492,21 @@ function dclipText_Callback(hObject, eventdata, handles)
         notifyPlotChange( handles, 'clippingDistance', v );
     end
 
+function sclipText_Callback(hObject, eventdata, handles)
+
 function dclipText_CreateFcn(hObject, eventdata, handles)
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+function tclipText_Callback(hObject, eventdata, handles)
+% Plot panel.
+    [ v, ok1 ] = getDoubleFromDialog( hObject );
+    if ok1
+        notifyPlotChange( handles, 'clippingThickness', v );
+    end
+
+function tclipText_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
@@ -5128,12 +5142,4 @@ function catchIFExceptionsItem_Callback(hObject, eventdata, handles)
 
 function timeCommandsItem_Callback(hObject, eventdata, handles)
     toggleCheckedMenuItem( hObject );
-
-
-
-
-
-
-
-
 

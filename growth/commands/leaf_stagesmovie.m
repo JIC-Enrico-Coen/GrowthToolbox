@@ -14,6 +14,13 @@ function [m,ok] = leaf_stagesmovie( m, varargin )
 %           before that time.  By default the last existing stage file of
 %           the project.
 %
+%   closebefore: Whether to close any movie currently in progress before
+%           beginning this one. Note that if a movie is open and has
+%           already had any frames written to it, its parameters cannot be
+%           changed. The default is true.
+%
+%   close after: Whether to close the movie at the end. The default is true.
+%
 %   leaf_stagesmovie never recomputes any stages.  It makes a movie only
 %   from the existing stage files in the specified time range.
 
@@ -34,13 +41,17 @@ function [m,ok] = leaf_stagesmovie( m, varargin )
     s = defaultfields( s, ...
         'start', -Inf, ...
         'end', Inf, ...
+        'closebefore', true, ...
+        'closeafter', true, ...
         'compression', m.globalProps.codec, ...
         'fps', fps, ...
         'quality', quality, ...
         'keyframe', 5 );
     starttime = s.start;
     endtime = s.end;
-    s = rmfield( s, { 'start', 'end' } );
+    closebefore = s.closebefore;
+    closeafter = s.closeafter;
+    s = rmfield( s, { 'start', 'end', 'closebefore', 'closeafter' } );
     
     % Get the stages that are to be made into a movie.
     stageTimes = savedStages( m );
@@ -61,13 +72,15 @@ function [m,ok] = leaf_stagesmovie( m, varargin )
     end
     
     % Close any current movie.
-    [m,ok] = leaf_movie( m, 0 );
-    if ~ok
-        return;
+    if closebefore
+        [m,ok] = leaf_movie( m, 0 );
+        if ~ok
+            return;
+        end
     end
     
     numframes = length(stageTimes);
-    fprintf( 1, 'Creating movie of %d frames between times %f - %f.\n', numframes, stageTimes(1), stageTimes(end) );
+    fprintf( 1, 'Creating %d frames from times %f to %f.\n', numframes, stageTimes(1), stageTimes(end) );
     
     % Prepare to be interrupted.
     oldrunning = setRunning( guidata(m.pictures(1)), true );

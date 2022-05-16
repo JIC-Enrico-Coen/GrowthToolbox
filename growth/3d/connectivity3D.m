@@ -34,7 +34,7 @@ function c = connectivity3D( m )
 %   allfevxs: An L*ANY ragged array listing the vertexes of every element.
 %       (Not needed -- this duplicates m.FEsets.fevxs when there is only
 %       one set of FEs. Used only in computeResiduals and testVFEN.))
-%   nzallfevxs: A booleam map of the nonzero elements of allfevxs. (Also
+%   nzallfevxs: A boolean map of the nonzero elements of allfevxs. (Also
 %       not needed.  Never used.)
 %   numfevxs: An L*1 array listing the number of vertexes for each FE.
 %   fetypes: An L*1 array listing the type of each FE, i.e. which element
@@ -73,8 +73,7 @@ function c = connectivity3D( m )
 %   Per-edge data:
 %
 %   edgeends: An E*2 array with one row for every pair of vertexes
-%       connected by an edge.  The ordering of the two vertexes is
-%       arbitrary. 
+%       connected by an edge.  The lower vertex index always comes first.
 %   edgefaces: An E*ANY ragged array mapping each edge to the list of faces
 %       it belongs to.
 %   edgeloctype: An E*1 array classifying each edge as interior (0),
@@ -89,6 +88,8 @@ function c = connectivity3D( m )
 %       surface (1), edge(2), or corner (3).
 %
 %   Topics: volumetric mesh
+
+fprintf( 2, '%s called\n', mfilename() );
 
     numAllFEs = 0;
     maxVxsPerFE = 0;

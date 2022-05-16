@@ -111,7 +111,7 @@ function [m,splitdata] = splitT4Edges3D( m, eis )
     oldEdgeToNewVxs(eis) = newVxIndexes;
 
     % Edge sharpness is inherited from the parent.
-    % DOES NOT WORK. The call of FEconnectivity later will scramble things.
+    % DOES NOT WORK. The call of connectivity3D() later will scramble things.
 %     m.sharpedges = [ m.sharpedges; m.sharpedges( eis ) ];
 
     % New vertexes are never sharp.

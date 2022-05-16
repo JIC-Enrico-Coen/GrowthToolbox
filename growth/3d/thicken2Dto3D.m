@@ -25,19 +25,11 @@ function mesh = thicken2Dto3D( mesh2d, axisdivs, height, fetype )
     
     p6vxs = [ p6vxs(1:(end-num2dtris),:), p6vxs((num2dtris+1):end,:) ];
     
-    
-
-
-
-
-
-            newm.FEnodes = mesh2d.nodes;
-            layervolumes = a*height/axisdivs;
-            newm.FEsets = struct( 'fe', FiniteElementType.MakeFEType('P6'), ...
-                                  'fevxs', p6vxs, ...
-                                  'fevolumes', repmat( layervolumes, axisdivs, 1 ) );
-                      
-                      
+    newm.FEnodes = mesh2d.nodes;
+    layervolumes = a*height/axisdivs;
+    newm.FEsets = struct( 'fe', FiniteElementType.MakeFEType('P6'), ...
+                          'fevxs', p6vxs, ...
+                          'fevolumes', repmat( layervolumes, axisdivs, 1 ) );
                       
     newm.globalDynamicProps.currentVolume = sum( newm.FEsets.fevolumes );
 

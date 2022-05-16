@@ -12,10 +12,12 @@ function perCell = FEvertexToCell( m, perFEvertex, method, whichcells )
 %
 %   This is currently valid for foliate meshes only.
 
-    if isVolumetricMesh(m)
-        perCell = [];
-        return;
-    end
+%     if isVolumetricMesh(m)
+%         perCell = [];
+%         perCellVertex = perFEVertexToPerCellVertex( m, s_divarea_p );
+%         perCell = perCellVertexToPerCell( m, perCellVertex );
+%         return;
+%     end
     
     if nargin < 3
         method = 'mid';

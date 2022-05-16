@@ -108,7 +108,7 @@ function m = upgrademesh( m, checkValidity )
     
     m.plotdefaults = upgradePlotoptions( m.plotdefaults );
 
-    if isfield( m.globalProps, 'defaultViewParams' )
+    if isfield( m.globalProps, 'defaultViewParams' ) && ~isempty( m.globalProps.defaultViewParams )
         m.globalProps.defaultViewParams = replacefields( ...
             m.globalProps.defaultViewParams, 'CameraUp', 'CameraUpVector' );
     else

@@ -227,6 +227,7 @@ function updateGUIFromMesh( h )
     setDoubleInTextItem( h.azclipText, plotdefaults.clippingAzimuth );
     setDoubleInTextItem( h.elclipText, plotdefaults.clippingElevation );
     setDoubleInTextItem( h.dclipText, plotdefaults.clippingDistance );
+    setDoubleInTextItem( h.tclipText, plotdefaults.clippingThickness );
     setShowHideMenuItem( h.axesMenuItem, plotdefaults.axisVisible );
     setShowHideMenuItem( h.displacementsMenuItem, plotdefaults.drawdisplacements );
     

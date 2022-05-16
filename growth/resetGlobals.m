@@ -6,7 +6,8 @@ function resetGlobals()
 %   initialises the globals only the first time it is called in a Matlab
 %   session.
 
-    global gHaveGlobals;
+    global gHaveGlobals GFTboxConfig;
     gHaveGlobals = [];
     setGlobals();
+    GFTboxConfig = readGFtboxConfig();
 end

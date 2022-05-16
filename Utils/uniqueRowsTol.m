@@ -23,9 +23,8 @@ function [c,ia,ic,as,sp,aix] = uniqueRowsTol( a, tol )
         [a1,p] = sort( a(:,di) );
         p1 = invperm(p);
         same1 = [ false; abs( a1(2:end)-a1(1:(end-1)) ) <= tol ];
-        ix = zeros(npts,1);
+        ix = zeros(npts,1); 
         nix = 0;
-        lastrepeated = 0;
         for i=1:length(same1)
             if same1(i)
                 ix(i) = ix(i-1);

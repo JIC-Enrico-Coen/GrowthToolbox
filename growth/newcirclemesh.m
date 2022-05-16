@@ -1,13 +1,16 @@
-function [m,rimnodes] = newcirclemesh( sz, circum, nrings, centre, hollow, inneredges, ...
+function [m,rimnodes] = newcirclemesh( sz, circumdivs, nrings, centre, hollow, inneredges, ...
                                        dealign, sector, coneangle )
 %[m,rimnodes] = newcirclemesh( sz, circum, nrings, centre, inner, dealign, sector, coneangle )
+
+    m = [];
+    rimnodes = [];
 
     % Fill in default values for all arguments.
     if (nargin < 1) || isempty(sz)
         sz = [2 2 1];
     end
-    if (nargin < 2) || isempty(circum) || (circum < 3)
-        circum = 0;
+    if (nargin < 2) || isempty(circumdivs) || ((length(circumdivs)==1) && (circumdivs < 3))
+        circumdivs = 0;
     end
     if (nargin < 3) || isempty(nrings) || (nrings <= 0)
         nrings = 4;
@@ -35,6 +38,8 @@ function [m,rimnodes] = newcirclemesh( sz, circum, nrings, centre, hollow, inner
         end
     end
     
+    circumdivs = max( circumdivs, 3 );
+    
     % Some of the zeros we filled in still represent default values, but
     % defaults that depend on other values.  We calculate these now.
     % So far, the following arguments are known to have real values:
@@ -47,26 +52,39 @@ function [m,rimnodes] = newcirclemesh( sz, circum, nrings, centre, hollow, inner
     totalrings = max( 1, round( nrings/(1-hollow) ) );
     
     % The default for circum is determined by totalrings.
-    if circum==0
-        circum = totalrings*6;
+    if circumdivs==0
+        circumdivs = totalrings*6;
     end
     
-    % The default for inneredges is determined by circum, hollow, and nrings.
-    if inneredges==0
-        if hollow==0
-            inneredges = max( floor(circum/nrings), 3 );
-        else
-            inneredges = max( round(circum*hollow), 3 );
+    if length(circumdivs)==1
+        % The default for inneredges is determined by circum, hollow, and nrings.
+        if inneredges==0
+            if hollow==0
+                inneredges = max( floor(circumdivs/nrings), 3 );
+            else
+                inneredges = max( round(circumdivs*hollow), 3 );
+            end
         end
+
+        if totalrings==1
+            vxsPerRing = circumdivs;
+        elseif hollow==0
+            vxsPerRing = arithprog( inneredges, circumdivs, nrings );
+        else
+            vxsPerRing = arithprog( inneredges, circumdivs, nrings+1 );
+        end
+    else
+        % circumdivs must specify the required number of vertexes for every
+        % ring.
+        numUnspecifiedCircumdivs = nrings + 1 - length(circumdivs) - (hollow==0);
+        if numUnspecifiedCircumdivs ~= 0
+            fprintf( 1, '%s: circumdivs has length %d, %d expected.\n', ...
+                mfilename(), length(circumdivs), length(circumdivs)-numUnspecifiedCircumdivs );
+            return;
+        end
+        vxsPerRing = circumdivs;
     end
     
-    if totalrings==1
-        vxsPerRing = circum;
-    elseif hollow==0
-        vxsPerRing = arithprog( inneredges, circum, nrings );
-    else
-        vxsPerRing = arithprog( inneredges, circum, nrings+1 );
-    end
     if hollow==0
         vxsPerRing = [ 1 vxsPerRing ];
     end

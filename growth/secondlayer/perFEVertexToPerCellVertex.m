@@ -6,7 +6,11 @@ function perCellvertex = perFEVertexToPerCellVertex( m, perFEvertex )
         perFEvertex = perFEvertex(:);
     end
 
-    fePerCellVertex = m.tricellvxs( m.secondlayer.vxFEMcell, : );  % CV * T
+    if isVolumetricMesh(m)
+        fePerCellVertex = m.FEsets(1).fevxs( m.secondlayer.vxFEMcell, : );  % CV * T
+    else
+        fePerCellVertex = m.tricellvxs( m.secondlayer.vxFEMcell, : );  % CV * T
+    end
     perFEperCellVertex = perFEvertex(fePerCellVertex);  % CV * T
     perCellvertex = sum( perFEperCellVertex .* m.secondlayer.vxBaryCoords, 2 );
 end

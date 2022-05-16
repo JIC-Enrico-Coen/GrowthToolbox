@@ -57,6 +57,7 @@ function m = rescaleSpaceTime( m, spaceunitname, spacescale, timeunitname, times
         m.globalProps.bendunitlength = m.globalProps.bendunitlength / areascale;
         m.plotdefaults.axisRange = m.plotdefaults.axisRange / spacescale;
         m.plotdefaults.clippingDistance = m.plotdefaults.clippingDistance / spacescale;
+        m.plotdefaults.clippingThickness = m.plotdefaults.clippingThickness / spacescale;
         m = calcCloneVxCoords( m );
 
         m.secondlayer.splitThreshold = m.secondlayer.splitThreshold/spacescale;

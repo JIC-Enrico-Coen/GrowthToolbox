@@ -21,8 +21,9 @@ function m = findVisiblePart( m )
     if m.plotdefaults.doclip
         clippingDirection = azel2dir( m.plotdefaults.clippingAzimuth, ...
                                       m.plotdefaults.clippingElevation );
-        visnodemap = (nodes * clippingDirection(:)) ...
-                         >= m.plotdefaults.clippingDistance;
+        clipDistances = nodes * clippingDirection(:);
+        visnodemap = (clipDistances >= m.plotdefaults.clippingDistance) ...
+                     & ((m.plotdefaults.clippingThickness==Inf) | (clipDistances <= m.plotdefaults.clippingDistance + m.plotdefaults.clippingThickness));
     else
         visnodemap = true( size(nodes,1), 1 );
     end

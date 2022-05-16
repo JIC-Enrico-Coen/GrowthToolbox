@@ -10,10 +10,10 @@ function perCell = CellvertexToCell( m, perCellvertex, method, whichcells )
 %
 %   This is currently valid for foliate meshes only.
 
-    if isVolumetricMesh(m)
-        perCell = [];
-        return;
-    end
+%     if isVolumetricMesh(m)
+%         perCell = [];
+%         return;
+%     end
     
     % Do we want to weight by the area of the cells?  Or by the
     % area attributable to each vertex?
