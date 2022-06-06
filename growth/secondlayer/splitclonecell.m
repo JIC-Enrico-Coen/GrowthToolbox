@@ -18,8 +18,8 @@ function [m,edgesplitdata] = splitclonecell( m, ci, v, splitpoint )
     % both sides?  Currently not.
     pullRim = false;
     
-    % Force edges to be split at least this distance from their endpoints.
-    min_d = 0.05 * sqrt(m.secondlayer.averagetargetarea/1.4);
+    % Force edges to be split at least this absolute distance from their endpoints.
+    min_d = m.globalProps.biosplitavoid4way * sqrt(m.secondlayer.averagetargetarea/1.4);
 
     VERBOSE = 0;
     if VERBOSE
@@ -484,7 +484,7 @@ function p0 = avoidEnds( p0, p1, p2, min_d )
     d11 = norm( p0 - p1 );
     d12 = norm( p0 - p2 );
     d = norm( p2 - p1 );
-    minalpha = min_d/d;
+    minalpha = min( min_d/d, 0.5 );
     
     alpha = 0;
     beta = 0;

@@ -1,5 +1,5 @@
 function [cnum,cmin,cstep,csz,clumpindex,clumpcounts] = clumplinear( v, bigness )
-%[cnum,cmin,cstep,csz,clumpindex] = clumplinear( v )
+%[cnum,cmin,cstep,csz,clumpindex] = clumplinear( v, bigness )
 %   v is a vector which is expected to consist of a large number of values
 %   that fall into clumps clustered around a smaller number of values.
 %   These clump values are expected to be in arithmetic progression.

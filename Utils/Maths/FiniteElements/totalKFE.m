@@ -169,14 +169,15 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
         residStrainPerStep = [];
     else
         strainretMgen = getEffectiveMgenLevels( m, STRAINRET_MGEN );
-        sr = max( min( strainretMgen, 1 ), 0 );
-        if m.globalProps.timestep==0
-            % 0^0 is deemed to be 0, anything_else^0 is 1.
-            residStrainPerStep = ones(size(sr));
-            residStrainPerStep(sr==0) = 0;
-        else
-            residStrainPerStep = sr.^m.globalProps.timestep;
-        end
+%         sr = max( min( strainretMgen, 1 ), 0 );
+%         if m.globalProps.timestep==0
+%             % 0^0 is deemed to be 0, anything_else^0 is 1.
+%             residStrainPerStep = ones(size(sr));
+%             residStrainPerStep(sr==0) = 0;
+%         else
+%             residStrainPerStep = sr.^m.globalProps.timestep;
+%         end
+        residStrainPerStep = expDecay( m.globalProps.timestep, strainretMgen );
     end
     if useMorphogens
         if m.globalProps.flatten

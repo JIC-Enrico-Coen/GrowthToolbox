@@ -1,14 +1,14 @@
-function b = invertIndexArray( a, m, type )
+function [b,lengths] = invertIndexArray( a, m, type )
 %b = invertIndexArray( a, m )
 %   A is an N*K array that maps each integer in 1:N to a list of integers
 %   in the range 1:M.  If M is omitted it defaults to the maximum value in
 %   A.
 %
-%   type can be either 'cell', or 'array'.  If cell, the result is a cell
+%   TYPE can be either 'cell' or 'array'.  If cell, the result is a cell
 %   array of length M, mapping each integer in 1:M to the list of rows of A
 %   in which it appears.  If 'array', the result is returned as an M*L
 %   array, with each row being padded out with zeros as necessary. The
-%   default is 'cell'.
+%   default is 'cell'. LENGTHS contains the length of each list.
 %
 %   Zero elements of A are ignored.
 %
@@ -34,6 +34,7 @@ function b = invertIndexArray( a, m, type )
     end
     starts = [1; ends+1];
     ends(end+1) = size(xx,1);
+    lengths = ends-starts+1;
     if iscell
         b = cell( 1, m );
         for i=1:length(starts)

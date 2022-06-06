@@ -24,7 +24,7 @@ function [m,results] = invokeIFcallback( m, varargin )
                     if strcmp( e.identifier, 'MATLAB:UndefinedFunction' )
                         timedFprintf( 'Interaction function %s not found for callback %s:\n%s\n', ifname, fn, e.message );
                     else
-                        timedFprintfe( 'Error raised in interaction function %s for callback %s:\n%s %s\n', ifname, fn, e.identifier, e.message );
+                        timedFprintf( 'Error raised in interaction function %s for callback %s:\n%s %s\n', ifname, fn, e.identifier, e.message );
                         rethrow(e);
                     end
                     results = [];

@@ -1,5 +1,5 @@
 function mgenIndex = FindMorphogenIndex2( m, mgen, messageprefix, complain )
-%[mgenIndex,selected] = FindMorphogenIndex2( m, mgen, messageprefix, complain )
+%mgenIndex = FindMorphogenIndex2( m, mgen, messageprefix, complain )
 %   Find the index of any morphogen.  mgen can be an array of morphogen
 %   indexes, a morphogen name, or a cell array of morphogen names or
 %   indexes.  The list of indexes returned will be zero for invalid names

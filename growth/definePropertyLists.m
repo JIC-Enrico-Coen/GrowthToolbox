@@ -75,7 +75,7 @@ function definePropertyLists()
         ... % 0 gives flat subdivision.  1/8 makes the surface more pointy in the
         ... % middles of faces.  Negative values and values larger than 1/8 are
         ... % unstable, but are not excluded.
-        'edgetension', 1/16, ...  % The tension parameter for the for the butterfly
+        'edgetension', 1/16, ...  % The tension parameter for the butterfly
         ... % method of edge-splitting, on the border of a foliate mesh. Does not
         ... % apply to volumetric meshes.  This must be between 0 and 1/8.
         ... % 0 gives straight subdivision.  1/8 makes the edge more pointy in the
@@ -188,6 +188,10 @@ function definePropertyLists()
         ... % Biological cells will not be split wherever the named morphogen is above
         ... % biosplitarrestmgenthreshold.  If biosplitarrestmgen is empty, no morphogen
         ... % will be used for this purpose.
+        'biosplitavoid4way', 0.05, ...
+        ... % This determine the closest distance that two junctions on the same wall are allowed
+        ... % to be, to avoid 4-way junctions. It is multiplied by an estimate of the cell radius.
+        ... % This value must be positive.
         'biosplitarrestmgenthreshold', 0.99, ...
         'bioMinEdgeLength', 0, ... % A parameter relating to the growth of intercellular spaces.
         'bioSpacePullInRatio', 0.1, ... % A parameter relating to the growth of intercellular spaces.

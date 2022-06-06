@@ -20,7 +20,9 @@ function [a,n] = sumArray( indexes, values, shape )
     n = zeros( shape );
     for i=1:numel(indexes)
         ii = indexes(i);
-        a(ii) = a(ii) + values(i);
-        n(ii) = n(ii) +1;
+        if ii > 0
+            a(ii) = a(ii) + values(i);
+            n(ii) = n(ii) + 1;
+        end
     end
 end

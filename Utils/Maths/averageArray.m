@@ -2,7 +2,7 @@ function [a,n] = averageArray( indexes, values, shape )
 %[a,n] = averageArray( indexes, values, shape )
 %   Given an array VALUES and an array INDEXES of the same shape as VALUES
 %   consisting of indexes into another array of shape SHAPE, construct an
-%   array A of the shape such that A(I) = the average of the elements of
+%   array A of that shape such that A(I) = the average of the elements of
 %   VALUES for which the corresponding element of INDEXES is I.  N is a
 %   list of the number of times each index occurred.
 %
