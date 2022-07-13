@@ -163,6 +163,14 @@ function setGlobals()
         'secondlayer.vxdata.parent', { 'cellvx' }, '', '';
         'secondlayer.vxdata.values', { 'cellvx', 'any?' }, '', '';
         'secondlayer.visible.cells', { 'cell' }, '', '';
+        'volcells.vxs3d', { 'volvx', 'dim' }, 'float', 'vol';
+        'volcells.facevxs', { '{' 'volface', '}', '' }, 'volvx', 'vol';
+        'volcells.polyfaces', { '{' 'volsolid', '}', '' }, 'volface', 'vol';
+        'volcells.polyfacesigns', { '{' 'volsolid', '}', '' }, '', 'vol';
+        'volcells.edgevxs', { 'voledge', '2' }, 'volvx', 'vol';
+        'volcells.faceedges', { '{', 'volfacee', '}', '' }, 'voledge', 'vol';
+        'volcells.vxfe', { 'volvx', '1' }, 'fe', 'vol';
+        'volcells.vxbc', { 'volvx', '4' }, 'float', 'vol';
     };
 % Fields that may need special handling:
 % indexededgeproperties: [1x1 struct]

@@ -222,7 +222,7 @@ function [m,ok] = makeVoronoiBioA( m, numBioCells, numiters, amount, color, colo
     m.secondlayer = purgeOldVxs( m.secondlayer );
 
 %     m.secondlayer.side = true(numBioCells,1);
-%     m = calcBioACellAreas( m );
+%     m.secondlayer = calcBioACellAreas( m.secondlayer );
 %     m.secondlayer.areamultiple = ones( numBioCells, 1 );
 %     m.secondlayer.celltargetarea = m.secondlayer.areamultiple * ...
 %         (sum(m.secondlayer.cellarea)/numBioCells);

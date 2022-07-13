@@ -6,6 +6,8 @@ function [cell,bc] = splitBaryCoords( bc, femCell, newFemCell, splitv1, splitv2 
 %   cell, where these are indexes in the range 1:3.
 %   Calculate the new barycentric coordinates of the same point, and its
 %   cell index.
+%
+%   ONLY USED IN splitFEMcell, WHICH IS NEVER USED.
 
     % Determine which half it's in.
     test = bc( [splitv1, splitv2] );

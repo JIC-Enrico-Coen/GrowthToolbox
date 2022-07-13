@@ -1,6 +1,8 @@
 function [ok,secondlayer] = validsecondlayer( secondlayer )
 %[ok,m] = validsecondlayer( m )
 %   Make a complete set of validity checks for the biological layer.
+%
+%   NEVER USED. See checkclonesvalid.m
 
     ok = true;
     if isempty(secondlayer)
@@ -16,25 +18,25 @@ function [ok,secondlayer] = validsecondlayer( secondlayer )
     numvxs = size( secondlayer.vxFEMcell, 1 );
     
     for i=1:length(secondlayer.percellfields)
-        checksize( secondlayer.percellfields{i}, 1, numcells );
+        checksizeInternal( secondlayer.percellfields{i}, 1, numcells );
     end
     for i=1:length(secondlayer.peredgefields)
-        checksize( secondlayer.peredgefields{i}, 1, numedges );
+        checksizeInternal( secondlayer.peredgefields{i}, 1, numedges );
     end
     for i=1:length(secondlayer.pervertexfields)
-        checksize( secondlayer.pervertexfields{i}, 1, numvxs );
+        checksizeInternal( secondlayer.pervertexfields{i}, 1, numvxs );
     end
     
-    checksize( 'celldata.genindex', 1, numcells );
-    checksize( 'celldata.parent', 1, numcells );
-    checksize( 'celldata.values', 1, numcells );
-    checksize( 'edgedata.genindex', 1, numedges );
-    checksize( 'edgedata.parent', 1, numedges );
-    checksize( 'edgedata.values', 1, numedges );
-    checksize( 'vxdata.genindex', 1, numvxs );
-    checksize( 'vxdata.parent', 1, numvxs );
-    checksize( 'vxdata.values', 1, numvxs );
-    checksize( 'visible.cells', 1, numcells );
+    checksizeInternal( 'celldata.genindex', 1, numcells );
+    checksizeInternal( 'celldata.parent', 1, numcells );
+    checksizeInternal( 'celldata.values', 1, numcells );
+    checksizeInternal( 'edgedata.genindex', 1, numedges );
+    checksizeInternal( 'edgedata.parent', 1, numedges );
+    checksizeInternal( 'edgedata.values', 1, numedges );
+    checksizeInternal( 'vxdata.genindex', 1, numvxs );
+    checksizeInternal( 'vxdata.parent', 1, numvxs );
+    checksizeInternal( 'vxdata.values', 1, numvxs );
+    checksizeInternal( 'visible.cells', 1, numcells );
     
     % Check consistency of orientation.
     
@@ -58,7 +60,7 @@ function [ok,secondlayer] = validsecondlayer( secondlayer )
         
     end
 
-    function checksize( field, dim, expectedsize, data )
+    function checksizeInternal( field, dim, expectedsize, data )
         [v,ok1] = getDeepField( secondlayer, field );
         if ok1
             if nargin < 4

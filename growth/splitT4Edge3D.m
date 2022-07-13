@@ -1,6 +1,9 @@
 function m = splitT4Edge3D( m, ei, vi, oldfes, newfes )
 %m = splitEdge3D( m, ei )
 %   Split a single edge of a linear tetrahedral volumetric mesh.
+%
+% NEVER USED.
+
     ee = m.FEconnectivity.edgeends( ei, : );
 
     % Make a new vertex at the midpoint of the edge.

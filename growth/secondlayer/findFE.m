@@ -62,6 +62,10 @@ function [ ci, bc, bcerr, abserr, ishint, bcs, bcerrs, abserrs ] = findFE( m, p,
 %   elements, the selected element may not be the one that p is closest to.
 %   However, the difference is likely to be small.
 
+    bcs = [];
+    bcerrs = [];
+    abserrs = [];
+
     numpts = size(p,1);
     isvol = isVolumetricMesh(m);
     if isvol

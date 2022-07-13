@@ -1,8 +1,10 @@
 function c = findCloneVxCoords( m, vxs, mode )
-%mesh = calcFEMcoords( mesh, vxs, mode )
-%   Calculate the 3D coordinates of a list of clone vertexes.
-%   If mode==0, the calculation is done on the mid-plane of the FEs.
-%   If mode==-1 it is done on the A side, and if mode==1, the B side.
+%c = findCloneVxCoords( m, vxs, mode )
+%   Calculate the 3D coordinates of a list of bio vertexes.
+%   MODE is only relevant for foliate meshes.
+%   If MODE == 0, the calculation is done on the mid-plane of the FEs. This
+%   is the default.
+%   If MODE == -1 it is done on the A side, and if MODE == 1, the B side.
 
     full3d = usesNewFEs( m );
     if nargin < 2

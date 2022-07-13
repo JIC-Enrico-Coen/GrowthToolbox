@@ -1,5 +1,5 @@
 function m = recalculateSecondLayerFEs( m, changedFEmap )
-%m = recalculateSecondLayerFEs( m )
+%m = recalculateSecondLayerFEs( m changedFEmap )
 %   When the finite elements have changed, use the 3D coordinates of the
 %   bio layer vertexes to find which FEs they are in and where within those
 %   FEs.

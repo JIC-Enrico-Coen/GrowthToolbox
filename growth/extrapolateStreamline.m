@@ -75,8 +75,11 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
     if m.tubules.tubuleparams.curvature ~= 0
         curvature = m.tubules.tubuleparams.curvature;
     else
+        % This code is not good. GFtbox code should never refer to the
+        % model options nor to m.userdata. But I was in a hurry and there
+        % was not the time to do this right.
         edge_alignment = getModelOption( m, 'edge_alignment' );
-        if edge_alignment==0
+        if isempty(edge_alignment) || (edge_alignment==0) || ~isfield( m.userdata, 'edgedirection' )
             curvature = 0;
         else
             edgedir = unique( m.userdata.edgedirection( m.tricellvxs(ci,:) ) );

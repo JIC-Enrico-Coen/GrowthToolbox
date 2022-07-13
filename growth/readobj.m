@@ -31,8 +31,7 @@ end
 
 function ns = normals( facecoords )
 %ns = normals( facecoords )
-%   facecoords is a 3*n*3
-    ns = 0;
+%   facecoords is 3*n*3
     xy = facecoords(2,:,:) - facecoords(1,:,:);
     xz = facecoords(3,:,:) - facecoords(1,:,:);
     cs = permute( cross( xy, xz, 3 ), [2 3 1] );

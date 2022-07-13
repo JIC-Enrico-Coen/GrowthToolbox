@@ -1,5 +1,5 @@
 function [c,p,flatness,planarity,v,d] = bestFitPlane( vxs, weights )
-%[c,p,flatness] = bestFitPlane( vxs, weights )
+%[c,p,flatness,planarity,v,d] = bestFitPlane( vxs, weights )
 %   Find the best-fit plane through the vertexes VXS, an N*D array where D
 %   is the number of dimensions.  The result is returned in the form of C,
 %   the centroid of the vertexes, and P, the unit normal vector to the plane
@@ -8,7 +8,14 @@ function [c,p,flatness,planarity,v,d] = bestFitPlane( vxs, weights )
 %   eigenvalue of the covariance matrix.  Zero means very flat, 1 means not
 %   at all flat. PLANARITY is a different measure of flatness, the ratio of
 %   the smallest eigenvalue to the sum of eigenvalues. It varies betwen 0
-%   (absolutely flat) and 1/3 (not at all flat).
+%   (absolutely flat) and 1/3 (not at all flat). V is a 3x3 matrix whose
+%   columns are the axes of the best-fit ellipsoid. D is the eigenvalues in
+%   ascending order. V lists the eigenvectors in the same order. When the
+%   vertexes lie approximately in a plane, the smallest eigenvalue will be
+%   close to zero, abd the corresponding eigenvector will be the
+%   perpendicular to that plane. The ratio of the other two will express
+%   how elongated a shape it makes in that plane. This ratio will be
+%   between 0 (a straight line) and 1 (circular).
 %
 %   WEIGHTS, if supplied, weights the vertices.  When the weights are
 %   integers, this is exactly equivalent to repeating each vertex as many

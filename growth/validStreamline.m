@@ -11,8 +11,8 @@ function [oks,errfields] = validStreamline( m, ss, verbose )
         s = ss(si);
         errfields = {};
         numvxs = length(s.vxcellindex);
-        [ok1,errfields] = checklength( si, s, 'vxcellindex', numvxs, verbose, errfields );  ok = ok && ok1;
-        [ok1,errfields] = checklength( si, s, 'segcellindex', numvxs, verbose, errfields );  ok = ok && ok1;
+        [ok1,errfields] = checklengthInternal( si, s, 'vxcellindex', numvxs, verbose, errfields );  ok = ok && ok1;
+        [ok1,errfields] = checklengthInternal( si, s, 'segcellindex', numvxs, verbose, errfields );  ok = ok && ok1;
         if ok1
             if any( s.vxcellindex ~= s.segcellindex )
                 if verbose
@@ -29,12 +29,12 @@ function [oks,errfields] = validStreamline( m, ss, verbose )
         else
 %             BREAKPOINT();
         end
-        [ok1,errfields] = checksize( si, s, 'barycoords', [numvxs,3], verbose, errfields );  ok = ok && ok1;
-        [ok1,errfields] = checksize( si, s, 'globalcoords', [numvxs,3], verbose, errfields );  ok = ok && ok1;
-        [ok1,errfields] = checklength( si, s, 'segmentlengths', max(numvxs-1,0), verbose, errfields );  ok = ok && ok1;
-        [ok1,errfields] = checksize( si, s, 'directionbc', [1,3], verbose, errfields );  ok = ok && ok1;
-        [ok1,errfields] = checksize( si, s, 'directionglobal', [1,3], verbose, errfields );  ok = ok && ok1;
-        [ok1,errfields] = checksize( si, s, 'status', [1,1], verbose, errfields );  ok = ok && ok1;
+        [ok1,errfields] = checksizeInternal( si, s, 'barycoords', [numvxs,3], verbose, errfields );  ok = ok && ok1;
+        [ok1,errfields] = checksizeInternal( si, s, 'globalcoords', [numvxs,3], verbose, errfields );  ok = ok && ok1;
+        [ok1,errfields] = checklengthInternal( si, s, 'segmentlengths', max(numvxs-1,0), verbose, errfields );  ok = ok && ok1;
+        [ok1,errfields] = checksizeInternal( si, s, 'directionbc', [1,3], verbose, errfields );  ok = ok && ok1;
+        [ok1,errfields] = checksizeInternal( si, s, 'directionglobal', [1,3], verbose, errfields );  ok = ok && ok1;
+        [ok1,errfields] = checksizeInternal( si, s, 'status', [1,1], verbose, errfields );  ok = ok && ok1;
     
         if ~ok
             oks(si) = false;
@@ -156,7 +156,7 @@ function [oks,errfields] = validStreamline( m, ss, verbose )
     end
 end
 
-function [ok,errfields] = checklength( si, s, fn, expectedlen, verbose, errfields )
+function [ok,errfields] = checklengthInternal( si, s, fn, expectedlen, verbose, errfields )
     ok = true;
     if ~isfield( s, fn )
         if verbose
@@ -179,7 +179,7 @@ function [ok,errfields] = checklength( si, s, fn, expectedlen, verbose, errfield
     end
 end
 
-function [ok,errfields] = checksize( si, s, fn, expectedsize, verbose, errfields )
+function [ok,errfields] = checksizeInternal( si, s, fn, expectedsize, verbose, errfields )
     ok = true;
     sz = size(s.(fn));
     if length(sz) ~= length(expectedsize)

@@ -22,7 +22,7 @@ function [newbc,newdirbc] = transferDirection( m, ci, bc, dirbc, nextci )
 %     newvx = newbc * m.nodes( m.tricellvxs( nextci, : ), : )
     
     
-    if ~isfield( m, 'vertexnormals' )
+    if ~isfield( m, 'vertexnormals' ) || isempty( m.vertexnormals )
         m.vertexnormals = meshVertexNormals( m );
     end
     

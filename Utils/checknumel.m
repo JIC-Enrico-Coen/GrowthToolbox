@@ -1,4 +1,7 @@
 function result = checknumel( m, field, num, severity )
+%result = checknumel( m, field, num, severity )
+%   Check that M.(FIELD) has NUM elements.
+
     if nargin < 4
         severity = 0;
     end

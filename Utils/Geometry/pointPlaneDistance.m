@@ -7,6 +7,8 @@ function d = pointPlaneDistance( varargin )
 %   with unit normal vector planeNormal.
 %   The result is positive if p is on the same side of planeCentre as
 %   planeNormal.
+%
+%   P can be N points in an N*3 array, in which case D is N*1.
 
     switch nargin
         case 2
@@ -25,6 +27,6 @@ function d = pointPlaneDistance( varargin )
             planeCentre = varargin{1};
             planeNormal = varargin{2};
             p = varargin{3};
-            d = dot(p-planeCentre,planeNormal);
+            d = sum( (p-planeCentre).*planeNormal, 2 );
     end
 end

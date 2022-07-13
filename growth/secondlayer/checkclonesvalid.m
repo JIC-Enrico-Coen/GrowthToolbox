@@ -258,12 +258,12 @@ function [ok,secondlayer] = checkclonesvalid( secondlayer )
     ok = ok && okdict;
     
     
-    ok = checkindexdata( 'cell', secondlayer.celldata, numcells ) && ok;
-    ok = checkindexdata( 'edge', secondlayer.edgedata, numedges ) && ok;
-    ok = checkindexdata( 'vertex', secondlayer.vxdata, numvxs ) && ok;
+    ok = checkindexdataInternal( 'cell', secondlayer.celldata, numcells ) && ok;
+    ok = checkindexdataInternal( 'edge', secondlayer.edgedata, numedges ) && ok;
+    ok = checkindexdataInternal( 'vertex', secondlayer.vxdata, numvxs ) && ok;
 end
 
-function ok = checkindexdata( name, d, len )
+function ok = checkindexdataInternal( name, d, len )
     ok = true;
     if isempty(d), return; end
     if length(d.genindex) ~= len

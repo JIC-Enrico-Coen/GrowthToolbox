@@ -25,8 +25,7 @@ function [ m, didsplit, splitdata, numunsplit ] = trysplitVolumetric( m, splitlo
         return;
     end
     
-    if (m.globalProps.thresholdsq==0) ...
-            && (splitmgen==0)
+    if (m.globalProps.thresholdsq==0) && (splitmgen==0)
         return;
     end
     

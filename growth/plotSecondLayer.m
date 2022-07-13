@@ -18,7 +18,8 @@ function m = plotSecondLayer( m, theaxes )
     visNodeMap = [];
     visCellMap = [];
     if ~clipbio
-        visCellMap = m.secondlayer.visible.cells;
+%         visCellMap = m.secondlayer.visible.cells;
+        visCellMap = true( length(m.secondlayer.cells), 1 );
     elseif isempty( m.visible )
         visNodeMap = true( size(m.secondlayer.vxFEMcell) );
     elseif full3d
@@ -135,7 +136,7 @@ function m = plotSecondLayer( m, theaxes )
                         m.secondlayer.vxBaryCoords(abnodemap,:), ...
                         m.FEnodes, ...
                         m.FEsets.fevxs );
-        c3dcoordsA = offsets + c3dcoordsA0;
+        c3dcoordsA = offsets(abnodemap) + c3dcoordsA0;
         c3dcoordsB = [];
     elseif false && all(offsets(:)==0)
         c3dcoordsA = baryToGlobalCoords( ...

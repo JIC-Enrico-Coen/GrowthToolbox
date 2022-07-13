@@ -253,10 +253,6 @@ function [m,delinfo] = renumberMesh3D( m, varargin )
         % fn is the name of a deep field of m. If it is absent or empty, do
         % nothing.
         
-        if strcmp( fn, 'globalDynamicProps.locatenode' )
-            xxxx = 1;
-        end
-        
         v = getDeepField( m, fn );
         if isempty( v )
 %             fprintf( 1, 'Deep field %s not found.\n', fn );
@@ -268,6 +264,16 @@ function [m,delinfo] = renumberMesh3D( m, varargin )
         % dimtypes lists the types of the dimensions of the array.
         if ischar( dimtypes )
             dimtypes = { dimtypes };
+        end
+        
+        if ~isempty( dimtypes )
+            if strcmp( dimtypes{1}, '{' )
+                endcellargs = find( strcmp( dimtypes(2:end), '}' ), 1 );
+                cellcontentstypes = dimtypes( (endcellargs+1):end );
+                dimtypes = dimtypes( 2:(endcellargs-1) );
+            else
+                cellcontentstypes = {};
+            end
         end
         
         valuetype = gFIELDTYPES{i,3};
@@ -316,6 +322,12 @@ function [m,delinfo] = renumberMesh3D( m, varargin )
                     % Not handled.
                     error( '%s: unexpected case %d.', mfilename(), whichcase );
             end
+            
+%             if iscell(v) && ~isempty( cellcontentstypes )
+%                 for ci=1:numel(v)
+%                     v{ci} = reindex1( v{ci}, reindexer );
+%                 end
+%             end
         end
         
         % Remap the values.
@@ -370,7 +382,12 @@ function [m,delinfo] = renumberMesh3D( m, varargin )
         m = makeVertexConnections( m );
     end
     
+    [m,ok] = invokeIFcallback( m, 'Renumber', delinfo );
+    
 %     okafterdeletion = consistentMeshDelInfo( m, delinfo, true )
+end
+
+function v = reindex1( v, reindexer )
 end
 
 function dd = unifyDelData( n, dd, fn )

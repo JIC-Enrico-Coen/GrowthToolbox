@@ -1,10 +1,11 @@
-function m = flipedges( m )
-%m = flipedges( m )
+function [m,numflippededges] = flipedges( m )
+%[m,numflipedges] = flipedges( m )
 %   Find every place where it would improve the mesh to flip an edge, and
-%   flip it.
+%   flip it. numflippededges returns the number flipped.
 %
 %   For foliate meshes only.
 
+    numflippededges = 0;
     if isVolumetricMesh( m )
         return;
     end
@@ -21,7 +22,6 @@ function m = flipedges( m )
     end
     
     numedges = size(m.edgeends,1);
-    numflipedges = 0;
   % flippableEdges = find( eligibleEdges( m ) );
   % for i=1:length(flippableEdges)
   %     ei = flippableEdges(i);
@@ -136,10 +136,10 @@ function m = flipedges( m )
       % fprintf( 1, 'Flipping edge %d oldma %f newma %f maxcellangle %f.\n', ...
       %     ei, oldMinAngle, newMinAngle, maxcellangle );
         m = flipedge( m, ei );
-        numflipedges = numflipedges+1;
+        numflippededges = numflippededges+1;
     end
 
-    if numflipedges > 0
+    if numflippededges > 0
         % Compute the new relative positions of all the streamline vertexes.
         for i=1:length(m.tubules.tracks)
             vxs = streamlinevxs{i};
@@ -148,7 +148,7 @@ function m = flipedges( m )
                     findFE( m, vxs(j,:) );
             end
         end
-        fprintf( 1, '%d edges flipped.\n', numflipedges );
+        fprintf( 1, '%d edges flipped.\n', numflippededges );
         if ~validmesh( m )
             error('flipedge: Mesh validation failure');
         end

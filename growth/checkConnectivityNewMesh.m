@@ -43,37 +43,37 @@ vertexloctype: [27×1 double]
     c = m.FEconnectivity;
 
 % Check the sizes of all components.
-    checksize( 'allfevxs', [], numFEs, vxsPerFE );
-    checksize( 'nzallfevxs', [], numFEs, vxsPerFE );
-    checksize( 'numfevxs', [], numFEs, 1 );
-    checksize( 'fetypes', [], numFEs, 1 );
-    checksize( 'feedges', [], numFEs, edgesPerFE );
-    checksize( 'fefaces', [], numFEs, facesPerFE );
-    checksize( 'FEsets.fevxs', m.FEsets.fevxs, numFEs, 0 );
+    checksizeInternal( 'allfevxs', [], numFEs, vxsPerFE );
+    checksizeInternal( 'nzallfevxs', [], numFEs, vxsPerFE );
+    checksizeInternal( 'numfevxs', [], numFEs, 1 );
+    checksizeInternal( 'fetypes', [], numFEs, 1 );
+    checksizeInternal( 'feedges', [], numFEs, edgesPerFE );
+    checksizeInternal( 'fefaces', [], numFEs, facesPerFE );
+    checksizeInternal( 'FEsets.fevxs', m.FEsets.fevxs, numFEs, 0 );
 
     
-    checksize( 'faces', [], numFaces, vxsPerFace );
-    checksize( 'numfacevxs', [], numFaces, 1 );
-    checksize( 'faceedges', [], numFaces, edgesPerFace );
-    checksize( 'faceloctype', [], numFaces, 1 );
-    checksize( 'facefes', [], numFaces, 2 );
-    checksize( 'facefefaces', [], numFaces, 2 );
+    checksizeInternal( 'faces', [], numFaces, vxsPerFace );
+    checksizeInternal( 'numfacevxs', [], numFaces, 1 );
+    checksizeInternal( 'faceedges', [], numFaces, edgesPerFace );
+    checksizeInternal( 'faceloctype', [], numFaces, 1 );
+    checksizeInternal( 'facefes', [], numFaces, 2 );
+    checksizeInternal( 'facefefaces', [], numFaces, 2 );
     
-    checksize( 'edgefaces', [], numEdges, 0 );
-    checksize( 'edgeends', [], numEdges, 2 );
-    checksize( 'edgeloctype', [], numEdges, 1 );
+    checksizeInternal( 'edgefaces', [], numEdges, 0 );
+    checksizeInternal( 'edgeends', [], numEdges, 2 );
+    checksizeInternal( 'edgeloctype', [], numEdges, 1 );
     
-    checksize( 'vertexloctype', [], numVxs, 1 );
+    checksizeInternal( 'vertexloctype', [], numVxs, 1 );
     
 % Check that all values are in the proper range.
-    checkvalues( 'allfevxs', [], numVxs, true );
-    checkvalues( 'feedges', [], numEdges, true );
-    checkvalues( 'fefaces', [], numFaces, true );
-    checkvalues( 'faces', [], numVxs, true );
-    checkvalues( 'faceedges', [], numEdges, true );
-    checkvalues( 'edgefaces', [], numFaces, true );
-    checkvalues( 'edgeends', [], numVxs, false );
-    checkvalues( 'FEsets.fevxs', m.FEsets.fevxs, numVxs, false );
+    checkvaluesInternal( 'allfevxs', [], numVxs, true );
+    checkvaluesInternal( 'feedges', [], numEdges, true );
+    checkvaluesInternal( 'fefaces', [], numFaces, true );
+    checkvaluesInternal( 'faces', [], numVxs, true );
+    checkvaluesInternal( 'faceedges', [], numEdges, true );
+    checkvaluesInternal( 'edgefaces', [], numFaces, true );
+    checkvaluesInternal( 'edgeends', [], numVxs, false );
+    checkvaluesInternal( 'FEsets.fevxs', m.FEsets.fevxs, numVxs, false );
 
 % Check consistency of faceedges, edgeends, and faces.
     zedges = c.faceedges==0;
@@ -293,7 +293,7 @@ vertexloctype: [27×1 double]
     
     ok = ok && (errs==0);
     
-    function checkvalues( field, data, maxval, allowzero )
+    function checkvaluesInternal( field, data, maxval, allowzero )
         if isempty(data)
             if isfield( c, field )
                 data = c.(field);
@@ -316,7 +316,7 @@ vertexloctype: [27×1 double]
         end
     end
 
-    function checksize( field, data, sz1, sz2 )
+    function checksizeInternal( field, data, sz1, sz2 )
         if isempty(data)
             if isfield( c, field )
                 data = c.(field);

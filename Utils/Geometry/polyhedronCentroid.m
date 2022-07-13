@@ -23,15 +23,15 @@ function c = polyhedronCentroid( pts, sides )
     if (dims==2) && (nargin<2)
         sides = [ (1:numpts)' ([2:numpts 1])' ];
     end
-    ptspertri = size(sides,2);
-    numtris = size(sides,1);
+    ptspersimplex = size(sides,2);
+    numsimplexes = size(sides,1);
     
-    xx = permute( reshape( pts(sides',:), ptspertri, numtris, dims ), [ 1, 3, 2 ] );
-    % xx(:,:,i) contains the three vertexes of the i'th triangle as row
+    xx = permute( reshape( pts(sides',:), ptspersimplex, numsimplexes, dims ), [ 1, 3, 2 ] );
+    % xx(:,:,i) contains the vertexes of the i'th simplex as row
     % vectors.
     
-    dets = zeros(1,numtris);
-    for i=1:numtris
+    dets = zeros(1,numsimplexes);
+    for i=1:numsimplexes
         dets(i) = det(xx(:,:,i));
     end
     % dets is a row vector of the determinants of the triples or pairs of vectors
@@ -40,7 +40,7 @@ function c = polyhedronCentroid( pts, sides )
     volK = sum(dets);
     % volK is 6 times the volume of the polyhedron, or 3 times the volume of the polygon.
     
-    centroids = shiftdim( sum(xx,1), 1 )/(ptspertri+1);
+    centroids = shiftdim( sum(xx,1), 1 )/(ptspersimplex+1);
     % centroids contains the centroids of all of the tetrahedra formed by
     % each triangle and the origin.
     

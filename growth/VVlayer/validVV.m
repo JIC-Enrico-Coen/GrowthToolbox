@@ -17,39 +17,39 @@ function ok = validVV( m )
     numEdgesMWM = vvlayer.numEdgesMWM;
     nummgens = length(vvlayer.mgendict.indexToName);
 
-    checklength( 'vcells', numptsC );
-    checksize( 'vvc', [numptsM,4] );
-    checksize( 'vvcc', [numptsW,6] );
-    checklength( 'cellwalls', numptsC );
-    checksize( 'wallsegs', [numptsW,1] );
-    checksize( 'vvptsWi', [numptsW,4] );
-    checksize( 'vvptsMi', [numptsM,3] );
-    checksize( 'nbW', [numptsW,4] );
-    checklength( 'cellwallvxs', numptsC );
-    checksize( 'cellW', [numptsC,1] );
-    checksize( 'cellM', [numptsC,1] );
-    checksize( 'edgeCM', [numptsM,2] );
-    checksize( 'edgeCW', [numptsM,2] );
-    checksize( 'edgeWM', [numptsM,2] );
-    checksize( 'edgeMM', [numptsM,2] );
-    checksize( 'Medgeedge', [numptsM,2] );
-    checksize( 'edgeWW', [numEdgesWW,2] );
-    checksize( 'edgeMWM', [numEdgesMWM,2] );
-    checkvalue( 'numEdgesCM', numptsM );
-    checkvalue( 'numEdgesMM', numptsM );
-    checkvalue( 'numEdgesWM', numptsM );
-    checksize( 'vvptsC', [numptsC,3] );
-    checksize( 'vvptsM', [numptsM,3] );
-    checksize( 'vvptsW', [numptsW,3] );
-    checksize( 'vxLengthsMM', [numptsM,1] );
-    checksize( 'vxLengthsM', [numptsM,1] );
-    checksize( 'vxLengthsW', [numEdgesWW,1] );
-    checksize( 'vvpts', [numptsAll,3] );
-    checksize( 'mgens', [numptsAll,nummgens] );
-    checksize( 'mgenC', [numptsC,nummgens] );
-    checksize( 'mgenM', [numptsM,nummgens] );
-    checksize( 'mgenW', [numptsW,nummgens] );
-    checksize( 'cellpolarity', [numptsC,3] );
+    checklengthInternal( 'vcells', numptsC );
+    checksizeInternal( 'vvc', [numptsM,4] );
+    checksizeInternal( 'vvcc', [numptsW,6] );
+    checklengthInternal( 'cellwalls', numptsC );
+    checksizeInternal( 'wallsegs', [numptsW,1] );
+    checksizeInternal( 'vvptsWi', [numptsW,4] );
+    checksizeInternal( 'vvptsMi', [numptsM,3] );
+    checksizeInternal( 'nbW', [numptsW,4] );
+    checklengthInternal( 'cellwallvxs', numptsC );
+    checksizeInternal( 'cellW', [numptsC,1] );
+    checksizeInternal( 'cellM', [numptsC,1] );
+    checksizeInternal( 'edgeCM', [numptsM,2] );
+    checksizeInternal( 'edgeCW', [numptsM,2] );
+    checksizeInternal( 'edgeWM', [numptsM,2] );
+    checksizeInternal( 'edgeMM', [numptsM,2] );
+    checksizeInternal( 'Medgeedge', [numptsM,2] );
+    checksizeInternal( 'edgeWW', [numEdgesWW,2] );
+    checksizeInternal( 'edgeMWM', [numEdgesMWM,2] );
+    checkvalueInternal( 'numEdgesCM', numptsM );
+    checkvalueInternal( 'numEdgesMM', numptsM );
+    checkvalueInternal( 'numEdgesWM', numptsM );
+    checksizeInternal( 'vvptsC', [numptsC,3] );
+    checksizeInternal( 'vvptsM', [numptsM,3] );
+    checksizeInternal( 'vvptsW', [numptsW,3] );
+    checksizeInternal( 'vxLengthsMM', [numptsM,1] );
+    checksizeInternal( 'vxLengthsM', [numptsM,1] );
+    checksizeInternal( 'vxLengthsW', [numEdgesWW,1] );
+    checksizeInternal( 'vvpts', [numptsAll,3] );
+    checksizeInternal( 'mgens', [numptsAll,nummgens] );
+    checksizeInternal( 'mgenC', [numptsC,nummgens] );
+    checksizeInternal( 'mgenM', [numptsM,nummgens] );
+    checksizeInternal( 'mgenW', [numptsW,nummgens] );
+    checksizeInternal( 'cellpolarity', [numptsC,3] );
 %          mainvxs: [310x3 double]
 %            edges: [3561x2 double]
 %       mainvxsbcs: [310x3 double]
@@ -58,7 +58,7 @@ function ok = validVV( m )
 %               ax: [1x1 Axes]
 %      plothandles: [1x1 struct]
 %         mgendict: [1x1 struct]
-    checksize( 'diffusion', [nummgens,5] );
+    checksizeInternal( 'diffusion', [nummgens,5] );
     
     % Check connections.
     
@@ -121,7 +121,7 @@ function ok = validVV( m )
 
 
 
-    function checkvalue( f, v )
+    function checkvalueInternal( f, v )
         fv = vvlayer.(f);
         if fv ~= v
             ok = false;
@@ -130,7 +130,7 @@ function ok = validVV( m )
         end
     end
 
-    function checklength( f, len )
+    function checklengthInternal( f, len )
         flen = length(vvlayer.(f));
         if flen ~= len
             ok = false;
@@ -139,7 +139,7 @@ function ok = validVV( m )
         end
     end
 
-    function checksize( f, sz )
+    function checksizeInternal( f, sz )
         fsz = size(vvlayer.(f));
         if any(fsz ~= sz)
             ok = false;

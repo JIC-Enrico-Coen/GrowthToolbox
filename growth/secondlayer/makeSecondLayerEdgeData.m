@@ -2,12 +2,31 @@ function secondlayer = makeSecondLayerEdgeData( secondlayer )
 %secondlayer = makeSecondLayerEdgeData( secondlayer )
 %   Construct secondlayer.edges and secondlayer.cells(:).edges from
 %   secondlayer.cells(:).vxs.
+%
+%   secondlayer.edges is an E*4 array, where E is the number of edges.
+%   secondlayer.edges(:,[1 2]) lists the vertexes that the edge joins.
+%   secondlayer.edges(:,[3 4]) lists the cells the edge belongs to.
+%
+%   There are consistency rules relating these:
+%
+%   1. If an edge ei has a cell on only one side, then the non-existent
+%   cell on the other side is represented as zero. This entry always occurs
+%   as the second cell, i.e. secondlayer.edges(ei,4).
+%
+%   2. If secondlayer.edges(ei,:) is [v1,v2,c1,c2], then vertexes v1 and v2
+%   occur in that order in secondlayer.cells(c1).vxs, and if c2 is not 0,
+%   in the opposite order in secondlayer.cells(c2).vxs.
 
     if ~isNonemptySecondLayer( secondlayer )
         return;
     end
     
-    numBioVxs = length( secondlayer.vxFEMcell );
+    if isfield( secondlayer, 'vxFEMcell' )
+        numBioVxs = length( secondlayer.vxFEMcell );
+    else
+        allvxs = cell2mat( { secondlayer.cells.vxs } );
+        numBioVxs = max( allvxs );
+    end
     numBioEdges = 0;
     numBioCells = length( secondlayer.cells );
     

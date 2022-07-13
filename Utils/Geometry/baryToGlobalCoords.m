@@ -1,4 +1,4 @@
-function gc = baryToGlobalCoords( cells, bcs, nodes, triangles )
+function gc = baryToGlobalCoords( cells, bcs, nodes, simplexes )
 %gc = baryToGlobalCoords( cells, bcs, nodes, triangles )
 %   Convert barycentric coordinates to global coordinates.
 %   NODES is an N*D matrix containing the global coordinates of a set of N
@@ -23,8 +23,8 @@ function gc = baryToGlobalCoords( cells, bcs, nodes, triangles )
         gc = zeros(0,spacedims);
         return;
     end
-    vxspercell = size(triangles,2);
-    cellVxs = triangles( cells, : );
+    vxspercell = size(simplexes,2);
+    cellVxs = simplexes( cells, : );
     foo = permute( reshape( nodes( cellVxs', : ), vxspercell, [], spacedims ), [2 1 3] );
     gc = zeros( length(cells), spacedims );
     for ii=1:spacedims

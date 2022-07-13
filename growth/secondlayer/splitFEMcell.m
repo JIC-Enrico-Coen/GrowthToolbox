@@ -5,6 +5,8 @@ function secondlayer = splitFEMcell( secondlayer, femCell, newFemCell, splitv1, 
 %   index newFemCell.  The edge is specified by splitv1 and splitv2, which
 %   are the FEM vertexes at either end of the split edge, with splitv1
 %   belonging to the old FEM cell and splitv2 belonging to the new FEM cell.
+%
+%   NEVER USED.
 
     numvxs = length( secondlayer.vxFEMcell );
     for vi=1:numvxs

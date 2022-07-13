@@ -89,7 +89,7 @@ function c = connectivity3D( m )
 %
 %   Topics: volumetric mesh
 
-fprintf( 2, '%s called\n', mfilename() );
+    timedFprintf( '%s called\n', mfilename() );
 
     numAllFEs = 0;
     maxVxsPerFE = 0;
