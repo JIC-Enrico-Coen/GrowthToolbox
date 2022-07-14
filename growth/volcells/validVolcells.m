@@ -96,8 +96,11 @@ function [ok,errs] = validVolcells( volcells, m )
             edgesenseerrors = edgedata1(1:2:end,3) == edgedata1(2:2:end,3);
             numedgesenseerrors = sum( edgesenseerrors );
             if numedgesenseerrors > 0
-                timedFprintf( 1, 3, 'Volume %d has %d face-edge sense errors.\n', ...
+                timedFprintf( 1, 3, 'Volume %d has %d face-edge sense errors for edges', ...
                     vi, numedgesenseerrors );
+                fprintf( ' %d', find( edgesenseerrors ) );
+                fprintf( '\n' );
+                errdata = [ edgedata1, double(reshape( repmat(edgesenseerrors',2,1), [], 1) ) ]
                 errs = errs + numedgesenseerrors;
             end
         end

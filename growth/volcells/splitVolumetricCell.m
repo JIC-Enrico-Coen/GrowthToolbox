@@ -290,7 +290,7 @@ function newvolcells = splitVolumetricCell( volcells, vci, divcentre, divnormal 
     newWallSameSenseAsFirstFaceOldHalf = find( newvolcells.edgevxs(firstNewEdge,:)==firstVxOfFirstEdgeInFirstFace, 1 ) == 2;
     
     newwallvxs = cycle1;
-    newwalledges = size(newvolcells.edgevxs,1) - numfacesplits + perm1;
+    newwalledges = newwalledgeslist( perm1 );
     % Add this face to newvolcells.facevxs, newvolcells.faceedges.
     newwallindex = length( newvolcells.facevxs ) + 1;
     newvolcells.facevxs{newwallindex} = newwallvxs;
@@ -310,6 +310,7 @@ function newvolcells = splitVolumetricCell( volcells, vci, divcentre, divnormal 
         else
             timedFprintf( 'Invalid face (rel %d/abs %d) straddles splitting plane.\n', relfi, fi );
             planesides(relfi) = 2;
+            xxxx = 1;
         end
     end
     oldnumcells = length( newvolcells.polyfaces );
@@ -362,7 +363,7 @@ function [cycle,perm] = findCycle1( edges )
     prevVx = vxis(nextEdge2,1);
     curVx = vxis(nextEdge2,2);
     cycle([1 2]) = [ prevVx curVx ];
-    perm(1) = floor(firstedge2/2);
+    perm(1) = floor((firstedge2+1)/2);
     vxis(nextEdge2,:) = 0;
     ci = 2;
     iters = 0;

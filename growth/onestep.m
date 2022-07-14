@@ -224,18 +224,20 @@ function [m,ok,splitdata] = onestep( m, useGrowthTensors, useMorphogens )
                 end
             end
             if (numflippededges > 0) || (numElided > 0) || ~isempty( splitdata )
-                % Brute force recomputation of the relative locations of
-                % the volcells vertexes
-                newvxfe = zeros( size( m.volcells.vxfe ) );
-                newvxbc = zeros( size( m.volcells.vxbc ) );
-                bcerr = nan( length( m.volcells.vxfe ), 1 );
-                abserr = nan( length( m.volcells.vxfe ), 1 );
-                for pi=1:size(m.volcells.vxs3d,1)
-                    [ newvxfe(pi), newvxbc(pi,:), bcerr(pi), abserr(pi) ] = findFE( m, m.volcells.vxs3d(pi,:), 'hint', m.volcells.vxfe(pi) );
+                if isfield( m, 'volcells' ) && ~isempty( m.volcells )
+                    % Brute force recomputation of the relative locations of
+                    % the volcells vertexes
+                    newvxfe = zeros( size( m.volcells.vxfe ) );
+                    newvxbc = zeros( size( m.volcells.vxbc ) );
+                    bcerr = nan( length( m.volcells.vxfe ), 1 );
+                    abserr = nan( length( m.volcells.vxfe ), 1 );
+                    for pi=1:size(m.volcells.vxs3d,1)
+                        [ newvxfe(pi), newvxbc(pi,:), bcerr(pi), abserr(pi) ] = findFE( m, m.volcells.vxs3d(pi,:), 'hint', m.volcells.vxfe(pi) );
+                    end
+                    m.volcells.vxfe = newvxfe;
+                    m.volcells.vxbc = newvxbc;
+                    xxxx = 1;
                 end
-                m.volcells.vxfe = newvxfe;
-                m.volcells.vxbc = newvxbc;
-                xxxx = 1;
             end
         end
     end
