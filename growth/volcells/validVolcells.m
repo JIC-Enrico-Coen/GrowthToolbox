@@ -76,33 +76,82 @@ function [ok,errs] = validVolcells( volcells, m )
         voledges = cell2mat( volcells.faceedges(pf1) );
         numvoledges = length(unique(voledges));
         discrepancy = length(voledges) - 2*numvoledges;
-        if discrepancy ~= 0
-            timedFprintf( 1, 3, 'Volume %d fails to connect to every edge twice, discrepancy %d.\n', ...
-                vi, discrepancy );
+        [a,b] = sumArray( voledges, ones(size(voledges)), [numedges,1] );
+        badedges = find( (a~=0) & (a~=2) )';
+        badcounts = a(badedges)';
+        if ~isempty(badedges)
+            timedFprintf( 1, 3, 'Volume %d fails to connect to every edge twice, %d bad edges.\n', ...
+                vi, length(badedges) );
+            badedges
+            badcounts
             errs = errs+1;
         else
-            % Needs an array with three columns: edge index, face index,
-            % and face sign. the first column is voledges defined above.
-            edgedata = [ voledges(:), zeros( length(voledges), 2 ) ];
-            ei = 0;
-            for fi=1:length(pf1)
-                ne = length( volcells.faceedges{pf1(fi)} );
-                fesenses = volcells.edgevxs( volcells.faceedges{pf1(fi)}, 1 )==volcells.facevxs{pf1(fi)};
-                edgedata( (ei+1):(ei+ne), 2 ) = pf1(fi);
-                edgedata( (ei+1):(ei+ne), 3 ) = fesenses==pfs1(fi);
-                ei = ei + ne;
+            % Maybe a better way. Make an array containing for every edge
+            % of the polyhedron, the indexes of the faces containing that
+            % edge.
+            % 1: edge index
+            % 2: face 1
+            % 3, 4: vertexes of the edge in face 1
+            foo = [ cell2mat( volcells.faceedges(pf1) ), cell2mat( volcells.facevxs(pf1) ) ];
+            foo = [ foo, zeros(size(foo,1),2) ];
+            fooi = 0;
+            for rfi=1:length(pf1)
+                fi = pf1(rfi);
+                fivxs = volcells.facevxs{fi};
+                foo( (fooi+1):(fooi+length(fivxs)), 3 ) = fivxs([2:end 1],1);
+                foo( (fooi+1):(fooi+length(fivxs)), 4 ) = volcells.polyfacesigns{vi}(rfi);
+                foo( (fooi+1):(fooi+length(fivxs)), 5 ) = rfi;
+                foo( (fooi+1):(fooi+length(fivxs)), 6 ) = fi;
+                fooi = fooi+length(fivxs);
             end
-            edgedata1 = sortrows( edgedata );
-            edgesenseerrors = edgedata1(1:2:end,3) == edgedata1(2:2:end,3);
-            numedgesenseerrors = sum( edgesenseerrors );
-            if numedgesenseerrors > 0
+            foo = sortrows( foo );
+            edges1 = foo(1:2:end,[2 3]);
+            edges2 = foo(2:2:end,[3 2]);
+            edgesagree = all(edges1 == edges2,2);
+            signs1 = foo(1:2:end,4);
+            signs2 = foo(2:2:end,4);
+            signsagree = signs1==signs2;
+            polyfaceedgesenseerrors = edgesagree ~= signsagree;
+            numpolyfaceedgesenseerrors = sum( polyfaceedgesenseerrors );
+            if numpolyfaceedgesenseerrors > 0
                 timedFprintf( 1, 3, 'Volume %d has %d face-edge sense errors for edges', ...
-                    vi, numedgesenseerrors );
-                fprintf( ' %d', find( edgesenseerrors ) );
+                    vi, numpolyfaceedgesenseerrors );
+                fprintf( ' %d', find( polyfaceedgesenseerrors ) );
                 fprintf( '\n' );
-                errdata = [ edgedata1, double(reshape( repmat(edgesenseerrors',2,1), [], 1) ) ]
-                errs = errs + numedgesenseerrors;
+                errdata = [ foo, double(reshape( repmat(polyfaceedgesenseerrors',2,1), [], 1) ) ]
+                errs = errs + numpolyfaceedgesenseerrors;
+                xxxx = 1;
             end
+            xxxx = 1;
+            
+            
+            
+%             % We want an array with three columns: edge index, face index,
+%             % and face sign. The first column is voledges defined above,
+%             % being the concatenation of faceedges for all of thefaces of
+%             % the volcell.
+%             % The second and third will now be computed.
+%             edgedata = [ voledges, zeros( length(voledges), 2 ) ];
+%             ei = 0;
+%             for fi=1:length(pf1)
+%                 fes = volcells.faceedges{pf1(fi)};
+%                 ne = length( fes );
+%                 fesenses = volcells.edgevxs( fes, 1 )==volcells.facevxs{pf1(fi)};
+%                 edgedata( (ei+1):(ei+ne), 2 ) = pf1(fi);
+%                 edgedata( (ei+1):(ei+ne), 3 ) = fesenses==pfs1(fi);
+%                 ei = ei + ne;
+%             end
+%             edgedata1 = sortrows( edgedata );
+%             edgesenseerrors = edgedata1(1:2:end,3) == edgedata1(2:2:end,3);
+%             numedgesenseerrors = sum( edgesenseerrors );
+%             if numedgesenseerrors > 0
+%                 timedFprintf( 1, 3, 'Volume %d has %d face-edge sense errors for edges', ...
+%                     vi, numedgesenseerrors );
+%                 fprintf( ' %d', find( edgesenseerrors ) );
+%                 fprintf( '\n' );
+%                 errdata = [ edgedata1, double(reshape( repmat(edgesenseerrors',2,1), [], 1) ) ]
+%                 errs = errs + numedgesenseerrors;
+%             end
         end
     end
     

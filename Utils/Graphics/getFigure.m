@@ -46,8 +46,12 @@ function [result,ax] = getFigure( varargin )
         elseif isstruct( arg1 )
             result = arg1;
             fn = varargin{2};
-            fig = figure();
-            result.(fn) = fig;
+            if isfield( result, fn )
+                fig = result.(fn);
+            else
+                fig = figure();
+                result.(fn) = fig;
+            end
             varargin([1 2]) = [];
         else
             fig = figure();
