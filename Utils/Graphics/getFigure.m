@@ -56,7 +56,7 @@ function [result,ax] = getFigure( varargin )
         else
             fig = figure();
             result = fig;
-            if isempty(arg1)
+            if isempty(arg1) || ishandle(arg1)
                 varargin(1) = [];
             end
         end

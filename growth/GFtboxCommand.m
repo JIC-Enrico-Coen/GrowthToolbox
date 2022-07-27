@@ -1,7 +1,9 @@
 function bareExptID = GFtboxCommand( varargin )
     %function GFtboxCommand(...)
     %
-    %For running growth models in batch mode. Results are filed in a
+    %   IGNORE ALL OF THESE COMMENTS. THEY ARE HOPELESSLY OUT OF DATE.
+    %
+    %For running growth models in batch modpasswe. Results are filed in a
     %subdirectory
     %ProjectName:Movies:experimentname:meshes   stores full mesh .mat files
     %
@@ -12,9 +14,6 @@ function bareExptID = GFtboxCommand( varargin )
     %The meshes can be viewed using VMS (View Mesh System)
     %or VMSReport. They can also be moved into the project directory where
     %GFtbox will recognise them as 'Stages'.
-    %
-    %When running jobs on the cluster, GFtboxCommand will automatically 
-    %log the fact with a program called ClusterControl. 
     %
     %To run on the cluster you must have 
     %      1) Your cluster username.
@@ -30,7 +29,7 @@ function bareExptID = GFtboxCommand( varargin )
     %      
     %GFtboxCommand(...
     %    'Cluster',true/false   % Use the cluster. Default is true.
-    %    'Project','IMotif2a',...  % Project to be run. This can be either
+    %    'Project',your_project)here,...  % The project to be run. This can be either
     %                              a full path name or the base name of a
     %                              project contained in one of the user's
     %                              list of default project directories.
@@ -39,15 +38,9 @@ function bareExptID = GFtboxCommand( varargin )
     %    'Stages',[80,120,...]  % default, output at every iteration
     %                           % list of stages that are to be
     %                           % output.
-    %                           % Overrides Stepsize.
-    %                           % stage filenumbers are time - consistent
-    %                           % GFtbox
     %    
     % Using steps
     %    'Steps', 20,...        % number of steps to be run
-    %    'Stepsize',1,...       % interval between steps that are recorded
-    %                           % overridden by Stages
-    %                           % default 1
     %
     %    'Modeloptions', [], ...
     %
@@ -94,26 +87,20 @@ function bareExptID = GFtboxCommand( varargin )
 
     global ProjectName ...
            LocalProjectFullPath ...
-           LocalProjectsDirectory ...
            RemoteProjectFullPath ...
            RemoteProjectsDirectory ...
-           ExperimentID ...
-           ExperimentUserID ...
-           LocalExperimentUniqueFullPath ...
            RemoteArchitecture ...
            DryRun ...
            MatlabModule
 
     ProjectName = '';
     LocalProjectFullPath = '';
-    LocalProjectsDirectory = '';
     RemoteProjectFullPath = '';
     RemoteProjectsDirectory = '';
-    ExperimentID = '';
-    ExperimentUserID = '';
-    LocalExperimentUniqueFullPath = '';
     RemoteArchitecture = '';
     DryRun = false;
+    experimentID = '';
+    experimentUserID = '';
     
     if rem(nargin,2)
         dbstack();
@@ -121,7 +108,6 @@ function bareExptID = GFtboxCommand( varargin )
     end
     setFixedClusterDetails();
     repetitions = 1;
-    stepsize=1;
     parallelOptions = true;
     stages=[];
     usecluster = ~oncluster();
@@ -144,9 +130,9 @@ function bareExptID = GFtboxCommand( varargin )
             case 'REMOTEPROJECTS'
                 RemoteProjectsDirectory=argvalue;
             case 'EXPID'
-                ExperimentID = argvalue;
+                experimentID = argvalue;
             case 'EXPUSERID'
-                ExperimentUserID = argvalue;
+                experimentUserID = argvalue;
             case 'CLUSTERTYPE'
                 % The option should be 'PC' if the cluster is a Windows
                 % machine. Any other value implies a *nix machine.
@@ -154,10 +140,6 @@ function bareExptID = GFtboxCommand( varargin )
             case 'REPETITIONS'
                 % The number runs to be performed with each set of parameters.
                 repetitions = argvalue;
-            case 'STEPSIZE'
-                % The number of simulation steps to perform between saved
-                % stages and movie frames.
-                stepsize = argvalue;
             case 'COMBINEOPTIONS'
                 switch argvalue
                     case 'together'
@@ -201,7 +183,7 @@ function bareExptID = GFtboxCommand( varargin )
         dbstack();
         error('Project ''%s'' not found, reason:\n    %s.', ProjectName, status );
     end
-    [LocalProjectsDirectory,~,~] = fileparts( LocalProjectFullPath );
+    [localProjectsDirectory,~,~] = fileparts( LocalProjectFullPath );
     RemoteProjectFullPath = clusterfullfile( RemoteProjectsDirectory, ProjectName );
     % We now have these variables specifying the layout of the local and
     % remote files and directories:
@@ -209,7 +191,7 @@ function bareExptID = GFtboxCommand( varargin )
     %       machines. This is also the basename of the directory that is
     %       the project.
     %   LocalProjectFullPath: the full path name of the local project.
-    %   LocalProjectsDirectory: the full path name of the directory
+    %   localProjectsDirectory: the full path name of the directory
     %       containing the local project directory.
     %   RemoteProjectFullPath: the full path name of the remote project.
     %   RemoteProjectsDirectory: the full path name of the directory
@@ -225,19 +207,19 @@ function bareExptID = GFtboxCommand( varargin )
         end
     end
 
-    if isempty( ExperimentID )
+    if isempty( experimentID )
         % This happens only if the runs are to be done on the local
-        % machine. And even then this value of ExperimentID is never used.
+        % machine. And even then this value of experimentID is never used.
         
         % Generate a name: the project name and a time stamp.
-        ExperimentID = [ ProjectName, '-', datestr(now,'yyyymmdd_HHMMSS') ];
+        experimentID = [ ProjectName, '-', datestr(now,'yyyymmdd_HHMMSS') ];
     end
     
     % Even if we are not going to run the model here, but submit it to the
     % cluster, we still need to load it, in order to determine the valid
     % options and the default time stamp. Actually, maybe this is pointless
     % and we should do this only when actually running the model.
-    [m,ok] = leaf_loadmodel( [], ProjectName, LocalProjectsDirectory, 'rewrite', false);
+    [m,ok] = leaf_loadmodel( [], ProjectName, localProjectsDirectory, 'rewrite', false);
     if ~ok
          error('Cannot load project %s', LocalProjectFullPath);
     end
@@ -254,28 +236,24 @@ function bareExptID = GFtboxCommand( varargin )
         error('Problem with the interaction function.');
     end
     
-    % Decide timestep, number of steps, and stages to save.
-    dt = m.globalProps.timestep;
-    if isempty( stages )
-        stages = m.stagetimes;
-    end
-    if isempty( stages )
-        fprintf( 2, 'No stages specified. Cannot run.\n' );
-        return;
-    end
-    number_steps = round( max(stages)/dt );
-    
     % All of the options supplied to GFtboxCommand that have not been
     % recognised should be options of the model being run.
     haveModelOptions = ~isempty( m.modeloptions );
     if haveModelOptions
         modeloptions = intersectStruct( argStruct, fieldnames( m.modeloptions ) );
-%         unrecognisedoptions = setdiff( fieldnames( argStruct ), fieldnames( m.modeloptions ) );
-%         if ~isempty( unrecognisedoptions )
-%             fprintf( 2, '%s: Unrecognised options ''%s''.\n', mfilename(), joinstrings( ''', ''', unrecognisedoptions ) );
-%         end
+        unrecognisedoptions = setdiff( fieldnames( argStruct ), fieldnames( m.modeloptions ) );
+        if ~isempty( unrecognisedoptions )
+            fprintf( 2, '%s: Unrecognised options ''%s''.\n', mfilename(), joinstrings( ''', ''', unrecognisedoptions ) );
+        end
         haveModelOptions = ~isempty( fieldnames(modeloptions) );
     end
+    
+    % Decide timestep, number of steps, and stages to save.
+    if isempty( stages )
+        timePerRun = modeloptions.stepsperrun * m.globalProps.timestep;
+        m.stagetimes = timePerRun*(1:modeloptions.runsperset);
+    end
+    stages = m.stagetimes;
     
     % Combine the model options in all possible ways.
     variantFormat = 'V%03d';
@@ -316,11 +294,21 @@ function bareExptID = GFtboxCommand( varargin )
         allmodeloptions = struct( 'currentrun', sprintf( variantFormat, 1 ) );
     end
     
+    clusterExcludeOptions = { 'Cluster', 'RemoteProjects', 'ClusterType', 'CombineOptions', 'Repetitions', 'Matlab' };
+    clusterArgstruct = safermfield( argStruct, clusterExcludeOptions );
+    if haveModelOptions
+        clusterArgstruct = safermfield( clusterArgstruct, fieldnames(allmodeloptions) );
+    end
+    clusterArgString = structToString( clusterArgstruct );
+    bareExptID = joinNonemptyStrings( '_', { experimentUserID, sprintf('%06d',floor(1000000*rand())) } );
+    exptID = ['_e' bareExptID ];
+    fprintf( 1, 'Run ID %s\n', exptID );
+        
     if usecluster
         getClusterDetails();
         remoteProjectExists = existsRemoteFile( RemoteProjectFullPath );
-        RemoteClusterProjectFiles = clusterfullfile( RemoteProjectFullPath, ClusterProjectFiles );
-        makeRemoteDirectory( RemoteClusterProjectFiles );
+        remoteClusterProjectFiles = clusterfullfile( RemoteProjectFullPath, ClusterProjectFiles );
+        makeRemoteDirectory( remoteClusterProjectFiles );
         
         if remoteProjectExists
             fprintf( 1, 'Remote project %s exists, not copying across.\n', RemoteProjectFullPath );
@@ -329,7 +317,7 @@ function bareExptID = GFtboxCommand( varargin )
 
             makeRemoteDirectory( clusterfullfile( RemoteProjectFullPath, 'runs' ) );
             localProjectInfoFile = fullfile( LocalClusterProjectFiles, 'ProjectInfo.txt' );
-            remoteProjectInfoFile = clusterfullfile( RemoteClusterProjectFiles, 'ProjectInfo.txt' );
+            remoteProjectInfoFile = clusterfullfile( remoteClusterProjectFiles, 'ProjectInfo.txt' );
             writefile( localProjectInfoFile, [LocalProjectFullPath newline] );
             copyFileLocalRemote( localProjectInfoFile, remoteProjectInfoFile, '>', true );
             copyProjectFile( [makeIFname(ProjectName),'.m'] );
@@ -353,10 +341,6 @@ function bareExptID = GFtboxCommand( varargin )
                             '>' );
                 end
             end
-%             if ~objflag && sensitivityflag
-%                 warning('A sensitivity test has been asked for, but there are no reference obj files')
-%                 sensitivityflag = false;
-%             end
         end
         
         if ~existsRemoteFile( 'RunSilent.m' )
@@ -365,19 +349,9 @@ function bareExptID = GFtboxCommand( varargin )
         end
         executeRemote( sprintf( 'touch ''%s''', 'ClusterBuffer.txt' ) );
         
-        bareExptID = joinNonemptyStrings( '_', { ExperimentUserID, sprintf('%06d',floor(1000000*rand())) } );
-        exptID = ['_e' bareExptID ];
-        fprintf( 1, 'Run ID %s\n', exptID );
         writefile( fullfile( LocalClusterProjectFiles, 'batchnumber.txt' ), [ exptID newline ] );
 
         
-        
-        clusterExcludeOptions = { 'Cluster', 'RemoteProjects', 'ClusterType', 'CombineOptions', 'Repetitions', 'Matlab' };
-        clusterArgstruct = safermfield( argStruct, clusterExcludeOptions );
-        if haveModelOptions
-            clusterArgstruct = safermfield( clusterArgstruct, fieldnames(allmodeloptions) );
-        end
-        clusterArgString = structToString( clusterArgstruct );
         
         sh_basefilename = [ProjectName, exptID,'.sh'];
         sh_fullfilename = fullfile( LocalClusterProjectFiles, sh_basefilename );
@@ -391,18 +365,16 @@ function bareExptID = GFtboxCommand( varargin )
             currentrun = allmodeloptions(i).currentrun;
             modeloptionsString = structToString( safermfield( allmodeloptions(i), 'currentrun' ) );
             subexptID = [ exptID '_' currentrun ];
-%             modeloptionsString = structToString( s );
             fprintf( 1, 'Options for run %d, subexptID %s:\n', i, subexptID );
             disp( allmodeloptions(i) );
             for repnum=1:repetitions
                 runnum = runnum+1;
                 ID = [ProjectName,subexptID,'R',sprintf('%03d',repnum)];
-                morefuckingargs = struct( 'currentrun', ID );
-                morefuckingargsstring = structToString( morefuckingargs );
-                temp_argument_list = [clusterArgString, ', ', modeloptionsString, ', ', morefuckingargsstring, ', ''ExpID'', ''', ID, ''''];
+                moreargs = struct( 'currentrun', ID );
+                moreargsstring = structToString( moreargs );
+                temp_argument_list = [clusterArgString, ', ', modeloptionsString, ', ', moreargsstring, ', ''ExpID'', ''', ID, ''''];
                 fprintf( 1, 'temp_argument_list = %s\n', temp_argument_list );
                 [~,subfilename{runnum}] = unixtemplate( repnum, temp_argument_list, subexptID );
-                % currentrun
             end
         end
         if ~DryRun
@@ -417,33 +389,46 @@ function bareExptID = GFtboxCommand( varargin )
             fclose(h_master);
             fclose(h_report);
             ok = sendShellScript( sh_fullfilename, ['./' sh_basefilename], true );
-%         if ok
-%             ClusterControlAdd('Project',ProjectName);
-%         end
         end
     else
-        m = leaf_loadmodel( [], ProjectName, LocalProjectsDirectory, 'rewrite', false);
+        m = leaf_loadmodel( [], ProjectName, localProjectsDirectory, 'rewrite', false);
         m = leaf_setproperty( m, 'staticreadonly', true, 'allowInteraction', true ); % prevent cross talk when on cluster
         m = leaf_reload( m, 'restart' , 'rewrite', false);
         m = leaf_setproperty( m, 'staticreadonly', true, 'allowInteraction', true ); % prevent cross talk when on cluster
-        fprintf( 1, 'Setting m.globalProps.currentrun to argStruct.currentrun = %s\n', argStruct.currentrun );
-        m = leaf_setproperty( m, 'currentrun', argStruct.currentrun ); % Give the model access to which run it is executing.
-            % This also tells it not to save stages to the project
-            % directory, only to the run directory.
-        m = initialiseOptions( m );
-        if haveModelOptions
-            m = setModelOptions( m, modeloptions );
-            fprintf( 1, 'Model options specified:\n' );
-            disp( modeloptions );
-        else
-            fprintf( 1, 'No model options specified, running with defaults.\n' );
+        
+        numruns = repetitions * length(allmodeloptions);
+        subfilename = cell( 1, numruns );
+        runnum = 0;
+        for i=1:length(allmodeloptions)
+            currentrun = allmodeloptions(i).currentrun;
+            modeloptionsString = structToString( safermfield( allmodeloptions(i), 'currentrun' ) );
+            subexptID = [ exptID '_' currentrun ];
+            fprintf( 1, 'Options for run %d, subexptID %s:\n', i, subexptID );
+            disp( allmodeloptions(i) );
+            for repnum=1:repetitions
+                runnum = runnum+1;
+                ID = [ProjectName,subexptID,'R',sprintf('%03d',repnum)];
+                moreargs = struct( 'currentrun', ID );
+                moreargsstring = structToString( moreargs );
+                temp_argument_list = [clusterArgString, ', ', modeloptionsString, ', ', moreargsstring, ', ''ExpID'', ''', ID, ''''];
+                fprintf( 1, 'temp_argument_list = %s\n', temp_argument_list );
+%                 [~,subfilename{runnum}] = unixtemplate( repnum, temp_argument_list, subexptID );
+                % currentrun
+                m = leaf_setproperty( m, 'currentrun', ID ); % Give the model access to which run it is executing.
+                    % This also tells it not to save stages to the project
+                    % directory, only to the run directory.
+                m = initialiseOptions( m );
+                if haveModelOptions
+                    m = setModelOptions( m, allmodeloptions(i) ); 
+                    fprintf( 1, 'Model options specified:\n' );
+                    disp( modeloptions );
+                else
+                    fprintf( 1, 'No model options specified, running with defaults.\n' );
+                end
+                printModelOptions( 1, m );
+                doOneRun( m, stages, ID );
+            end
         end
-        printModelOptions( 1, m );
-        doOneRun( ...
-            m, ...
-            stepsize, ...
-            number_steps, ...
-            stages );
     end
     fprintf('Finish - %s\n',datestr(now));
     fprintf('Elapsed time = %d seconds\n',round(etime(clock(),starttime)));
@@ -466,15 +451,11 @@ function ok = copyProjectFile( filename )
     ok = copyFileLocalRemote( localFullPath, remoteFullPath, '>' );
 end
 
-function doOneRun( ...
-        m, ...
-        stepsize, ...
-        number_steps, ...
-        stages )
+function doOneRun( m, stages, runname )
 % This is the procedure that actually runs the simulation. It may be
 % running on either the desktop machine or the cluster.
 
-    global ProjectName LocalProjectFullPath ExperimentID LocalExperimentUniqueFullPath
+    global ProjectName LocalProjectFullPath
     
     % Choose a unique name for the runs subdirectory to store the results
     % of the current run.
@@ -484,14 +465,13 @@ function doOneRun( ...
     % newfilename(), but for concurrent runs on the cluster, this will not
     % work. This procedure may be called many times concurrently,
     % and it is important that no two instantiations choose the same name.
-    % Therefore we obtain uniqueness by suffixing a UUID to ExperimentID.
+    % Therefore we obtain uniqueness by suffixing a UUID to experimentID.
     % AMENDED: We do not add a UUID as I'm not sure it's needed. We will
     % see. The UUID would be obtained from char(java.util.UUID.randomUUID).
     
-    experimentUniqueID = ExperimentID;
-    LocalExperimentUniqueFullPath = fullfile(LocalProjectFullPath, 'runs', experimentUniqueID);
-    fprintf('Run directory: %s\n',LocalExperimentUniqueFullPath);
-    [~,~,~] = mkdir(LocalExperimentUniqueFullPath);
+    localExperimentUniqueFullPath = fullfile(LocalProjectFullPath, 'runs', runname);
+    fprintf('Run directory: %s\n',localExperimentUniqueFullPath);
+    [~,~,~] = mkdir(localExperimentUniqueFullPath);
     
     % Record the run parameters in the run directory.
 %     writefile( fullfile(LocalExperimentUniqueFullPath,'CommandLine.txt'), varargsToString( varargin, { 'STAGES', 'CLUSTER', 'PROJECT' } ) );
@@ -499,7 +479,7 @@ function doOneRun( ...
     ifname = makeIFname( ProjectName );
     ifFullname=fullfile( LocalProjectFullPath, [ifname,'.m'] );
     if exist(ifFullname,'file')==2
-        copyfile(ifFullname, fullfile(LocalExperimentUniqueFullPath,[ifname,'.txt']));
+        copyfile(ifFullname, fullfile(localExperimentUniqueFullPath,[ifname,'.txt']));
     end
     
     m = leaf_setproperty( m, 'staticreadonly', true , 'allowInteraction', true ); % Prevent crosstalk between multiple jobs on the cluster.
@@ -507,20 +487,19 @@ function doOneRun( ...
     
     % Seed the random number using time and filename, to ensure different random numbers for each
     % instance running on the cluster.
-    seednumber = sum(10000*clock()) + sum(double(LocalExperimentUniqueFullPath));
+    seednumber = sum(10000*clock()) + sum(double(localExperimentUniqueFullPath));
     rng(seednumber,'twister');
     rngstate = rng();
     fprintf( 2, 'Random seed = %d\n', rngstate.Seed );
-    m = savemesh(m);
-    m = savepng(m);
+    m = savemesh( m, ProjectName, localExperimentUniqueFullPath );
+    m = savepng( m, localExperimentUniqueFullPath );
 
     for i_stage=1:length(stages)
         while meshBeforeTime( m, stages(i_stage) ) % realtime<stages(i_stage)
-            % iterate stepsize steps without recording
             m = leaf_iterate( m, 1, 'plot', 0 );
         end
-        m=savemesh(m);
-        m=savepng(m);
+        m=savemesh( m, ProjectName, localExperimentUniqueFullPath );
+        m=savepng( m, localExperimentUniqueFullPath );
     end
 end
 
@@ -578,14 +557,13 @@ function ok = sendShellScript( localfullname, remotefullname, execute )
     end
 end
 
-function m = savemesh(m)
-    global ProjectName LocalExperimentUniqueFullPath
+function m = savemesh(m,ProjectName,localExperimentUniqueFullPath)
     saveasbase = (m.globalProps.allowsave && (m.globalDynamicProps.currentIter==0));
     if saveasbase
         return;
     end
     stagesuffix = makestagesuffixf( m.globalDynamicProps.currenttime );
-    savedir = fullfile( LocalExperimentUniqueFullPath, 'meshes' );
+    savedir = fullfile( localExperimentUniqueFullPath, 'meshes' );
     [~,~,~] = mkdir( savedir );
     savefilebasename = [ProjectName stagesuffix];
     savefilename = fullfile( savedir, savefilebasename );
@@ -597,12 +575,11 @@ function m = savemesh(m)
     end
 end
 
-function m = savepng(m)
-    global LocalExperimentUniqueFullPath
+function m = savepng(m,localExperimentUniqueFullPath)
     
     if ~oncluster()
         stagesuffix = makestagesuffixf( m.globalDynamicProps.currenttime );
-        imagesDir = fullfile( LocalExperimentUniqueFullPath, 'images' );
+        imagesDir = fullfile( localExperimentUniqueFullPath, 'images' );
         [~,~,~] = mkdir( imagesDir );
         printfilename = fullfile( imagesDir, sprintf('E%s.png',stagesuffix) );
         oldPPM = get(gcf,'PaperPositionMode');

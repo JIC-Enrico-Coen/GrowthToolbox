@@ -164,6 +164,10 @@ function [ok,errs] = validVolcells( volcells, m )
     end
     
     ok = errs == 0;
+    
+    if ~ok
+        xxxx = 1;
+    end
 end
 
 function errs = checkBCSum( field, bcs, tol )

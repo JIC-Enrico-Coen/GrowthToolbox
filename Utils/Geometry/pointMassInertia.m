@@ -8,5 +8,5 @@ function inertia = pointMassInertia( pos, m )
     if nargin < 2
         m = 1;
     end
-    inertia = m * (sum(pos.^2) * eye(3) - pos' * pos);
+    inertia = m * (sum(pos.^2) * eye(length(pos)) - pos' * pos);
 end
