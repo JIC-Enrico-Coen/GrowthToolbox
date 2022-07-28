@@ -101,6 +101,9 @@ function [m,ok] = leaf_loadmodel( m, modelname, projectdir, varargin )
             ok = false;
             return;
         end
+    elseif isrootpath( modelname )
+        modeldir = modelname;
+        [projectdir,modelname] = dirparts( modeldir );
     else
         modeldir = fullfile( projectdir, modelname );
     end

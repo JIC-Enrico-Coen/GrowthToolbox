@@ -183,7 +183,8 @@ function bareExptID = GFtboxCommand( varargin )
         dbstack();
         error('Project ''%s'' not found, reason:\n    %s.', ProjectName, status );
     end
-    [localProjectsDirectory,~,~] = fileparts( LocalProjectFullPath );
+    [localProjectsDirectory,ProjectName] = dirparts( LocalProjectFullPath );
+%     [localProjectsDirectory,~,~] = fileparts( LocalProjectFullPath );
     RemoteProjectFullPath = clusterfullfile( RemoteProjectsDirectory, ProjectName );
     % We now have these variables specifying the layout of the local and
     % remote files and directories:
@@ -455,8 +456,13 @@ function doOneRun( m, stages, runname )
 % This is the procedure that actually runs the simulation. It may be
 % running on either the desktop machine or the cluster.
 
-    global ProjectName LocalProjectFullPath
+    global ProjectName LocalProjectFullPath DryRun
     
+    fprintf( 1, 'doOneRun called for run "%s".\n', runname );
+    if DryRun
+        fprintf( 1, 'Dry run only, no run performed.\n' );
+        return;
+    end
     % Choose a unique name for the runs subdirectory to store the results
     % of the current run.
     %

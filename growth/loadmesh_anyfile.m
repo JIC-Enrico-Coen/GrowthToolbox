@@ -22,6 +22,8 @@ function [m,ok] = loadmesh_anyfile( m, filename, staticdata, interactive, checkV
 %   a command to create a new mesh.
 
     global gPlotHandles gUNSAVEDFIELDS gDEFAULTFIELDS
+    
+    setGlobals();
 
     if nargin < 3
         staticdata = [];
