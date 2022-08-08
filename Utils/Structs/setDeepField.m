@@ -4,8 +4,8 @@ function [m,ok] = setDeepField( m, v, varargin )
 %   the fieldnames are supplied.
 %
 %   If the specified field path does not exist, ok is returned as false.
-%   This is the  only difference from makeDeepField, which does creates any
-%   field that does not exist.
+%   This is the only difference from makeDeepField, which creates fields
+%   that do not exist.
 %
 %   See also: getDeepField, makeDeepField
 

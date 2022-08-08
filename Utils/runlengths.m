@@ -1,4 +1,4 @@
-function [w,len] = runlengths( v, tol )
+function [w,len,starts,ends] = runlengths( v, tol )
 %[w,len] = runlengths( v )
 %   Find all runs of consecutive equal values in v. w is the list of these
 %   values, and len is the list of lengths of runs.

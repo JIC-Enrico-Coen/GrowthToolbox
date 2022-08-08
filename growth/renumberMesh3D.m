@@ -12,16 +12,10 @@ function [m,delinfo] = renumberMesh3D( m, varargin )
 % Each option name is a combination of the sort of thing to be deleted and
 % the type of information specifying the set of things to delete.
 %
-% The sort is one of:
-%   'fe': finite elements
-%   'fevx: vertexes of finite elements
-%   'cell': biological cells
-%   'cellvx': vertexes of cells
-%   'celledge': edges of cells  (NOT SUPPORTED)
-%   'mgen': morphogens
-%   'cellmgen': cell factors
+% The possible sorts are listed in the deletiontypes variable.
 %
-% The information type is one of:
+% The information types are listed in the datamodes variable. The
+% possibilities are:
 %   'keepmap': an N*1 vector of booleans, one for each of the existing
 %       items, which is true for the items to be retained and false for the
 %       items to be deleted.
@@ -59,7 +53,18 @@ function [m,delinfo] = renumberMesh3D( m, varargin )
     delinfo = [];
     [s1,ok] = safemakestruct( mfilename(), varargin );
     if ~ok, return; end
-    deletiontypes = { 'fevx', 'fe', 'feedge', 'cellvx', 'celledge', 'cell', 'mgen', 'cellmgen' };
+    deletiontypes = { 'fevx', 'feedge', 'feface', 'fe', 'mgen', ...
+                      'cellvx', 'celledge', 'cell', 'cellmgen', ...
+                      'volvx', 'voledge', 'volface', 'volsolid' };
+%     {'volcells.vxs3d'           }    {1×2 cell}    {'float'  }    {'vol'   }
+%     {'volcells.facevxs'         }    {1×4 cell}    {'volvx'  }    {'vol'   }
+%     {'volcells.polyfaces'       }    {1×4 cell}    {'volface'}    {'vol'   }
+%     {'volcells.polyfacesigns'   }    {1×4 cell}    {0×0 char }    {'vol'   }
+%     {'volcells.edgevxs'         }    {1×2 cell}    {'volvx'  }    {'vol'   }
+%     {'volcells.faceedges'       }    {1×4 cell}    {'voledge'}    {'vol'   }
+%     {'volcells.vxfe'            }    {1×2 cell}    {'fe'     }    {'vol'   }
+%     {'volcells.vxbc'            }    {1×2 cell}    {'float'  }    {'vol'   }
+                  
     datamodes = { 'dellist', 'delmap', 'keeplist', 'keepmap' };
     datatypes = { 'int32', 'logical', 'int32', 'logical' };
     anywork = false;
@@ -97,33 +102,15 @@ function [m,delinfo] = renumberMesh3D( m, varargin )
         return;
     end
     
-    numitems = struct();
     for i=1:length(deletiontypes)
         deltype = deletiontypes{i};
-        switch deltype
-            case 'fevx'
-                numitems.(deltype) = getNumberOfVertexes( m );
-            case 'fe'
-                numitems.(deltype) = getNumberOfFEs( m );
-            case 'feedge'
-                numitems.(deltype) = getNumberOfEdges( m );
-            case 'cell'
-                numitems.(deltype) = getNumberOfCells( m );
-            case 'cellvx'
-                numitems.(deltype) = getNumberOfCellvertexes( m );
-            case 'mgen'
-                numitems.(deltype) = getNumberOfMorphogens( m );
-            case 'cellmgen'
-                numitems.(deltype) = getNumberOfCellFactors( m );
-            case 'celledge'
-                numitems.(deltype) = getNumberOfCellEdges( m );
-        end
+        delinfo.(deltype).numitems = getNumberOf( m, deltype );
     end
     
     for i=1:length(deletiontypes)
         deltype = deletiontypes{i};
         if havework.(deltype)
-            delinfo.(deltype) = unifyDelData( numitems.(deltype), delinfo.(deltype) );
+            delinfo.(deltype) = unifyDelData( delinfo.(deltype) );
         end
     end
     
@@ -144,27 +131,39 @@ function [m,delinfo] = renumberMesh3D( m, varargin )
     if havefe
         if havefevx
             delinfo.fe.keepmap = delinfo.fe.keepmap & all( delinfo.fevx.keepmap( fevxs ), 2 );
-            delinfo.fe = unifyDelData( numitems.fe, delinfo.fe, 'keepmap' );
+            delinfo.fe = unifyDelData( delinfo.fe, 'keepmap' );
             
             usedvxs = unique( fevxs( delinfo.fe.keepmap, : ) );
             usedmap = false( size( delinfo.fevx.keepmap ) );
             usedmap(usedvxs) = true;
             delinfo.fevx.keepmap = delinfo.fevx.keepmap & usedmap;
-            delinfo.fevx = unifyDelData( numitems.fevx, delinfo.fevx, 'keepmap' );
+            delinfo.fevx = unifyDelData( delinfo.fevx, 'keepmap' );
         else
             delinfo.fevx.keeplist = unique( fevxs( delinfo.fe.keepmap, : ) );
-            delinfo.fevx = unifyDelData( numitems.fevx, delinfo.fevx, 'keeplist' );
+            delinfo.fevx = unifyDelData( delinfo.fevx, 'keeplist' );
             havefevx = true;
         end
     elseif havefevx
         delinfo.fe.keepmap = all( delinfo.fevx.keepmap( fevxs ), 2 );
-        delinfo.fe = unifyDelData( numitems.fe, delinfo.fe, 'keepmap' );
+        delinfo.fe = unifyDelData( delinfo.fe, 'keepmap' );
         havefe = true;
     end
     
     usededges = unique( feedges( delinfo.fe.keepmap, : ) );
     delinfo.feedge.keeplist = usededges;
-    delinfo.feedge = unifyDelData( numitems.feedge, delinfo.feedge, 'keeplist' );
+    delinfo.feedge = unifyDelData( delinfo.feedge, 'keeplist' );
+    
+    if hasVolumetricCells( m )
+        delinfo.volsolid.delmap = delinfo.fe.delmap( m.volcells.vxfe );
+        delinfo.volsolid = unifyDelData( delinfo.volsolid, 'delmap' );
+        delinfo.volface = requireReference( delinfo.volface, delinfo.volsolid, m.volcells.polyfaces );
+    end
+    
+    newdelinfo = propagateDeletions( m, delinfo );
+
+    
+    
+    
     
     havecell = ~isempty( delinfo.cell.dellist );
     havecellvx = ~isempty( delinfo.cellvx.dellist );
@@ -179,7 +178,7 @@ function [m,delinfo] = renumberMesh3D( m, varargin )
             delinfo.cellvx.keepmap = newcellvxkeepmap;
             havecellvx = true;
         end
-        delinfo.cellvx = unifyDelData( numitems.cellvx, delinfo.cellvx, 'keepmap' );
+        delinfo.cellvx = unifyDelData( delinfo.cellvx, 'keepmap' );
     end
     
     % Reconcile cellvx and cell data.  Cell vertexes and cells are retained
@@ -193,16 +192,16 @@ function [m,delinfo] = renumberMesh3D( m, varargin )
                 extracellkeepmap(i) = all( delinfo.cellvx.keepmap( allcellvxs{i}.vxs ) );
             end
             delinfo.cell.keepmap = delinfo.cell.keepmap & extracellkeepmap;
-            delinfo.cell = unifyDelData( numitems.cell, delinfo.cell, 'keepmap' );
+            delinfo.cell = unifyDelData( delinfo.cell, 'keepmap' );
             
             usedvxs = unique( [ m.secondlayer.cells(delinfo.cell.keepmap).vxs ] );
             usedmap = false( size( delinfo.cellvx.keepmap ) );
             usedmap(usedvxs) = true;
             delinfo.cellvx.keepmap = delinfo.cellvx.keepmap & usedmap;
-            delinfo.cellvx = unifyDelData( numitems.cellvx, delinfo.cellvx, 'keepmap' );
+            delinfo.cellvx = unifyDelData( delinfo.cellvx, 'keepmap' );
         else
             delinfo.cellvx.keeplist = unique( [ m.secondlayer.cells(delinfo.cell.keepmap).vxs ] );
-            delinfo.cellvx = unifyDelData( numitems.cellvx, delinfo.cellvx, 'keeplist' );
+            delinfo.cellvx = unifyDelData( delinfo.cellvx, 'keeplist' );
         end
     elseif havecellvx
         delinfo.cell.keepmap = false( getNumberOfCells( m ), 1 );
@@ -210,10 +209,10 @@ function [m,delinfo] = renumberMesh3D( m, varargin )
         for i=1:length( m.secondlayer.cells )
             delinfo.cell.keepmap(i) = all( delinfo.cellvx.keepmap( allcellvxs{i} ) );
         end
-        delinfo.cell = unifyDelData( numitems.cell, delinfo.cell, 'keepmap' );
+        delinfo.cell = unifyDelData( delinfo.cell, 'keepmap' );
         
-        % Duplicates a chhunk of code from above -- bad!
-        % By deleting all the dells that include deleted vertexes, some
+        % Duplicates a chunk of code from above -- bad!
+        % By deleting all the cells that include deleted vertexes, some
         % non-deleted vertexes may no longer belong to any cell, and should
         % also be deleted. These vertexes must be found and added to
         % delinfo.cellvx.
@@ -221,30 +220,31 @@ function [m,delinfo] = renumberMesh3D( m, varargin )
         usedmap = false( size( delinfo.cellvx.keepmap ) );
         usedmap(usedvxs) = true;
         delinfo.cellvx.keepmap = delinfo.cellvx.keepmap & usedmap;
-        delinfo.cellvx = unifyDelData( numitems.cellvx, delinfo.cellvx, 'keepmap' );
+        delinfo.cellvx = unifyDelData( delinfo.cellvx, 'keepmap' );
     end
     
     % A celledge is retained only if both of its vertexes are retained
     delinfo.celledge.keepmap = all( delinfo.cellvx.keepmap( m.secondlayer.edges(:,[1 2]) ), 2 );
-    delinfo.celledge = unifyDelData( numitems.celledge, delinfo.celledge, 'keepmap' );
+    delinfo.celledge = unifyDelData( delinfo.celledge, 'keepmap' );
     
     % Recompute our idea of what we are doing.
     havefevx = ~isempty( delinfo.fe.dellist );
-    havefe = ~isempty( delinfo.fevx.dellist );
-    havecellvx = ~isempty( delinfo.cell.dellist );
-    havecell = ~isempty( delinfo.cellvx.dellist );
     
     if ~full3d && havefevx
         delinfo.prismvx.keeplist = delinfo.fevx.keeplist*2;
         delinfo.prismvx.keeplist = reshape( [ delinfo.prismvx.keeplist-1; delinfo.prismvx.keeplist ], [], 1 );
-        delinfo.prismvx = unifyDelData( numitems.fevx*2, delinfo.prismvx, 'keeplist' );
+        delinfo.prismvx.numitems = delinfo.fevx.numitems * 2;
+        delinfo.prismvx = unifyDelData( delinfo.prismvx, 'keeplist' );
     end
     
     fns = fieldnames(delinfo);
     for i=1:length(fns)
         fn = fns{i};
         delinfo.(fn) = makeremapper( delinfo.(fn) );
+        newdelinfo.(fn) = makeremapper( newdelinfo.(fn) );
     end
+    
+    result = compareStructs( newdelinfo, delinfo, 'reportok', true )
     
 %     okbeforedeletion = consistentMeshDelInfo( m, delinfo, false )
     
@@ -290,6 +290,10 @@ function [m,delinfo] = renumberMesh3D( m, varargin )
             xxxx = 1;
         end
         
+        if ~isempty( regexp( fn, '^volcells' ) )
+            xxxx = 1;
+        end
+        
         % Reindex every applicable dimension.
         for j=1:length(dimtypes)
             dimtype = dimtypes{j};
@@ -323,6 +327,7 @@ function [m,delinfo] = renumberMesh3D( m, varargin )
                     error( '%s: unexpected case %d.', mfilename(), whichcase );
             end
             
+% WHY IS THIS COMMENTED OUT?
 %             if iscell(v) && ~isempty( cellcontentstypes )
 %                 for ci=1:numel(v)
 %                     v{ci} = reindex1( v{ci}, reindexer );
@@ -341,12 +346,25 @@ function [m,delinfo] = renumberMesh3D( m, varargin )
                     valuetype = 'fevx';
                 end
                 reindexer = delinfo.(valuetype);
-                if ~isempty(reindexer.keepmap)
+                if ~isempty(reindexer.dellist)
                     changed = true;
-                    if haszero
-                        v(v>0) = reindexer.remap(v(v>0));
+                    if iscell(v)
+                        if haszero
+                            for vi=1:numel(v)
+                                v{vi}(v{vi}>0) = reindexer.remap(v{vi}(v{vi}>0));
+                            end
+                        else
+                            for vi=1:numel(v)
+                                v{vi} = reindexer.remap(v{vi});
+                            end
+                        end
                     else
-                        v = reindexer.remap(v);
+                        if haszero
+                            v(v>0) = reindexer.remap(v(v>0));
+                        else
+                            v1 = reindexer.remap(v);
+                            v = v1;
+                        end
                     end
                 end
             end
@@ -390,10 +408,10 @@ end
 function v = reindex1( v, reindexer )
 end
 
-function dd = unifyDelData( n, dd, fn )
+function dd = unifyDelData( dd, fn )
 % dd has four fields: dellist, delmap, keeplist, and keepmap.
-% At most one should be nonempty.  The other fields will be computed
-% from that one.
+% The one specified by fn, or the first nonempty one if fn is not given,
+% will be used to recompute the others. 
 
     if ~isfield( dd, 'dellist' )
         dd.dellist = zeros(0,1,'int32');
@@ -411,7 +429,7 @@ function dd = unifyDelData( n, dd, fn )
         dd.remap = zeros(0,1,'int32');
     end
     
-    if nargin < 3
+    if nargin < 2
         if ~isempty( dd.keepmap )
             fn = 'keepmap';
         elseif ~isempty( dd.keeplist )
@@ -423,6 +441,12 @@ function dd = unifyDelData( n, dd, fn )
         else
             return;
         end
+    end
+    
+    if isfield( dd, 'numitems' )
+        n = dd.numitems;
+    else
+        n = 0;
     end
     
     switch fn
@@ -446,6 +470,7 @@ function dd = unifyDelData( n, dd, fn )
             dd.keeplist = int32( find( dd.keepmap ) );
     end
 
+    dd.numitems = length( dd.keepmap );
 end
 
 function reindexer = makeremapper( reindexer )
@@ -455,5 +480,134 @@ function reindexer = makeremapper( reindexer )
     end
 end
 
+function data = keepslices( data, dim, keep )
+    sz = size(data);
+    if length(sz) < dim
+        sz( (length(sz)+1):dim ) = 1;
+    end
+    sz1 = sz(1:(dim-1));
+    sz2 = sz((dim+1):end);
+    data = reshape( data, prod(sz1), sz(dim), prod(sz2) );
+    data = data( :, keep, : );
+    data = reshape( data, [sz1, sum(keep), sz2] );
+end
+
+function data = voidslices( data, dim, del, voidvalue )
+    sz = size(data);
+    if length(sz) < dim
+        sz( (length(sz)+1):dim ) = 1;
+    end
+    sz1 = sz(1:(dim-1));
+    sz2 = sz((dim+1):end);
+    data = reshape( data, prod(sz1), sz(dim), prod(sz2) );
+    data( :, del, : ) = voidvalue;
+    data = reshape( data, sz );
+end
+
+function delinfo = unionDeletions( delinfo1, delinfo2 )
+    if isempty( delinfo1.delmap )
+        delinfo.delmap = delinfo2.delmap;
+    elseif isempty( delinfo2.delmap )
+        delinfo.delmap = delinfo1.delmap;
+    else
+        delinfo.delmap = delinfo1.delmap | delinfo2.delmap;
+    end
+    delinfo = unifyDelData( delinfo );
+end
+
+function newdelinfo = propagateDeletions( m, delinfo )
+    relations = { 'fevx', 'feedge', 'FEconnectivity.edgeends'; ...
+                  'fevx', 'feface', 'FEconnectivity.faces'; ...
+                  'feface', 'fe', 'FEconnectivity.fefaces'; ...
+                  'volvx', 'voledge', 'volcells.edgevxs'; ...
+                  'volface', 'volsolid', 'volcells.polyfaces'; ...
+                  'fe', 'volvx', 'volcells.vxfe' };
+    newdelinfo = delinfo;
+    
+    for ri=1:length(relations)
+        f1 = relations{ri,1};
+        f2 = relations{ri,2};
+        fn = relations{ri,3};
+        newdelinfo.(f1) = requireReference( newdelinfo.(f1), delinfo.(f2), getDeepField( m, fn ) );
+    end
+    
+    for ri=length(relations):-1:1
+        f1 = relations{ri,1};
+        f2 = relations{ri,2};
+        fn = relations{ri,3};
+        newdelinfo.(f2) = forbidReference( newdelinfo.(f2), delinfo.(f1), getDeepField( m, fn ) );
+    end
+    
+    delinfo.volface = requireReference( delinfo.volface, delinfo.volsolid, m.volcells.polyfaces );
+
+        
+        
+    fns = fieldnames( newdelinfo );
+    numdiffs = 0;
+    for fi = 1:length(fns)
+        fn = fns{fi};
+        s_new = sum( newdelinfo.(fn).delmap );
+        s_old = sum( delinfo.(fn).delmap );
+        if s_new ~= s_old
+            numdiffs = numdiffs+1;
+            timedFprintf( 'For field %s, old deletions %d/%d, new %d/%d.\n', ...
+                fn, s_old, delinfo.(fn).numitems, s_new, newdelinfo.(fn).numitems );
+        end
+    end
+    if numdiffs==0
+        timedFprintf( 'No change in deletions.\n' );
+    end
+end
+
+function delinfo1 = forbidReference( delinfo1, delinfo2, data )
+% DATA is indexed by delinfo1 and references delinfo2.
+% Everything in DATA referencing any deleted element of delinfo2 is deleted
+% from delinfo1.
+
+    if isempty( delinfo2.dellist )
+        return;
+    end
+
+    newdelmap = false( delinfo1.numitems, 1 );
+    if iscell( data )
+        for i=1:length(data)
+            newdelmap(i) = any( delinfo2.delmap( data{i}(:) ) );
+        end
+    else
+        newdelmap( any( delinfo2.delmap( data ), 2 ) ) = true;
+    end
+    if isempty( delinfo1.keepmap )
+        delinfo1.delmap = newdelmap;
+    else
+        delinfo1.delmap = delinfo1.delmap | newdelmap;
+    end
+    delinfo1 = unifyDelData( delinfo1, 'delmap' );
+end
+
+function delinfo1 = requireReference( delinfo1, delinfo2, data )
+% DATA is indexed by delinfo2 and references delinfo1.
+% Everything that is not referenced by DATA is added to delinfo1.delmap.
+
+    newkeepmap = false( delinfo1.numitems, 1 );
+    if iscell( data )
+        data( delinfo2.delmap ) = [];
+        for i=1:length(data)
+            newkeepmap( data{i}(:) ) = true;
+        end
+    else
+        data = voidslices( data, 1, delinfo2.delmap, 0 );
+        datavalues = unique( data(:) );
+        if ~isempty(datavalues) && (datavalues(1)==0)
+            datavalues(1) = [];
+        end
+        newkeepmap( datavalues ) = true;
+    end
+    if isempty( delinfo1.keepmap )
+        delinfo1.keepmap = newkeepmap;
+    else
+        delinfo1.keepmap = delinfo1.keepmap & newkeepmap;
+    end
+    delinfo1 = unifyDelData( delinfo1, 'keepmap' );
+end
 
     

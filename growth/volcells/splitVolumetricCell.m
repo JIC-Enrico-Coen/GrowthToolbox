@@ -98,11 +98,6 @@ function newvolcells = splitVolumetricCell( volcells, vci, divcentre, divnormal 
     
     
     
-    if vci==4
-        xxxx = 1;
-    end
-
-    
     
     
     splitedgeslist = celledgesi( splitedgescellmap ); % Absolute edge indexes.
@@ -113,24 +108,6 @@ function newvolcells = splitVolumetricCell( volcells, vci, divcentre, divnormal 
     splitedgesmap( planeabsedges ) = false;
     
     % Make new vertexes and set them into the edges.
-    
-    % For every split edge we must make a new vertex.
-%     splitbcs = reshape( vxdists( relcelledgevxs( splitedgescellmap, : ) ), [], 2 ); % Correcting for Matlab idiocy around arrays.
-%     splitbcs = [ -splitbcs(:,2), splitbcs(:,1) ];
-%     splitbcs = splitbcs ./ sum( splitbcs, 2 );
-%     
-%     foo = relcelledgevxs( splitedgescellmap, : );
-%     snapbcs = splitbcs < TOLEDGES;
-%     splitbcs( snapbcs(:,1), 1 ) = 0;
-%     splitbcs( snapbcs(:,1), 2 ) = 1;
-%     splitbcs( snapbcs(:,2), 1 ) = 0;
-%     splitbcs( snapbcs(:,2), 2 ) = 1;
-%     snaprelvxsi = foo( snapbcs(:,[2 1]) ); % Relative vx indexes of vertexes snapped to plane.
-%     vxsides( snaprelvxsi ) = 0;
-%     
-%     if any( snapbcs(:) )
-%         xxxx = 1;
-%     end
     
     addedvxs3d = cellvxspos( relcelledgevxs( splitedgescellmap, 1 ), : ) .* splitbcs(:,1) + cellvxspos( relcelledgevxs( splitedgescellmap, 2 ), : ) .* splitbcs(:,2);
     newvxs3d = [ volcells.vxs3d; addedvxs3d ];
@@ -610,3 +587,7 @@ function [vi,ai] = minWithinSegment1( a, segstart, segend, excludedmap )
     ai = ai + segstart - 1;
     ai = mod1( ai, len );
 end
+
+function [wallvxs,walledges,wallarea] = trySplit( facevxs, faceedges, edgevxs, vxs3d )
+end
+

@@ -16,7 +16,7 @@ function [m,deletionInfo] = deleteFEs(m,elementsToDelete)
         % It is possible that deleting a set of elements results in a
         % non-manifold surface. When this happens, we delete more
         % elements until we get a manifold surface.
-        % The problem is that if we delete an arbutrary subset of the
+        % The problem is that if we delete an arbitrary subset of the
         % elements that share a given edge, that edge might be an edge
         % of more than two new surface faces. A vertex might also be a
         % member of two disjoint cycles of surface faces. All elements

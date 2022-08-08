@@ -166,9 +166,9 @@ function setGlobals()
         'volcells.vxs3d', { 'volvx', 'dim' }, 'float', 'vol';
         'volcells.facevxs', { '{' 'volface', '}', '' }, 'volvx', 'vol';
         'volcells.polyfaces', { '{' 'volsolid', '}', '' }, 'volface', 'vol';
-        'volcells.polyfacesigns', { '{' 'volsolid', '}', '' }, '', 'vol';
+        'volcells.polyfacesigns', { '{' 'volsolid', '}', '' }, 'logical', 'vol';
         'volcells.edgevxs', { 'voledge', '2' }, 'volvx', 'vol';
-        'volcells.faceedges', { '{', 'volfacee', '}', '' }, 'voledge', 'vol';
+        'volcells.faceedges', { '{', 'volface', '}', '' }, 'voledge', 'vol';
         'volcells.vxfe', { 'volvx', '1' }, 'fe', 'vol';
         'volcells.vxbc', { 'volvx', '4' }, 'float', 'vol';
     };

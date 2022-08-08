@@ -131,8 +131,8 @@ function [m,ok,splitdata] = onestep( m, useGrowthTensors, useMorphogens )
         % some displacement u is nonzero.  The other case is for an
         % old-style mesh for which growth in thickness is being specified
         % directly by KNOR instead of by the physics.
-        moved = any(u(:)) && ~isempty(u);
-        if (~moved) && (~isvolumetric)
+        moved = any(u(:)) && ~isempty(u) && ~m.stop;
+        if (~moved) && (~isvolumetric) && ~isempty(u)
             moved = strcmp( m.globalProps.thicknessMode, 'direct' ) ...
                     && any(thicknessmgen);
         end

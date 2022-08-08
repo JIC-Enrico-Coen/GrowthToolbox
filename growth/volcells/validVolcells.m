@@ -1,4 +1,4 @@
-function [ok,errs] = validVolcells( volcells, m )
+function [ok,errs,volcells] = validVolcells( volcells, m )
 %ok = validVolcells( volcells, m )
 %   Check the validity of a volumetric cellular layer.
 %   M is optional. If not given, then the values in volcells.vxfe will not
@@ -163,6 +163,42 @@ function [ok,errs] = validVolcells( volcells, m )
         errs = errs + checkBCSum( 'vxbc', volcells.vxbc );
     end
     
+    % surfacevxs must be exactly those vertexes that are ends of
+    % surfaceedges.
+    if ~isfield( volcells, 'surfacevxs' )
+        volcells = setSurfaceElements( volcells );
+    else
+        errs = errs + checkSize( 'surfacevxs', volcells.surfacevxs, [numvxs 1] );
+        errs = errs + checkSize( 'surfaceedges', volcells.surfaceedges, [numedges 1] );
+        errs = errs + checkSize( 'surfacefaces', volcells.surfacefaces, [numfaces 1] );
+        errs = errs + checkSize( 'surfacevolumes', volcells.surfacevolumes, [numvolumes 1] );
+        [svx,se,sf,svol] = getSurfaceElements( volcells );
+        errs1 = sum( svx ~= volcells.surfacevxs );
+        errs2 = sum( se ~= volcells.surfaceedges );
+        errs3 = sum( sf ~= volcells.surfacefaces );
+        errs4 = sum( svol ~= volcells.surfacevolumes );
+        if errs1 > 0
+            timedFprintf( 1, 3, 'surfacevxs wrong for %d vertexes.\n', errs1 );
+        end
+        if errs2 > 0
+            timedFprintf( 1, 3, 'surfaceedges wrong for %d edges.\n', errs2 );
+        end
+        if errs3 > 0
+            timedFprintf( 1, 3, 'surfacefaces wrong for %d faces.\n', errs3 );
+        end
+        if errs4 > 0
+            timedFprintf( 1, 3, 'surfacevolumes wrong for %d volumes.\n', errs4 );
+        end
+        errs1234 = errs1 + errs2 + errs3 + errs4;
+        if errs1234 > 0
+            volcells.surfacevxs = svx;
+            volcells.surfaceedges = se;
+            volcells.surfacefaces = sf;
+            volcells.surfacevolumes = svol;
+        end
+        errs = errs + errs1234;
+    end
+
     ok = errs == 0;
     
     if ~ok
