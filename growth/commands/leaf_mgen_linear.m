@@ -1,6 +1,7 @@
 function m = leaf_mgen_linear( m, morphogen, amount, varargin )
 %m = leaf_mgen_linear( m, morphogen, amount, ... )
-%   Set the value of a specified morphogen to a linear gradient.
+%   Set the value of a specified morphogen to a linear gradient, or add a
+%   linear gradient to its current distribution.
 %
 %   Arguments:
 %       1: The name or index of a morphogen.

@@ -14,6 +14,8 @@ function [ok,errs,volcells] = validVolcells( volcells, m )
 %              vxfe: [12×1 double]
 %              vxbc: [12×4 double]
 
+    REPORT_polyfaceedgesenseerrors = false;
+
     numvxs = size( volcells.vxs3d, 1 );
     numedges = size( volcells.edgevxs, 1 );
     numfaces = length( volcells.facevxs );
@@ -21,6 +23,37 @@ function [ok,errs,volcells] = validVolcells( volcells, m )
     numdims = 4;
     
     errs = 0;
+    
+%              vxs3d: [24×3 double]
+%            facevxs: {14×1 cell}
+%          polyfaces: {[14×1 uint32]}
+%      polyfacesigns: {[14×1 logical]}
+%               vxfe: [24×1 uint32]
+%               vxbc: [24×4 double]
+%            edgevxs: [36×2 uint32]
+%          edgefaces: {36×1 cell}
+%          faceedges: {14×1 cell}
+%        atcornervxs: [24×1 logical]
+%          onedgevxs: [24×1 logical]
+%         surfacevxs: [24×1 logical]
+%       surfaceedges: [36×1 logical]
+%       surfacefaces: [14×1 logical]
+%     surfacevolumes: 1
+    errs = errs + checkClass( volcells, 'vxs3d', 'double' );
+    errs = errs + checkClass( volcells, 'facevxs', 'uint32' );
+    errs = errs + checkClass( volcells, 'polyfaces', 'uint32' );
+    errs = errs + checkClass( volcells, 'polyfacesigns', 'logical' );
+    errs = errs + checkClass( volcells, 'vxfe', 'uint32' );
+    errs = errs + checkClass( volcells, 'vxbc', 'double' );
+    errs = errs + checkClass( volcells, 'edgevxs', 'uint32' );
+    errs = errs + checkClass( volcells, 'edgefaces', 'uint32' );
+    errs = errs + checkClass( volcells, 'faceedges', 'uint32' );
+    errs = errs + checkClass( volcells, 'atcornervxs', 'logical' );
+    errs = errs + checkClass( volcells, 'onedgevxs', 'logical' );
+    errs = errs + checkClass( volcells, 'surfacevxs', 'logical' );
+    errs = errs + checkClass( volcells, 'surfaceedges', 'logical' );
+    errs = errs + checkClass( volcells, 'surfacefaces', 'logical' );
+    errs = errs + checkClass( volcells, 'surfacevolumes', 'logical' );
     
     % facevxs must be indexed by faces, and reference vertexes.
     errs = errs + checkSize( 'facevxs', volcells.facevxs, [numfaces 1] );
@@ -41,6 +74,10 @@ function [ok,errs,volcells] = validVolcells( volcells, m )
     errs = errs + checkSize( 'edgevxs', volcells.edgevxs, [numedges 2] );
     errs = errs + checkInRange( 'edgevxs', volcells.edgevxs, 1, numvxs );
     
+    % edgefaces must be indexed by edges, and reference faces.
+    errs = errs + checkSize( 'edgefaces', volcells.edgefaces, [numedges 1] );
+    errs = errs + checkInRange( 'edgefaces', cell2mat( volcells.edgefaces ), 1, numfaces );
+
     % faceedges must be indexed by faces and ends, and reference edges.
     errs = errs + checkSize( 'faceedges', volcells.faceedges, [numfaces 1] );
     errs = errs + checkInRange( 'faceedges', cell2mat( volcells.faceedges ), 1, numedges );
@@ -51,10 +88,56 @@ function [ok,errs,volcells] = validVolcells( volcells, m )
     % vxbc must be indexed by vertexes and dimensions.
     errs = errs + checkSize( 'vxbc', volcells.vxbc, [numvxs numdims] );
     
-    % faceedges must list edges in order around the face.
+    % Every vertex must be referenced by some edge.
+    alledgevxs = unique( volcells.edgevxs );
+    if length(alledgevxs) < numvxs
+        timedFprintf( 1, 3, '%d vertexes are not referenced by any edge.\n', ...
+            numvxs - length(alledgevxs) );
+        errs = errs + 1;
+    end
+    
+    % Every vertex must be referenced by some face.
+    allfacevxs = unique( cell2mat( volcells.facevxs ) );
+    if length(allfacevxs) < numvxs
+        timedFprintf( 1, 3, '%d vertexes are not referenced by any face.\n', ...
+            numvxs - length(allfacevxs) );
+        errs = errs + 1;
+    end
+    
+    % Every edge must be referenced by some face.
+    allfaceedges = unique( cell2mat( volcells.faceedges ) );
+    if length(allfaceedges) < numedges
+        timedFprintf( 1, 3, '%d edges are not referenced by any face.\n', ...
+            numedges - length(allfaceedges) );
+        errs = errs + 1;
+    end
+    
+    % Every face must be referenced by some volume.
+    allvolfaces = unique( cell2mat( volcells.polyfaces ) );
+    if length(allvolfaces) < numfaces
+        timedFprintf( 1, 3, '%d faces are not referenced by any volume.\n', ...
+            numfaces - length(allvolfaces) );
+        errs = errs + 1;
+    end
+    
+    % Every face must have the same number of vertexes as edges, and at
+    % least 3. faceedges must list vertexes and edges in the same order
+    % around the face.
     for fi=1:numfaces
         fv = volcells.facevxs{fi};
         fe = volcells.faceedges{fi};
+        if length(fv) ~= length(fe)
+            timedFprintf( 1, 3, 'Face %d has %d vertexes and %d edges.\n', ...
+                fi, length(fv), length(fe) );
+            errs = errs+1;
+            break;
+        end
+        if length(fv) < 3
+            timedFprintf( 1, 3, 'Face %d has only %d vertexes and edges, should have at least 3.\n', ...
+                fi, length(fv) );
+            errs = errs+1;
+            break;
+        end
         fee = [ fv, fv([2:end 1]) ];
         edgesense = volcells.edgevxs( fe, 1 )==fv;
         fee( ~edgesense, : ) = fee( ~edgesense, [2 1] );
@@ -67,10 +150,24 @@ function [ok,errs,volcells] = validVolcells( volcells, m )
         end
     end
     
+    % Every volume must have at least four faces.
+    % polyfaces and polyfacesigns must have the same length.
     % polyfacesigns must consistently orient the faces of each volume.
     for vi=1:numvolumes
         pf1 = volcells.polyfaces{vi};
         pfs1 = volcells.polyfacesigns{vi};
+        if length(pf1) ~= length(pfs1)
+            timedFprintf( 1, 3, 'Volume %d has %d faces and %d face signs.\n', ...
+                vi, length(pf1), length(pfs1) );
+            errs = errs+1;
+            break;
+        end
+        if length(pf1) < 4
+            timedFprintf( 1, 3, 'Volume %d has only %d faces, should have at least 4.\n', ...
+                vi, length(pf1) );
+            errs = errs+1;
+            break;
+        end
         % Every edge of any of these faces should occur exactly twice in
         % this set of faces.
         voledges = cell2mat( volcells.faceedges(pf1) );
@@ -113,45 +210,14 @@ function [ok,errs,volcells] = validVolcells( volcells, m )
             signsagree = signs1==signs2;
             polyfaceedgesenseerrors = edgesagree ~= signsagree;
             numpolyfaceedgesenseerrors = sum( polyfaceedgesenseerrors );
-            if numpolyfaceedgesenseerrors > 0
-                timedFprintf( 1, 3, 'Volume %d has %d face-edge sense errors for edges', ...
-                    vi, numpolyfaceedgesenseerrors );
+            if (numpolyfaceedgesenseerrors > 0) && REPORT_polyfaceedgesenseerrors
+                timedFprintf( 1, 3, 'Volume %d has %d face-edge sense errors among %d edges.\n   ', ...
+                    vi, numpolyfaceedgesenseerrors, length( polyfaceedgesenseerrors ) );
                 fprintf( ' %d', find( polyfaceedgesenseerrors ) );
                 fprintf( '\n' );
-                errdata = [ foo, double(reshape( repmat(polyfaceedgesenseerrors',2,1), [], 1) ) ]
+%                 errdata = [ foo, double(reshape( repmat(polyfaceedgesenseerrors',2,1), [], 1) ) ]
                 errs = errs + numpolyfaceedgesenseerrors;
-                xxxx = 1;
             end
-            xxxx = 1;
-            
-            
-            
-%             % We want an array with three columns: edge index, face index,
-%             % and face sign. The first column is voledges defined above,
-%             % being the concatenation of faceedges for all of thefaces of
-%             % the volcell.
-%             % The second and third will now be computed.
-%             edgedata = [ voledges, zeros( length(voledges), 2 ) ];
-%             ei = 0;
-%             for fi=1:length(pf1)
-%                 fes = volcells.faceedges{pf1(fi)};
-%                 ne = length( fes );
-%                 fesenses = volcells.edgevxs( fes, 1 )==volcells.facevxs{pf1(fi)};
-%                 edgedata( (ei+1):(ei+ne), 2 ) = pf1(fi);
-%                 edgedata( (ei+1):(ei+ne), 3 ) = fesenses==pfs1(fi);
-%                 ei = ei + ne;
-%             end
-%             edgedata1 = sortrows( edgedata );
-%             edgesenseerrors = edgedata1(1:2:end,3) == edgedata1(2:2:end,3);
-%             numedgesenseerrors = sum( edgesenseerrors );
-%             if numedgesenseerrors > 0
-%                 timedFprintf( 1, 3, 'Volume %d has %d face-edge sense errors for edges', ...
-%                     vi, numedgesenseerrors );
-%                 fprintf( ' %d', find( edgesenseerrors ) );
-%                 fprintf( '\n' );
-%                 errdata = [ edgedata1, double(reshape( repmat(edgesenseerrors',2,1), [], 1) ) ]
-%                 errs = errs + numedgesenseerrors;
-%             end
         end
     end
     
@@ -163,8 +229,13 @@ function [ok,errs,volcells] = validVolcells( volcells, m )
         errs = errs + checkBCSum( 'vxbc', volcells.vxbc );
     end
     
-    % surfacevxs must be exactly those vertexes that are ends of
-    % surfaceedges.
+    if isfield( volcells, 'atcornervxs' )
+        errs = errs + checkSize( 'atcornervxs', volcells.atcornervxs, [numvxs 1] );
+    end
+    if isfield( volcells, 'onedgevxs' )
+        errs = errs + checkSize( 'onedgevxs', volcells.onedgevxs, [numvxs 1] );
+    end
+    
     if ~isfield( volcells, 'surfacevxs' )
         volcells = setSurfaceElements( volcells );
     else
@@ -173,22 +244,10 @@ function [ok,errs,volcells] = validVolcells( volcells, m )
         errs = errs + checkSize( 'surfacefaces', volcells.surfacefaces, [numfaces 1] );
         errs = errs + checkSize( 'surfacevolumes', volcells.surfacevolumes, [numvolumes 1] );
         [svx,se,sf,svol] = getSurfaceElements( volcells );
-        errs1 = sum( svx ~= volcells.surfacevxs );
-        errs2 = sum( se ~= volcells.surfaceedges );
-        errs3 = sum( sf ~= volcells.surfacefaces );
-        errs4 = sum( svol ~= volcells.surfacevolumes );
-        if errs1 > 0
-            timedFprintf( 1, 3, 'surfacevxs wrong for %d vertexes.\n', errs1 );
-        end
-        if errs2 > 0
-            timedFprintf( 1, 3, 'surfaceedges wrong for %d edges.\n', errs2 );
-        end
-        if errs3 > 0
-            timedFprintf( 1, 3, 'surfacefaces wrong for %d faces.\n', errs3 );
-        end
-        if errs4 > 0
-            timedFprintf( 1, 3, 'surfacevolumes wrong for %d volumes.\n', errs4 );
-        end
+        errs1 = checkSame( svx, volcells.surfacevxs, 0, 'computed surfacevxs', 'actual surfacevxs' );
+        errs2 = checkSame( se, volcells.surfaceedges, 0, 'computed surfaceedges', 'actual surfaceedges' );
+        errs3 = checkSame( sf, volcells.surfacefaces, 0, 'computed surfacefaces', 'actual surfacefaces' );
+        errs4 = checkSame( svol, volcells.surfacevolumes, 0, 'computed surfacevolumes', 'actual surfacevolumes' );
         errs1234 = errs1 + errs2 + errs3 + errs4;
         if errs1234 > 0
             volcells.surfacevxs = svx;
@@ -203,6 +262,59 @@ function [ok,errs,volcells] = validVolcells( volcells, m )
     
     if ~ok
         xxxx = 1;
+    end
+end
+
+function errs = checkClass( volcells, fn, expectedType )
+    errs = 0;
+    if ~isfield( volcells, fn )
+        timedFprintf( 1, 3, 'Field %s is missing.\n', fn );
+        errs = 1;
+        return;
+    end
+    f = volcells.(fn);
+    
+    if iscell( f )
+        for i=1:numel( f )
+            actualType = class( f{i} );
+            errs = errs + 1 - strcmp( actualType, expectedType );
+        end
+        if errs > 0
+            timedFprintf( 1, 3, 'Cell array %s should have class %s, found %s for %d of %d items.\n', ...
+                fn, expectedType, actualType, errs, numel( f ) );
+        end
+    else
+        actualType = class( f );
+        errs = 1 - strcmp( actualType, expectedType );
+        if errs==1
+            timedFprintf( 1, 3, 'Field %s should have class %s, found %s.\n', ...
+                fn, expectedType, actualType );
+        end
+    end
+end
+
+function errs = checkSame( a, b, tol, namea, nameb )
+    ca = class(a);
+    cb = class(b);
+    errs = 0;
+    if ~isa(a,class(b))
+        timedFprintf( 1, 3, '%s and %s should have the same class, found %s and %s.\n', ...
+            namea, nameb, class(a), class(b) );
+        errs = errs+1;
+    end
+    na = numel(a);
+    nb = numel(b);
+    if na ~= nb
+        timedFprintf( 1, 3, '%s and %s should have the same number of elements, found %d and %d.\n', ...
+            namea, nameb, na, nb );
+        errs = errs+1;
+    else
+        errs1 = sum( abs( a(:)-b(:) ) > tol );
+        if errs1 > 0
+            timedFprintf( 1, 3, '%s and %s should be identical, are different at %d out of %d places.\n', ...
+                namea, nameb, errs1, na );
+            errs = errs + errs1;
+        end
     end
 end
 

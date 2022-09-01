@@ -50,7 +50,9 @@ function [newbc,newdirbc] = transferDirection( m, ci, bc, dirbc, nextci )
         xxxx = 1;
     end
     
-    % Convert nextdirglobal to bcs.
-    newdirbc = baryCoords( nextfevxs, nextfenormal, nextdirglobal + nextfevxs(1,:), false );
-    newdirbc = newdirbc - [1 0 0];
+    % Convert nextdirglobal to dbcs.
+%     newdirbc = baryCoords( nextfevxs, nextfenormal, nextdirglobal + nextfevxs(1,:), false );
+%     newdirbc = newdirbc - [1 0 0];
+    
+    newdirbc = baryDirCoords( nextfevxs, nextfenormal, nextdirglobal );
 end

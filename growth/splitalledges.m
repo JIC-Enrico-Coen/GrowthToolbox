@@ -533,7 +533,7 @@ fprintf( 1, '%s 5: update cell info.\n', mfilename() );
         [m.tubules.tracks(i).vxcellindex, m.tubules.tracks(i).barycoords] = ...
             updateptsSplitFE( m.tubules.tracks(i).vxcellindex, m.tubules.tracks(i).barycoords, splitinfo );
         [~,m.tubules.tracks(i).directionbc] = ...
-            updateptsSplitFE( finaloldvertex, m.tubules.tracks(i).directionbc, splitinfo );
+            updateptsSplitFE( finaloldvertex, m.tubules.tracks(i).directionbc, splitinfo );  % NOT VALID
         m.tubules.tracks(i).directionglobal = m.tubules.tracks(i).directionbc * m.nodes( m.tricellvxs( m.tubules.tracks(i).vxcellindex(end), : ), : );
     end
     

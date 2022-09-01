@@ -1,7 +1,7 @@
 function [newbc,newci] = splitbc( oldbc, ci, splitinfo )
 %newbc = splitbc( oldbc, splitinfo )
 %   When a finite element is split, any points within it that were defined
-%   by their barycentric coordinates must have those coordinate recomputed,
+%   by their barycentric coordinates must have those coordinates recomputed,
 %   and the descendant cell containing the point must be found.  That is
 %   done by this function.
 %
@@ -43,16 +43,19 @@ function [newbc,newci] = splitbc( oldbc, ci, splitinfo )
         nc2 = splitinfo(2);
         nc3 = splitinfo(3);
         if oldbc(1) >= 0.5
-            newbc(1) = oldbc(1)*2 - 1;
-            newbc([2,3]) = oldbc([2,3])*2;
+%             newbc(1) = oldbc(1)*2 - 1;
+%             newbc([2,3]) = oldbc([2,3])*2;
+            newbc = oldbc*2 - [1 0 0];
             newci = nc1;
         elseif oldbc(2) >= 0.5
-            newbc(1) = oldbc(2)*2 - 1;
-            newbc([2,3]) = oldbc([3,1])*2;
+%             newbc(1) = oldbc(2)*2 - 1;
+%             newbc([2,3]) = oldbc([3,1])*2;
+            newbc = oldbc([2 3 1])*2 - [1 0 0];
             newci = nc2;
         elseif oldbc(3) >= 0.5
-            newbc(1) = oldbc(3)*2 - 1;
-            newbc([2,3]) = oldbc([1,2])*2;
+%             newbc(1) = oldbc(3)*2 - 1;
+%             newbc([2,3]) = oldbc([1,2])*2;
+            newbc = oldbc([3 1 2])*2 - [1 0 0];
             newci = nc3;
         else
             newbc = 1 - oldbc*2;
@@ -62,6 +65,10 @@ function [newbc,newci] = splitbc( oldbc, ci, splitinfo )
     if newci==0
         error('splitbc');
     end
+    
+    if abs(sum(newbc)-sum(oldbc)) > 0.01
+        xxxx = 1;
+    end
 end
 
 function [newbc,newci] = split1( oldbc, ci, nc1 )
@@ -69,8 +76,20 @@ function [newbc,newci] = split1( oldbc, ci, nc1 )
     if oldbc(2) >= oldbc(3)
         newbc([2,3]) = [ oldbc(2)-oldbc(3), oldbc(3)*2 ];
         newci = ci;
+        oldToNew = [ 1  0 0;
+                     0  1 0;
+                     0 -1 2 ];
+        newToOld = [ 1 0 0;
+                     0 1 0;
+                     0 1/2 1/2 ];
     else
         newbc([2,3]) = [ oldbc(2)*2, oldbc(3)-oldbc(2) ];
         newci = nc1;
+        oldToNew = [ 1 0 0;
+                     0 2 -1;
+                     0 0 1 ];
+        newToOld = [ 1 0 0;
+                     0 1/2 1/2;
+                     0 0 1 ];
     end
 end

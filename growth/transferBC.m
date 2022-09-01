@@ -37,20 +37,4 @@ function bc2 = transferBC( m, ci1, bc, ci2 )
             bc2(bc2i) = 1;
         end
     end
-
-%     cei = find(bc==0,1);
-%     ei = m.celledges(ci1,cei);
-%     celledges = m.edgecells(ei,:);
-%     ci2a = celledges(celledges ~= ci1);
-%     if ci2a==0
-%         bc2 = [];
-%         return;
-%     end
-%     cej = find(m.celledges(ci2a,:)==ei);
-%     bc2 = [0 0 0];
-%     cei1 = mod(cei,3)+1;
-%     cei2 = mod(cei1,3)+1;
-%     cej1 = mod(cej,3)+1;
-%     cej2 = mod(cej1,3)+1;
-%     bc2([cej,cej1,cej2]) = bc([cei,cei2,cei1]);
 end

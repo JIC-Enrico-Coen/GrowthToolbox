@@ -22,6 +22,14 @@ function ra = cellToRaggedArray( ca, nullvalue, pad )
         return;
     end
     
+    cellIsRow = (size(ca,1)==1) && (size(ca,2) > 1);
+    if cellIsRow
+        for i=1:length(ca)
+            ca{i} = ca{i}';
+        end
+        ca = ca';
+    end
+    
     if (nargin < 2) || isempty( nullvalue )
         if isfloat(ca{1})
             nullvalue = NaN;
@@ -51,7 +59,11 @@ function ra = cellToRaggedArray( ca, nullvalue, pad )
     for i=1:n
         x = ca{i};
         nr = size(x,1);
-        ra((nrr+1):(nrr+nr),1:size(x,2)) = x;
+        ra((nrr+1):(nrr+nr),1:size(x,2)) = reshape( x, 1, numel(x) );
         nrr = nrr+nr;
+    end
+    
+    if cellIsRow
+        ra = ra';
     end
 end

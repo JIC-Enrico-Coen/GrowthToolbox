@@ -2,7 +2,7 @@ function arr = reverseRaggedArray( arr, nullvalue )
 %arr = reverseRaggedArray( arr, nullvalue )
 %   ARR is an N*K array in which NULLVALUE occurs only as trailing elements
 %   in each row. (A row need not contain any occurrence of NULLVALUE.) This
-%   procedure reverses the non-NULLVALUE part of each row. Thus the array
+%   procedure reverses the non-NULLVALUE part of each row. Thus the array:
 %
 %       [ 1 2 0 0;
 %         6 1 5 5;

@@ -131,6 +131,10 @@ function compatible = compareStructs1( fid, s1, s2, reportCompatible, tolerance,
             end
             return;
         end
+        if reportCompatible && compatible && ~silent
+            fprintf( fid, 'Compatible at %s\n', path );
+        end
+        return;
     end
     
     % Check reals for identity to within tolerance.
@@ -146,6 +150,9 @@ function compatible = compareStructs1( fid, s1, s2, reportCompatible, tolerance,
                 end
             end
         end
+        if reportCompatible && compatible && ~silent
+            fprintf( fid, 'Compatible at %s\n', path );
+        end
         return;
     end
     
@@ -153,11 +160,17 @@ function compatible = compareStructs1( fid, s1, s2, reportCompatible, tolerance,
     if iscell(s1) && iscell(s2)
         for i=1:min(numel(s1),numel(s2))
             ok = compareStructs1( fid, s1{i}, s2{i}, ...
-                reportCompatible, tolerance, sprintf( '%s.{%d}', path, i ), maxnum, true || silent );
+                reportCompatible, tolerance, sprintf( '%s.{%d}', path, i ), maxnum, true );
             compatible = compatible && ok;
-            if silent && ~compatible
+            if ~compatible
+                if ~silent
+                    fprintf( fid, 'At %s, cell arrays differ at item %d (and possibly others) of %d.\n', path, i, numel(s1) );
+                end
                 return;
             end
+        end
+        if reportCompatible && compatible && ~silent
+            fprintf( fid, 'Compatible at %s\n', path );
         end
         return;
     end
@@ -195,14 +208,18 @@ function compatible = compareStructs1( fid, s1, s2, reportCompatible, tolerance,
         n = min(numel(s1),numel(s2));
         if n==1
             for i=1:length(f12)
-                ok = compareStructs1( fid, s1.(f12{i}), s2.(f12{i}), ...
-                    reportCompatible, tolerance, [ path, '.', f12{i} ], maxnum, silent );
+                fn = f12{i};
+                if strcmp( fn, 'facevxs' )
+                    xxxx = 1;
+                end
+                ok = compareStructs1( fid, s1.(fn), s2.(fn), ...
+                    reportCompatible, tolerance, [ path, '.', fn ], maxnum, silent );
                 compatible = compatible && ok;
                 if silent && ~compatible
                     return;
                 end
             end
-            elseif n > 1
+        elseif n > 1
             compat1 = true;
             reported = false;
             for si=1:n

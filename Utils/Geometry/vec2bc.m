@@ -1,4 +1,4 @@
-function bc = vec2bc( v, vxs, n )
+function dbc = vec2bc( v, vxs, n )
 %bc = vec2bc( v, vxs )
 %   Convert a vector to barycentric coordinates with respect to the
 %   triangle whose vertexes are the rows of the 3*3 matrix vxs.  n, if
@@ -13,5 +13,8 @@ function bc = vec2bc( v, vxs, n )
         n = [];
     end
     npts = size(v,1);
-    bc = baryCoords( vxs, n, v + repmat( vxs(1,:), npts, 1 ) ) - repmat( [1,0,0], npts, 1 );
+    bc = baryCoords( vxs, n, v + repmat( vxs(1,:), npts, 1 ) );
+    dbc = bc - repmat( [1,0,0], npts, 1 );
+    norms = sqrt( sum( dbc.^2, 2 ) );
+    dbc = dbc./norms;
 end

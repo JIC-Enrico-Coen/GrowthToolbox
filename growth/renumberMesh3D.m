@@ -584,9 +584,22 @@ function delinfo1 = forbidReference( delinfo1, delinfo2, data )
     delinfo1 = unifyDelData( delinfo1, 'delmap' );
 end
 
+function d = emptyDelinfo( n )
+    d.numitems = n;
+    d.delmap = false( n, 1 );
+    d.dellist = zeros( 0, 1 );
+    d.keepmap = true( n, 1 );
+    d.keeplist = (1:n)';
+end
+
+
 function delinfo1 = requireReference( delinfo1, delinfo2, data )
 % DATA is indexed by delinfo2 and references delinfo1.
 % Everything that is not referenced by DATA is added to delinfo1.delmap.
+
+    if isempty( delinfo1.delmap )
+        delinfo1 = emptyDelinfo( delinfo1.numitems );
+    end
 
     newkeepmap = false( delinfo1.numitems, 1 );
     if iscell( data )

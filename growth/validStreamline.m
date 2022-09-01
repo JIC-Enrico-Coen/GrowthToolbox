@@ -1,8 +1,8 @@
 function [oks,errfields] = validStreamline( m, ss, verbose )
     if nargin < 3
-        verbose = false;
+        verbose = true;
     end
-    if nargin < 2
+    if (nargin < 2) || isempty(ss)
         ss = m.tubules.tracks;
     end
     oks = true( size(ss) );
@@ -12,32 +12,40 @@ function [oks,errfields] = validStreamline( m, ss, verbose )
         errfields = {};
         numvxs = length(s.vxcellindex);
         [ok1,errfields] = checklengthInternal( si, s, 'vxcellindex', numvxs, verbose, errfields );  ok = ok && ok1;
-        [ok1,errfields] = checklengthInternal( si, s, 'segcellindex', numvxs, verbose, errfields );  ok = ok && ok1;
-        if ok1
+        [ok2,errfields] = checklengthInternal( si, s, 'segcellindex', numvxs, verbose, errfields );  ok = ok && ok2;
+        if ok1 && ok2
             if any( s.vxcellindex ~= s.segcellindex )
                 if verbose
-                    fprintf( 1, '%s, streamline id %d: differing vxcellindex and segcellindex:\n', ...
-                        mfilename(), s.id );
+                    fprintf( 1, '%s, streamline id %d: vxcellindex and segcellindex differ at %d places:\n', ...
+                        mfilename(), s.id, sum( s.vxcellindex ~= s.segcellindex ) );
                 end
                 invalids = find( s.vxcellindex ~= s.segcellindex );
-                s_vxcellindex = s.vxcellindex(invalids)
-                s_segcellindex = s.segcellindex(invalids)
-                ok = true;
+                s_vxcellindex = s.vxcellindex(invalids);
+                s_segcellindex = s.segcellindex(invalids);
+                fprintf( '   ' ); fprintf( 1, ' %d', s_vxcellindex ); fprintf( 1, '\n' );
+                fprintf( '   ' ); fprintf( 1, ' %d', s_segcellindex ); fprintf( 1, '\n' );
+                ok = false;
                 xxxx = 1;
 %                 BREAKPOINT();
             end
         else
-%             BREAKPOINT();
+            BREAKPOINT();
         end
-        [ok1,errfields] = checksizeInternal( si, s, 'barycoords', [numvxs,3], verbose, errfields );  ok = ok && ok1;
-        [ok1,errfields] = checksizeInternal( si, s, 'globalcoords', [numvxs,3], verbose, errfields );  ok = ok && ok1;
-        [ok1,errfields] = checklengthInternal( si, s, 'segmentlengths', max(numvxs-1,0), verbose, errfields );  ok = ok && ok1;
-        [ok1,errfields] = checksizeInternal( si, s, 'directionbc', [1,3], verbose, errfields );  ok = ok && ok1;
-        [ok1,errfields] = checksizeInternal( si, s, 'directionglobal', [1,3], verbose, errfields );  ok = ok && ok1;
-        [ok1,errfields] = checksizeInternal( si, s, 'status', [1,1], verbose, errfields );  ok = ok && ok1;
+        [ok1,errfields] = checksizeInternal( si, s, 'barycoords', [numvxs,3], verbose, errfields );
+        [ok2,errfields] = checksizeInternal( si, s, 'globalcoords', [numvxs,3], verbose, errfields );
+        [ok3,errfields] = checklengthInternal( si, s, 'segmentlengths', max(numvxs-1,0), verbose, errfields );
+        [ok4,errfields] = checksizeInternal( si, s, 'directionbc', [1,3], verbose, errfields );
+        [ok5,errfields] = checksizeInternal( si, s, 'directionglobal', [1,3], verbose, errfields );
+        [ok6,errfields] = checksizeInternal( si, s, 'status', [1,1], verbose, errfields );
+        
+        ok = ok && ok2 && ok3 && ok4 && ok5 && ok6;
+       
+        [okbcs,maxbcerr,dbcerr] = checkZeroBcsInStreamline( s );
+        ok = ok && okbcs;
     
         if ~ok
             oks(si) = false;
+            xxxx = 1;
             continue;
         end
 
@@ -55,6 +63,7 @@ function [oks,errfields] = validStreamline( m, ss, verbose )
                 invalidcells = s.vxcellindex( invalidcells )
             end
             oks(si) = false;
+            xxxx = 1;
             continue;
         end
 
@@ -152,7 +161,15 @@ function [oks,errfields] = validStreamline( m, ss, verbose )
             end
         end
         
+        if ~ok
+            xxxx = 1;
+        end
+        
         oks(si) = ok;
+    end
+    
+    if any(~oks)
+        xxxx = 1;
     end
 end
 

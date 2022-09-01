@@ -32,13 +32,6 @@ function m = leaf_createStreamlines( m, varargin )
 
     [s,ok] = safemakestruct( mfilename(), varargin );
     if ~ok, return; end
-%         m = leaf_createStreamlines( m, ...
-%                 'downstream', true, ...
-%                 'speed', OPTIONS.growthrate, ...
-%                 'elementindex', elementindexes, ...
-%                 'startbc', bcs(i,:), ...
-%                 'directionbc', dirbc(i,:), ...
-%                 'length', 0 );
     s = defaultfields( s, ...
         'startpos', [], ...
         'elementindex', zeros(1,0,'int32'), ...
@@ -72,12 +65,15 @@ function m = leaf_createStreamlines( m, varargin )
         s.creationtimes = s.creationtimes(:);
     end
     
-    if isempty( s.directionbc )
+    if isempty( s.directionbc ) && isempty( s.directionglobal )
         for i=1:length( s.elementindex )
             vxs = m.nodes( m.tricellvxs( s.elementindex(i), : ), : );
             s.directionbc(i,:) = randDirectionBC( vxs );
         end
     end
+    localFromGlobal = isempty( s.directionbc ) && ~isempty( s.directionglobal );
+    globalFromLocal = ~isempty( s.directionbc ) && isempty( s.directionglobal );
+
     ss = transposeStructOfArrays( s, numstreamlines );
 
     streamline = m.tubules.defaulttrack;
@@ -88,9 +84,15 @@ function m = leaf_createStreamlines( m, varargin )
         streamline(i).barycoords = ss(i).barycoords;
         streamline(i).vxcellindex = ss(i).elementindex;
         streamline(i).segcellindex = ss(i).elementindex;
-        streamline(i).globalcoords = streamlineGlobalPos( m, streamline(i) );
         streamline(i).directionbc = ss(i).directionbc;
-        streamline(i).directionglobal = streamlineGlobalDirection( m, streamline(i) );
+        streamline(i).directionglobal = ss(i).directionglobal;
+        if localFromGlobal
+            streamline(i).directionbc = streamlineLocalDirection( m, streamline(i) );
+        end
+        if globalFromLocal
+            streamline(i).directionglobal = streamlineGlobalDirection( m, streamline(i) );
+        end
+        streamline(i).globalcoords = streamlineGlobalPos( m, streamline(i) );
         streamline(i).starttime = ss(i).creationtimes;
         streamline(i).endtime = ss(i).creationtimes;
         streamline(i) = setStructTypes( streamline(i), ...

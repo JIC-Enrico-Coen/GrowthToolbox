@@ -16,12 +16,12 @@ function newvolcells = splitVolumetricCell( volcells, vci, divcentre, divnormal 
 % on. With a certain tolerance it may be marked as being on the plane.
 
     newvolcells = volcells;
-    [ok,errs] = validVolcells( newvolcells );
+    [ok,errs] = validVolcells( newvolcells ); %#ok<*ASGLU>
     if ok
-        timedFprintf( 'Initial volcells is valid.\n' );
+        timedFprintf( 'Initial volcells is valid, splitting cell %d of %d.\n', vci, getNumberOfVolCells(volcells) );
     else
-        timedFprintf( 'Initial volcells is invalid.\n' );
-        xxxx = 1;
+        timedFprintf( 'Initial volcells is invalid, splitting cell %d of %d.\n', vci, getNumberOfVolCells(volcells) );
+        xxxx = 1; %#ok<*NASGU>
     end
     
     TOLVXS = 0; % 5e-4;
@@ -31,7 +31,7 @@ function newvolcells = splitVolumetricCell( volcells, vci, divcentre, divnormal 
 
     cellfaces = volcells.polyfaces{vci}; % Indexed by rel face, contains abs face.
     cellvxsi = unique( cell2mat( volcells.facevxs(cellfaces) ) ); % Indexed by rel vx, contains abs vx.
-    cellvxspos = volcells.vxs3d( cellvxsi, : );
+    cellvxspos = volcells.vxs3d( cellvxsi, : ); % Indexed by rel face, contains vertex positions.
     if isempty(divcentre)
         divcentre = mean( cellvxspos, 1 );
     end
@@ -96,10 +96,6 @@ function newvolcells = splitVolumetricCell( volcells, vci, divcentre, divnormal 
 %     splitedgescelllist = find( splitedgescellmap ); % Values are relative edge indexes.
 %     splitedgescellmap( splitedgescelllist(snapedges) ) = false;
     
-    
-    
-    
-    
     splitedgeslist = celledgesi( splitedgescellmap ); % Absolute edge indexes.
     splitedgesmap = false( size(volcells.edgevxs,1), 1 ); % Indexed by absolute edge.
     splitedgesmap( splitedgeslist ) = true;
@@ -107,9 +103,26 @@ function newvolcells = splitVolumetricCell( volcells, vci, divcentre, divnormal 
     planeabsedges = celledgesi( planereledges );
     splitedgesmap( planeabsedges ) = false;
     
+    
     % Make new vertexes and set them into the edges.
     
     addedvxs3d = cellvxspos( relcelledgevxs( splitedgescellmap, 1 ), : ) .* splitbcs(:,1) + cellvxspos( relcelledgevxs( splitedgescellmap, 2 ), : ) .* splitbcs(:,2);
+%     addedsurfacevxs2 = all( volcells.surfacevxs( [ cellvxsi( relcelledgevxs( splitedgescellmap, 1 ) ), cellvxsi( relcelledgevxs( splitedgescellmap, 2 ) ) ] ), 2 );
+    
+    relsplitedgeends = relcelledgevxs(splitedgescellmap,:);
+    abssplitedgeends = reshape( cellvxsi( relsplitedgeends', 1 ), 2, [] )';
+    
+    addedsurfacevxs = volcells.surfaceedges( celledgesi( splitedgescellmap ), 1 );
+    
+    % This is not correct. We nee to maintain a field recording which edges
+    % are "edge" edges. Only those produce edge vertexes when they are
+    % split.
+    onedgesplitedgeends = reshape( volcells.onedgevxs( abssplitedgeends', 1 ), 2, [] )';
+    addedonedgevxs = all( onedgesplitedgeends, 2 );
+    
+    newsurfacevxs = [ volcells.surfacevxs; addedsurfacevxs ];
+    newonedgevxs = [ volcells.onedgevxs; addedonedgevxs ];
+    
     newvxs3d = [ volcells.vxs3d; addedvxs3d ];
     numoldvxs = size( volcells.vxs3d, 1 );
     numnewvxs = size( addedvxs3d, 1 );
@@ -134,7 +147,10 @@ function newvolcells = splitVolumetricCell( volcells, vci, divcentre, divnormal 
     oldtonewedge = zeros( numoldedges, 1 );
     oldtonewedge( splitedgeslist ) = newedgesi;
     
+    newvolcells.surfacevxs = newsurfacevxs;
+    newvolcells.atcornervxs = [newvolcells.atcornervxs; false(numnewvxs,1) ]; % Vertexes created by splitting edges cannot be at a corner.
     newvolcells.edgevxs = newedgevxs;
+    newvolcells.onedgevxs = newonedgevxs;
     
     % Fields now valid: vxs3d, edgevxs.
 
@@ -152,7 +168,7 @@ function newvolcells = splitVolumetricCell( volcells, vci, divcentre, divnormal 
             continue;
         end
         reind1 = cumsum( 1 + issplitedge );
-        newfaceedges1 = zeros( reind1(end), 1 );
+        newfaceedges1 = zeros( reind1(end), 1, 'uint32' );
         newfaceedges1( reind1 ) = faceedges1;
         newissplitedge2 = false( 1, reind1(end) );
         newissplitedge2( reind1 ) = issplitedge;
@@ -168,10 +184,10 @@ function newvolcells = splitVolumetricCell( volcells, vci, divcentre, divnormal 
         edgeinserts2( splitfaceedgesenses ) = oldtonewedge( edgeinserts2( splitfaceedgesenses ) );
         if any(edgeinserts1==0) || any(edgeinserts2==0)
             timedFprintf( 'When splitting face %d, zero entries in edgeinserts1 or edgeinserts2.\n', fi );
-            edgeinserts1
+            edgeinserts1 %#ok<*NOPRT>
             edgeinserts2
             error( 'When splitting face %d, zero entries in edgeinserts1 or edgeinserts2.', fi );
-            xxxx = 1;
+            xxxx = 1; %#ok<*UNRCH>
         end
         newfaceedges1( newissplitedge1 ) = edgeinserts1;
         newfaceedges1( newissplitedge2 ) = edgeinserts2;
@@ -185,13 +201,10 @@ function newvolcells = splitVolumetricCell( volcells, vci, divcentre, divnormal 
         
         % Insert the new vertexes.
         insertedvxs = newedgevxs( edgeinserts1, : );
-        newfacevxs1 = zeros( reind1(end), 1 );
+        newfacevxs1 = zeros( reind1(end), 1, 'uint32' );
         newfacevxs1( reind1 ) = facevxs1;
         newfacevxs1( newissplitedge1 ) = newfacevxs1( newissplitedge2 );
         newfacevxs1( newissplitedge2 ) = insertedvxs(:,2);
-        
-
-        
         
         fee = [ newfacevxs1, newfacevxs1([2:end 1]) ];
         edgesense = newvolcells.edgevxs( newfaceedges1, 1 )==newfacevxs1;
@@ -204,31 +217,26 @@ function newvolcells = splitVolumetricCell( volcells, vci, divcentre, divnormal 
             xxxx = 1;
         end
         
-        
-        
-        
-        
-        
         newvolcells.facevxs{fi} = newfacevxs1;
         newvolcells.faceedges{fi} = newfaceedges1;
+        if (fi==175) && (vci==16)
+            xxxx = 1;
+        end
     end
     
-    if (vci==4)
-        xxxx = 1;
-    end
     % Fields now valid: vxs3d, edgevxs, facevxs, faceedges.
     
     % Fields now valid: vxs3d, edgevxs, facevxs, faceedges.
     % newvolcells should now be a valid volcells structure. The required
     % edges have been split, but not yet the faces or the cells.
-    [ok,errs] = validVolcells( newvolcells );
-    if ok
-        timedFprintf( 'newvolcells is valid after splitting edges.\n' );
-    else
-        timedFprintf( 'newvolcells is invalid after splitting edges.\n' );
-        error( 'newvolcells is invalid after splitting edges.' );
-        xxxx = 1;
-    end
+%     [ok,errs] = validVolcells( newvolcells );
+%     if ok
+%         timedFprintf( 'newvolcells is valid after splitting edges.\n' );
+%     else
+%         timedFprintf( 'newvolcells is invalid after splitting edges.\n' );
+% %         error( 'newvolcells is invalid after splitting edges.' );
+%         xxxx = 1;
+%     end
     xxxx = 1;
     
 %     newwallvxsmap = vxsides==0; % Indexed by vertexes of vci, including the new vertexes.
@@ -254,7 +262,9 @@ function newvolcells = splitVolumetricCell( volcells, vci, divcentre, divnormal 
     
     % Split the faces.
     numfacesplitsdone = 0;
-%     excludedvxsi = false( size( newvolcells.vxs3d, 1 ), 1 );
+    absFacesToSplit = cellfaces(splitfacesmap(cellfaces)); % Absolute face indexes
+            % of the faces to split, listed in the same order as they occur in the
+            % cell being split.
     for relfi=1:length(cellfaces) % Relative face index.
         fi = cellfaces( relfi ); % Absolute face index.
         if ~splitfacesmap(fi)
@@ -346,16 +356,19 @@ function newvolcells = splitVolumetricCell( volcells, vci, divcentre, divnormal 
     curnumfaces = length( newvolcells.facevxs );
     newfaceindexes = ((curnumfaces+1):(curnumfaces+numfacesplitsdone))';
     facesplitmapping = zeros( numoldfaces, 1 );  % Indexed by absolute face index. Values are absolute face indexes.
-    facesplitmapping( splitfacesmap ) = newfaceindexes;
+    facesplitmapping( absFacesToSplit ) = newfaceindexes;
     newvolcells.edgevxs = [ newvolcells.edgevxs; facesplitedgevxs ];
     newfacevxs1( (numfacesplitsdone+1):end ) = [];
     newfacevxs2( (numfacesplitsdone+1):end ) = [];
     newfaceedges1( (numfacesplitsdone+1):end ) = [];
     newfaceedges2( (numfacesplitsdone+1):end ) = [];
-    newvolcells.facevxs( splitfacesmap ) = newfacevxs1;
+    newvolcells.facevxs( absFacesToSplit ) = newfacevxs1;
     newvolcells.facevxs = [ newvolcells.facevxs; newfacevxs2 ];
-    newvolcells.faceedges( splitfacesmap ) = newfaceedges1;
+    newvolcells.faceedges( absFacesToSplit ) = newfaceedges1;
     newvolcells.faceedges = [ newvolcells.faceedges; newfaceedges2 ];
+    newvolcells.surfacefaces = [ newvolcells.surfacefaces; ...
+                                 newvolcells.surfacefaces( absFacesToSplit, 1 ); ... % The new half takes the same surfaceness as the old.
+                                 false ]; % Faces created by splitting are necessarily in the interior.
     % Insert new faces into all volumetric cells.
     for vi=1:length(newvolcells.polyfaces)
         pf = newvolcells.polyfaces{vi};
@@ -365,13 +378,33 @@ function newvolcells = splitVolumetricCell( volcells, vci, divcentre, divnormal 
         newvolcells.polyfacesigns{vi} = [ ps; ps( spfs ) ];
     end
     
-    [ok,errs] = validVolcells( newvolcells );
-    if ok
-        timedFprintf( 'newvolcells is valid after splitting faces.\n' );
-    else
-        timedFprintf( 'newvolcells is invalid after splitting faces.\n' );
-        xxxx = 1;
-    end
+    allnewedges = (size(volcells.edgevxs,1)+1):size(newvolcells.edgevxs,1);
+    
+    % This calculation of which new edges are on the surface is not
+    % correct. An edge joinong two surface vertexes can be an interior
+    % edge. The correct criterion is that the surface edges are all the
+    % edges of the surface faces.
+%     newedgeends = newvolcells.edgevxs( allnewedges, : );
+%     surfacenewedgeends = reshape( newvolcells.surfacevxs( newedgeends, 1 ), [], 2 );
+%     newvolcells.surfaceedges( allnewedges ) = all( surfacenewedgeends, 2 );
+    
+    finalnumedges = size(newvolcells.edgevxs,1);
+    finalnumfaces = length(newvolcells.faceedges);
+    absdaughterfaces = ((finalnumfaces-length(absFacesToSplit)+1):finalnumfaces)';
+    newsurffacesmap = newvolcells.surfacefaces( absFacesToSplit, 1 );
+    foo1 = absFacesToSplit( newsurffacesmap, 1 );
+    foo2 = absdaughterfaces( newsurffacesmap, 1 );
+    foo = [ foo1; foo2 ];
+    newsurfaceedges = unique( cell2mat( newvolcells.faceedges( foo, 1 ) ) );
+    newvolcells.surfaceedges( (length(newvolcells.surfaceedges)+1):finalnumedges, 1 ) = false;
+    newvolcells.surfaceedges( newsurfaceedges ) = true;
+%     [ok,errs] = validVolcells( newvolcells );
+%     if ok
+%         timedFprintf( 'newvolcells is valid after splitting faces.\n' );
+%     else
+%         timedFprintf( 'newvolcells is invalid after splitting faces.\n' );
+%         xxxx = 1;
+%     end
     xxxx = 1;
     
 %     planeedges1 = planeedges;
@@ -483,14 +516,19 @@ function newvolcells = splitVolumetricCell( volcells, vci, divcentre, divnormal 
     newvolcells.polyfacesigns{vci,1} = [ newpolyfacesigns1; newWallSenseForVol1 ];
     newvolcells.polyfaces{newcellindex,1} = [ newpolyfaces2; newwallindex ];
     newvolcells.polyfacesigns{newcellindex,1} = [ newpolyfacesigns2; ~newWallSenseForVol1 ];
+    newvolcells.surfacevolumes(vci,1) = any( newvolcells.surfacefaces( newvolcells.polyfaces{vci} ) );
+    newvolcells.surfacevolumes(newcellindex,1) = any( newvolcells.surfacefaces( newvolcells.polyfaces{newcellindex} ) );
+    
+    newvolcells.edgefaces = invertNeighbourList( newvolcells.faceedges, size( newvolcells.edgevxs, 1 ) );
+    xxxx = 1;
     
     % After returning we will need to compute vxfe and vxbc for the new
     % vertexes. These have been filled in as zero.
     [ok,errs] = validVolcells( newvolcells );
     if ok
-        timedFprintf( 'newvolcells is valid after splitting polyhedron.\n' );
+        timedFprintf( 'newvolcells is valid after splitting polyhedron %d, %d cells.\n', vci, getNumberOfVolCells(newvolcells) );
     else
-        timedFprintf( 'newvolcells is invalid after splitting polyhedron.\n' );
+        timedFprintf( 'newvolcells is invalid after splitting polyhedron %d, %d cells.\n', vci, getNumberOfVolCells(newvolcells) );
         xxxx = 1;
     end
     xxxx = 1;
@@ -564,30 +602,27 @@ function [vi,ai] = minWithinSegment( a, segstart, segend )
     end
 end
 
-function v = getSegment( a, segstart, segend )
-    len = length(a);
-    segstart = mod1( segstart, len );
-    segend = mod1( segend, len );
-    if segstart <= segend
-        v = a( segstart:segstart );
-    else
-        v = a( [segstart:end 1:segstart] );
-    end
-end
+% function v = getSegment( a, segstart, segend )
+%     len = length(a);
+%     segstart = mod1( segstart, len );
+%     segend = mod1( segend, len );
+%     if segstart <= segend
+%         v = a( segstart:segstart );
+%     else
+%         v = a( [segstart:end 1:segstart] );
+%     end
+% end
 
-function [vi,ai] = minWithinSegment1( a, segstart, segend, excludedmap )
-    len = length(a);
-    invalidValue = 1 + max(a);
-    a( excludedmap ) = invalidValue;
-    v = getSegment( a, segstart, segend );
-    if any( v==invalidValue )
-        xxxx = 1;
-    end
-    [vi,ai] = min( v );
-    ai = ai + segstart - 1;
-    ai = mod1( ai, len );
-end
-
-function [wallvxs,walledges,wallarea] = trySplit( facevxs, faceedges, edgevxs, vxs3d )
-end
+% function [vi,ai] = minWithinSegment1( a, segstart, segend, excludedmap )
+%     len = length(a);
+%     invalidValue = 1 + max(a);
+%     a( excludedmap ) = invalidValue;
+%     v = getSegment( a, segstart, segend );
+%     if any( v==invalidValue )
+%         xxxx = 1;
+%     end
+%     [vi,ai] = min( v );
+%     ai = ai + segstart - 1;
+%     ai = mod1( ai, len );
+% end
 

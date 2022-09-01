@@ -1,4 +1,4 @@
-function [bc,baryCoords_err,n] = baryCoords( vxs, n, v, within )
+function [bc,baryCoords_err,n,v_in_plane] = baryCoords( vxs, n, v, within )
 %[bc,baryCoords_err,n] = baryCoords( vxs, n, v, within )
 %   Calculate the barycentric coordinates of point v with respect to
 %   triangle vxs, in three dimensions.  vxs contains the three vertexes of
@@ -27,28 +27,28 @@ function [bc,baryCoords_err,n] = baryCoords( vxs, n, v, within )
     v1 = vxs(1,:);
     v2 = vxs(2,:);
     v3 = vxs(3,:);
-    vv = zeros(size(v));
+    v_in_plane = zeros(size(v));
     nsq = n*n';
     for i=1:size(v,1)
-        vv(i,:) = v(i,:) + (((v1-v(i,:))*n')/nsq)*n;  % vv is in the plane of the triangle.
+        v_in_plane(i,:) = v(i,:) + (((v1-v(i,:))*n')/nsq)*n;  % v_in_plane is in the plane of the triangle.
     end
     
     a1 = cross3( v2-v3, n );
     oneval = dot3(a1,v1);
     zeroval = dot3(a1,v2);
-    vval = vv*a1';
+    vval = v_in_plane*a1';
     b1 = (vval-zeroval)/(oneval-zeroval);
     
     a2 = cross3( v3-v1, n );
     oneval = dot3(a2,v2);
     zeroval = dot3(a2,v3);
-    vval = vv*a2';
+    vval = v_in_plane*a2';
     b2 = (vval-zeroval)/(oneval-zeroval);
     
     a3 = cross3( v1-v2, n );
     oneval = dot3(a3,v3);
     zeroval = dot3(a3,v1);
-    vval = vv*a3';
+    vval = v_in_plane*a3';
     b3 = (vval-zeroval)/(oneval-zeroval);
     
     bc = [ b1, b2, b3 ];
@@ -70,7 +70,7 @@ function [bc,baryCoords_err,n] = baryCoords( vxs, n, v, within )
     end
     
     if nargout > 1
-        baryCoords_err = sqrt( sum( (bc*vxs-vv).^2, 2 ) );
+        baryCoords_err = sqrt( sum( (bc*vxs-v_in_plane).^2, 2 ) );
         % baryCoords_err = norm(bc*vxs-vv);
     end
 end

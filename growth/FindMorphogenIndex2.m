@@ -27,9 +27,9 @@ function mgenIndex = FindMorphogenIndex2( m, mgen, messageprefix, complain )
         badindexes = mgen(~valid);
         if complain && ~isempty(messageprefix) && ~isempty(badindexes)
             if length(badindexes)==1
-                fprintf( 1, '%s: No such morphogen index as %g.\n', messageprefix, badindexes );
+                timedFprintf( 1, '%s: No such morphogen index as %g.\n', messageprefix, badindexes );
             else
-                fprintf( 1, '%s: No such morphogen indexes as', messageprefix );
+                timedFprintf( 1, '%s: No such morphogen indexes as', messageprefix );
                 fprintf( 1, ' %d', badindexes );
                 fprintf( 1, '.\n' );
             end
@@ -42,7 +42,7 @@ function mgenIndex = FindMorphogenIndex2( m, mgen, messageprefix, complain )
             mgenIndex = m.mgenNameToIndex.(mgen);
         else
             if complain && ~isempty(messageprefix)
-                fprintf( 1, '%s: No such morphogen as "%s".\n', messageprefix, mgen );
+                timedFprintf( 1, '%s: No such morphogen as "%s".\n', messageprefix, mgen );
             end
             mgenIndex = 0;
         end

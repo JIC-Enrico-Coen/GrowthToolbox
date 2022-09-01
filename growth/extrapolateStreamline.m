@@ -44,7 +44,11 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
     bc = trimbc( s.barycoords(end,:) );
     dirbc = s.directionbc;
     if any(isnan(dirbc))
-        error( '%s: invalid direction', mfilename() );
+        error( '%s: invalid direction [%f %f %f]', mfilename(), dirbc );
+    end
+    if abs(sum(dirbc)) > 0.1
+        warning( 'invalid direction [%f %f %f]', dirbc(1), dirbc(2), dirbc(3) );
+        xxxx = 1;
     end
     
     % Determine the direction in which the microtubule is growing.
@@ -476,12 +480,17 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
             % Now I have to do the same calculation for each of collideseg and collidedsegbc
             collidedCell = zeros( length(collideseg), 1 );
             collidedCellBcs = zeros( length(collideseg), 3 );
+            okcollisions = true( length(collideseg), 1 );
             for ii=1:length(collideseg)
                 s1 = m.tubules.tracks(collidedwith(ii));
                 s1segi = collideseg(ii);
                 [s1cix, s1bc1x, s1bc2x] = referToSameTriangle( m, s1.segcellindex(s1segi), s1.barycoords( s1segi, : ), ...
                                                                   s1.segcellindex(s1segi+1), s1.barycoords( s1segi+1, : ) );
-                if isempty(s1cix)
+                okcollisions(ii) = ~isempty(s1cix);
+                if okcollisions(ii)
+                    collidedCell(ii,:) = s1cix;
+                    collidedCellBcs(ii,:) = collidedsegbc(ii,:) * [s1bc1x; s1bc2x];
+                else
                     fprintf( 2, '%s: referToSameTriangle failed for collided segment %s\n', mfilename(), s1segi );
                     fprintf( 2, '  Arguments were ci1 %d, bc1 [%.3f %.3f %.3f] ci2 %d, bc2 [%.3f %.3f %.3f]\n', ...
                         s1.segcellindex(s1segi), s1.barycoords( s1segi, : ), ...
@@ -490,190 +499,193 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                         m.tricellvxs( s1.segcellindex(s1segi), : ), m.tricellvxs( s1.segcellindex(s1segi+1), : ) );
                     collidedCell(ii,:) = NaN;
                     collidedCellBcs(ii,:) = NaN;
-                else
-                    collidedCell(ii,:) = s1cix;
-                    collidedCellBcs(ii,:) = collidedsegbc(ii,:) * [s1bc1x; s1bc2x];
                 end
             end
+            
+            if any( okcollisions )
+                colliderCell = colliderCell( okcollisions, : );
+                colliderCellBcs = colliderCellBcs( okcollisions, : );
+                collidedCell = collidedCell( okcollisions, : );
+                collidedCellBcs = collidedCellBcs( okcollisions, : );
+                colliderTubuleparams = getTubuleParamsModifiedByMorphogens( m, colliderCell, colliderCellBcs );
+                collidedTubuleparams = getTubuleParamsModifiedByMorphogens( m, collidedCell, collidedCellBcs );
 
-            colliderTubuleparams = getTubuleParamsModifiedByMorphogens( m, colliderCell, colliderCellBcs );
-            collidedTubuleparams = getTubuleParamsModifiedByMorphogens( m, collidedCell, collidedCellBcs );
+                shallow = (abs(collisionangle) < m.tubules.tubuleparams.min_collide_angle);
+                steep = ~shallow;
+                contacts = ~iscross;
+                shallowcontacts = contacts & shallow;
+                steepcontacts = contacts & steep;
+                p_interact = colliderTubuleparams.prob_collide_interact;
+                p_steepcat = p_interact .* colliderTubuleparams.prob_collide_catastrophe_steep(:) .* steepcontacts;
+                p_shallowcat = p_interact .* colliderTubuleparams.prob_collide_catastrophe_shallow(:) .* shallowcontacts;
+                p_steepzip = p_interact .* colliderTubuleparams.prob_collide_zipper_steep(:) .* steepcontacts;
+                p_shallowzip = p_interact .* colliderTubuleparams.prob_collide_zipper_shallow(:) .* shallowcontacts;
+                rand1 = rand( length(contacts), 1 );
+                zippers = ((rand1 < p_steepzip) & steepcontacts) | ((rand1 < p_shallowzip) & shallowcontacts);
+                rand1 = rand( length(contacts), 1 );
+                cats = ((rand1 < p_steepcat) & steepcontacts) | ((rand1 < p_shallowcat) & shallowcontacts);
+                cats = cats & ~zippers;
+                crosses = iscross & ~cats & ~zippers;
 
-            shallow = (abs(collisionangle) < m.tubules.tubuleparams.min_collide_angle);
-            steep = ~shallow;
-            contacts = ~iscross;
-            shallowcontacts = contacts & shallow;
-            steepcontacts = contacts & steep;
-            p_interact = colliderTubuleparams.prob_collide_interact;
-            p_steepcat = p_interact .* colliderTubuleparams.prob_collide_catastrophe_steep(:) .* steepcontacts;
-            p_shallowcat = p_interact .* colliderTubuleparams.prob_collide_catastrophe_shallow(:) .* shallowcontacts;
-            p_steepzip = p_interact .* colliderTubuleparams.prob_collide_zipper_steep(:) .* steepcontacts;
-            p_shallowzip = p_interact .* colliderTubuleparams.prob_collide_zipper_shallow(:) .* shallowcontacts;
-            rand1 = rand( length(contacts), 1 );
-            zippers = ((rand1 < p_steepzip) & steepcontacts) | ((rand1 < p_shallowzip) & shallowcontacts);
-            rand1 = rand( length(contacts), 1 );
-            cats = ((rand1 < p_steepcat) & steepcontacts) | ((rand1 < p_shallowcat) & shallowcontacts);
-            cats = cats & ~zippers;
-            crosses = iscross & ~cats & ~zippers;
+                rand1 = rand( length(contacts), 1 );
+                cutothers = crosses & (rand1 < colliderTubuleparams.prob_collide_cut_collided(:));
+                rand1 = rand( length(contacts), 1 );
+                cutself = crosses & (rand1 < colliderTubuleparams.prob_collide_cut_collider(:));
 
-            rand1 = rand( length(contacts), 1 );
-            cutothers = crosses & (rand1 < colliderTubuleparams.prob_collide_cut_collided(:));
-            rand1 = rand( length(contacts), 1 );
-            cutself = crosses & (rand1 < colliderTubuleparams.prob_collide_cut_collider(:));
+                % If there are several collisions with the same mt, zippering and
+                % catastrophe can only happen for the first of these.
+                [~,ia,~] = unique( collidedwith );
+                % ia is the indexes of the first occurrences of each mt in
+                % collidedwith. These are the only points at which zippers or cats
+                % may happen.
+                firstcontacts = false(size(collidedwith));
+                firstcontacts(ia) = true;
+                zippers = zippers & firstcontacts;
+                cats = cats & firstcontacts;
 
-            % If there are several collisions with the same mt, zippering and
-            % catastrophe can only happen for the first of these.
-            [~,ia,~] = unique( collidedwith );
-            % ia is the indexes of the first occurrences of each mt in
-            % collidedwith. These are the only points at which zippers or cats
-            % may happen.
-            firstcontacts = false(size(collidedwith));
-            firstcontacts(ia) = true;
-            zippers = zippers & firstcontacts;
-            cats = cats & firstcontacts;
+                % Any collision that does not zipper, catastrophe, or cross is
+                % ignored
+                ignoreCollisions = ~( iscross | cats | zippers );
+                zippers(ignoreCollisions) = [];
+                cats(ignoreCollisions) = [];
+                cutothers(ignoreCollisions) = [];
+                cutself(ignoreCollisions) = [];
+                crosses(ignoreCollisions) = [];
+                collidedwith(ignoreCollisions) = [];
+                collideseg(ignoreCollisions) = [];
+                collidedsegbc( ignoreCollisions, : ) = [];
+                collidersegbc( ignoreCollisions, : ) = [];
+                collisiontype(ignoreCollisions) = [];
+                collisionangle(ignoreCollisions) = [];
+                iscross(ignoreCollisions) = [];
 
-            % Any collision that does not zipper, catastrophe, or cross is
-            % ignored
-            ignoreCollisions = ~( iscross | cats | zippers );
-            zippers(ignoreCollisions) = [];
-            cats(ignoreCollisions) = [];
-            cutothers(ignoreCollisions) = [];
-            cutself(ignoreCollisions) = [];
-            crosses(ignoreCollisions) = [];
-            collidedwith(ignoreCollisions) = [];
-            collideseg(ignoreCollisions) = [];
-            collidedsegbc( ignoreCollisions, : ) = [];
-            collidersegbc( ignoreCollisions, : ) = [];
-            collisiontype(ignoreCollisions) = [];
-            collisionangle(ignoreCollisions) = [];
-            iscross(ignoreCollisions) = [];
-
-            if ~isempty(collisionangle)
-                xxxx = 1;
-            end
-
-            % The first zip or cat, if any, excludes all later events.
-            [~,zcfirst] = find( zippers | cats, 1 );
-            if ~isempty(zcfirst)
-                % Remove all events from zcfirst+1 to the end.
-                zippers( (zcfirst+1):end ) = [];
-                cats( (zcfirst+1):end ) = [];
-                cutothers( (zcfirst+1):end ) = [];
-                cutself( (zcfirst+1):end ) = [];
-                crosses( (zcfirst+1):end ) = [];
-                collidedwith( (zcfirst+1):end ) = [];
-                collideseg( (zcfirst+1):end ) = [];
-                collidedsegbc( (zcfirst+1):end, : ) = [];
-                collidersegbc( (zcfirst+1):end, : ) = [];
-                collisiontype( (zcfirst+1):end ) = [];
-                collisionangle( (zcfirst+1):end ) = [];
-                iscross( (zcfirst+1):end ) = [];
-            end
-
-            doeszip = ~isempty(zippers) && zippers(end);
-            doescat = ~isempty(cats) && cats(end);
-            previousEvent = doeszip || doescat;
-
-            m.tubules.statistics.crossovers = m.tubules.statistics.crossovers + sum( crosses );
-
-            if doeszip
-                % Truncate the growth to the zippering point.
-
-
-                % Rotate the direction about the surface normal by the collision
-                % angle, in order to make it parallel or
-                % antiparallel to the collided-with tubule.
-                elementNormal = m.unitcellnormals(s.segcellindex(end),:);
-                s.directionglobal = rotateVecAboutVec( s.directionglobal, elementNormal, collisionangle(end) );
-                s.directionbc = vec2bc( s.directionglobal, m.nodes( m.tricellvxs(ci,:), : ) );
-                if ~checkZeroBcsInStreamline( s )
+                if ~isempty(collisionangle)
                     xxxx = 1;
                 end
-                m.tubules.statistics.zipperings = m.tubules.statistics.zipperings + 1;
-            elseif doescat
-                % Truncate the growth to the catastrophe point.
-                % To do this we need to refer the final segment to the current
-                % cell. It probably is already. Then adjust the final bc
-                % according to segbc
-                m.tubules.statistics.collidecatastrophe = m.tubules.statistics.collidecatastrophe + 1;
-                segbc = collidersegbc(end,:);
-                extended = segbc(2) > 0;
-                if extended
-                    % Truncate the final segment.
-                    newbc = segbc*s.barycoords([end-1,end],:);
-                    s.barycoords(end,:) = newbc;
+
+                % The first zip or cat, if any, excludes all later events.
+                [~,zcfirst] = find( zippers | cats, 1 );
+                if ~isempty(zcfirst)
+                    % Remove all events from zcfirst+1 to the end.
+                    zippers( (zcfirst+1):end ) = [];
+                    cats( (zcfirst+1):end ) = [];
+                    cutothers( (zcfirst+1):end ) = [];
+                    cutself( (zcfirst+1):end ) = [];
+                    crosses( (zcfirst+1):end ) = [];
+                    collidedwith( (zcfirst+1):end ) = [];
+                    collideseg( (zcfirst+1):end ) = [];
+                    collidedsegbc( (zcfirst+1):end, : ) = [];
+                    collidersegbc( (zcfirst+1):end, : ) = [];
+                    collisiontype( (zcfirst+1):end ) = [];
+                    collisionangle( (zcfirst+1):end ) = [];
+                    iscross( (zcfirst+1):end ) = [];
+                end
+
+                doeszip = ~isempty(zippers) && zippers(end);
+                doescat = ~isempty(cats) && cats(end);
+                previousEvent = doeszip || doescat;
+
+                m.tubules.statistics.crossovers = m.tubules.statistics.crossovers + sum( crosses );
+
+                if doeszip
+                    % Truncate the growth to the zippering point.
+
+
+                    % Rotate the direction about the surface normal by the collision
+                    % angle, in order to make it parallel or
+                    % antiparallel to the collided-with tubule.
+                    elementNormal = m.unitcellnormals(s.segcellindex(end),:);
+                    s.directionglobal = rotateVecAboutVec( s.directionglobal, elementNormal, collisionangle(end) );
+                    s.directionbc = vec2bc( s.directionglobal, m.nodes( m.tricellvxs(ci,:), : ) );
                     if ~checkZeroBcsInStreamline( s )
                         xxxx = 1;
                     end
-                    s.globalcoords(end,:) = streamlineGlobalPos( m, s, length(s.vxcellindex) );
-                    s.segmentlengths(end) = norm( s.globalcoords(end,:) - s.globalcoords(end-1,:) );
-                    lengthgrown = s.segmentlengths(end);
-                    if s.segmentlengths(end) > maxlength
-                        xxxx = 1;
-                    end
-                else
-                    % Delete the final segment.
-                    s.barycoords(end,:) = [];
-                    s.globalcoords(end,:) = [];
-                    s.vxcellindex(end) = [];
-                    s.segcellindex(end) = [];
-                    s.segmentlengths(end) = [];
-                    lengthgrown = 0;
-                    % Direction can remain unchanged.
-                end
-                s.status.head = -1;
-                remaininglength = 0;
-            end
-
-            m.tubules.statistics.collidedcut = m.tubules.statistics.collidedcut + sum( cutothers );
-            m.tubules.statistics.collidercut = m.tubules.statistics.collidercut + sum( cutself );
-            severances.mt = collidedwith(cutothers);
-            severances.segindex = collideseg(cutothers);
-            severances.segbc = collidedsegbc(cutothers,:);
-            % We have not yet implemented self-severing.
-            selfindex = 0;
-            selfsegindex = length( s.segcellindex );
-            severances.mt = [ collidedwith(cutothers); selfindex+zeros(sum(cutself),1) ];
-            severances.segindex = [ collideseg(cutothers); selfsegindex+zeros(sum(cutself),1) ];
-            severances.segbc = [ collidedsegbc(cutothers,:); collidersegbc(cutself,:) ];
-
-            if false && ~isempty( severances.mt )
-                severances_mt = severances.mt
-                severances_segindex = severances.segindex
-                severances_segbc = severances.segbc
-            end
-
-            if ~isempty(collisionangle)
-                xxxx = 1;
-            end
-
-            % Sort the severances into descending order of segment index.
-            DO_SEVERING = true;
-            if DO_SEVERING && ~isempty( severances.mt )
-                severancedata = sortrows( [ severances.segindex severances.mt severances.segbc ], 'descend' );
-                severances.segindex = severancedata(:,1);
-                severances.mt = severancedata(:,2);
-                severances.segbc = severancedata(:,[3 4]);
-                for i=1:length( severances.mt )
-                    mti = severances.mt(i);
-                    if mti==0
-                        s1 = s;
-                    else
-                        s1 = m.tubules.tracks(mti);
-                    end
-                    [s1,ok] = insertSeveranceInMT( m, s1, severances.segindex(i), severances.segbc(i,:) );
-                    if ok
-                        if all( s1.directionglobal==0 )
+                    m.tubules.statistics.zipperings = m.tubules.statistics.zipperings + 1;
+                elseif doescat
+                    % Truncate the growth to the catastrophe point.
+                    % To do this we need to refer the final segment to the current
+                    % cell. It probably is already. Then adjust the final bc
+                    % according to segbc
+                    m.tubules.statistics.collidecatastrophe = m.tubules.statistics.collidecatastrophe + 1;
+                    segbc = collidersegbc(end,:);
+                    extended = segbc(2) > 0;
+                    if extended
+                        % Truncate the final segment.
+                        newbc = segbc*s.barycoords([end-1,end],:);
+                        s.barycoords(end,:) = newbc;
+                        if ~checkZeroBcsInStreamline( s )
                             xxxx = 1;
                         end
-                        if ~isempty(s1)
-                            if mti == 0
-                                s = s1;
-                            else
-                                m.tubules.tracks(mti) = s1;
-                            end
-                        else
+                        s.globalcoords(end,:) = streamlineGlobalPos( m, s, length(s.vxcellindex) );
+                        s.segmentlengths(end) = norm( s.globalcoords(end,:) - s.globalcoords(end-1,:) );
+                        lengthgrown = s.segmentlengths(end);
+                        if s.segmentlengths(end) > maxlength
                             xxxx = 1;
+                        end
+                    else
+                        % Delete the final segment.
+                        s.barycoords(end,:) = [];
+                        s.globalcoords(end,:) = [];
+                        s.vxcellindex(end) = [];
+                        s.segcellindex(end) = [];
+                        s.segmentlengths(end) = [];
+                        lengthgrown = 0;
+                        % Direction can remain unchanged.
+                    end
+                    s.status.head = -1;
+                    remaininglength = 0;
+                end
+
+                m.tubules.statistics.collidedcut = m.tubules.statistics.collidedcut + sum( cutothers );
+                m.tubules.statistics.collidercut = m.tubules.statistics.collidercut + sum( cutself );
+                severances.mt = collidedwith(cutothers);
+                severances.segindex = collideseg(cutothers);
+                severances.segbc = collidedsegbc(cutothers,:);
+                % We have not yet implemented self-severing.
+                selfindex = 0;
+                selfsegindex = length( s.segcellindex );
+                severances.mt = [ collidedwith(cutothers); selfindex+zeros(sum(cutself),1) ];
+                severances.segindex = [ collideseg(cutothers); selfsegindex+zeros(sum(cutself),1) ];
+                severances.segbc = [ collidedsegbc(cutothers,:); collidersegbc(cutself,:) ];
+
+                if false && ~isempty( severances.mt )
+                    severances_mt = severances.mt
+                    severances_segindex = severances.segindex
+                    severances_segbc = severances.segbc
+                end
+
+                if ~isempty(collisionangle)
+                    xxxx = 1;
+                end
+
+                % Sort the severances into descending order of segment index.
+                DO_SEVERING = true;
+                if DO_SEVERING && ~isempty( severances.mt )
+                    severancedata = sortrows( [ severances.segindex severances.mt severances.segbc ], 'descend' );
+                    severances.segindex = severancedata(:,1);
+                    severances.mt = severancedata(:,2);
+                    severances.segbc = severancedata(:,[3 4]);
+                    for i=1:length( severances.mt )
+                        mti = severances.mt(i);
+                        if mti==0
+                            s1 = s;
+                        else
+                            s1 = m.tubules.tracks(mti);
+                        end
+                        [s1,ok] = insertSeveranceInMT( m, s1, severances.segindex(i), severances.segbc(i,:) );
+                        if ok
+                            if all( s1.directionglobal==0 )
+                                xxxx = 1;
+                            end
+                            if ~isempty(s1)
+                                if mti == 0
+                                    s = s1;
+                                else
+                                    m.tubules.tracks(mti) = s1;
+                                end
+                            else
+                                xxxx = 1;
+                            end
                         end
                     end
                 end

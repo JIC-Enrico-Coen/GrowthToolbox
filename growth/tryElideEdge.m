@@ -69,7 +69,7 @@ function [m,numElided] = tryElideEdge( m )
                 end
                 finalelement = m.tubules.tracks(i).vxcellindex(end);
                 m.tubules.tracks(i).directionglobal = ...
-                    vec2bc( m.tubules.tracks(i).directionbc, m.nodes( m.tricellvxs(finalelement,:), : ) );
+                    vec2bc( m.tubules.tracks(i).directionbc, m.nodes( m.tricellvxs(finalelement,:), : ) );  % WTF?
                 m.tubules.tracks(i).directionglobal = streamlineGlobalDirection( m, m.tubules.tracks(i) );
             end
         end

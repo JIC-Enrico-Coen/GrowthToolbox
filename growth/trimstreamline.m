@@ -97,6 +97,7 @@ function m = trimstreamline( m, si, head, amount )
                 
                 if head
                     s.directionglobal = previouspoint - currentpoint;
+                    s.directionglobal = s.directionglobal/norm(s.directionglobal);
                     s.directionbc = vec2bc( s.directionglobal, m.nodes( m.tricellvxs( cuttingpointci, : ), : ) );
                 end
                 

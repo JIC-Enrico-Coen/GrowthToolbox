@@ -1,5 +1,5 @@
-function [newvxs,remap] = mergenodesprox( vxs, tol, transitive )
-%[newvxs,remapnodes] = mergenodesprox( vxs, tol, transitive )
+function [newvxs,retained,remap] = mergenodesprox( vxs, tol, transitive )
+%[newvxs,retained,remapnodes] = mergenodesprox( vxs, tol, transitive )
 %   vxs is an N*D array of N D-dimensional vectors. This procedure merges
 %   vertexes that lie within a distance TOL of each other along each axis.
 %   When a cluster of vertexes is merged, the new vertex is at the centre
@@ -48,7 +48,8 @@ function [newvxs,remap] = mergenodesprox( vxs, tol, transitive )
                 end
                 xxclass = ceil(xx/tol + d);
             else
-                xxclass = xx(2:end)==xx(1:(end-1));
+                xxclass = xx(2:end) ~= xx(1:(end-1));
+                xxclass = [1; (1 + cumsum( xx(2:end)~=xx(1:(end-1)) )) ];
             end
             [starts,ends] = runends( xxclass );
             xxprox = false( numvxs, numvxs );
@@ -63,7 +64,7 @@ function [newvxs,remap] = mergenodesprox( vxs, tol, transitive )
             prox = prox & xxprox;
         end
     end
-    [~,~,remap] = unique( prox, 'rows' );
+    [~,retained,remap] = unique( prox, 'rows', 'stable' );
     [newindexing,perm] = sort( remap );
     [starts,ends] = runends( newindexing );
     numgroups = length( starts );

@@ -28,7 +28,12 @@ function m = doTubuleCreation( m, dt )
 
     % Place the new microtubules randomly.
     [elementindexes,bcs] = randPointsOnSurface( m.nodes, m.tricellvxs, creationPerCorner, [], [], [], [], [], numtocreate );
-    dirbc = randomDirectionBC( numtocreate );
+    dirbc = zeros( numtocreate, 3 );
+    for i=1:numtocreate
+        vxs = m.nodes( m.tricellvxs(elementindexes(i),:), : );
+        dirbc(i,:) = randDirectionBC( vxs, 1 );
+    end
+%     dirbc = randomDirectionBC( numtocreate );
     m = leaf_createStreamlines( m, ...
             'elementindex', elementindexes, ...
             'barycoords', bcs, ...

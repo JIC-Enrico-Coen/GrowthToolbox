@@ -29,9 +29,9 @@ function [edgevxs,edgefaces,faceedges] = makeEdges( faces )
     edgeentries = find( es(:) );
     numedges = length( edgeentries );
     [e1,e2] = ind2sub( [numVxs, numVxs], edgeentries );
-    edgevxs = [e2,e1];
-    edgeindexes = zeros( [numVxs, numVxs] );
-    edgeindexes( edgeentries ) = 1:numedges;
+    edgevxs = uint32( [e2,e1] );
+    edgeindexes = zeros( [numVxs, numVxs], 'uint32' );
+    edgeindexes( edgeentries ) = uint32( 1:numedges );
     edgeindexes = max( edgeindexes, edgeindexes' );
     
     faceedges = cell( numFaces, 1 );
@@ -46,6 +46,6 @@ function [edgevxs,edgefaces,faceedges] = makeEdges( faces )
     
     edgefacesB = cell2mat( edgefacesA );
     edgefaces = map2cell( edgefacesB(:,[2 1]) );
-
-%     faceedgesX = map2cell( edgefacesB );
+    
+%     edgevxs = uint32(edgevxs);
 end

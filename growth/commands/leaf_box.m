@@ -87,7 +87,7 @@ function [m,ok] = leaf_box( m, varargin )
     vxs = cell2mat( vxs(:) );
     tricellvxs = cell2mat( tricellvxs(:) );
     tic;
-    [vxs,remap] = mergenodesprox( vxs, 0.01*min( s.size./s.numdivs ), false );
+    [vxs,~,remap] = mergenodesprox( vxs, 0.01*min( s.size./s.numdivs ), false );
     toc;
     tricellvxs = remap(tricellvxs);
     [~,~,~,~,clumpindex1,~] = clumplinear( vxs(:,1) );
