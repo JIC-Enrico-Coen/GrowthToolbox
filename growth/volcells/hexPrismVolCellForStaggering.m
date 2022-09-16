@@ -18,95 +18,99 @@ function volcells = hexPrismVolCellForStaggering( centre, height, edgelength, st
 %   bisected, and joined on the hexagonal face to subdivide it into four
 %   faces.
 
-    % Hexagon in the Z=0 plane.
-    c = 0.5;
-    s = sqrt(3)/2;
-    vxs3d = [ 1  0  0;
-              c  s  0;
-             -c  s  0;
-             -1  0  0;
-             -c -s  0;
-              c -s  0 ];
-    stagperm = [ staggerings(1):6 1:(staggerings(1)-1) ];
-    vxs3d = vxs3d( stagperm, : );
-    
-    splitedges = [2 3 5 6];
-    splitedges1 = mod( splitedges, 6 ) + 1;
-    foo = [ (1:6)', zeros(6,1), [2:6 1]' ];
-    foo(splitedges,2) = (7:10)';
-    edgevxs3d = ( vxs3d( splitedges, : ) + vxs3d( splitedges1, : ) )/2;
-    facevxs3d = vxs3d( splitedges([4 2]), : )/2;
-          
-    vxs3d = [ vxs3d; edgevxs3d; facevxs3d ];
-%     hexReordering = [1 2 7 3 8 4 5 9 6 10 11 12];
-%     vxs3d = vxs3d( hexReordering, : );
-    numhexinteriorvxs = 2;
-    numhextotalvxs = size(vxs3d,1);
-    numhexedgevxs = numhextotalvxs - numhexinteriorvxs;
-          
-    % Scale to required size.
-    vxs3d = vxs3d * edgelength;
-    
-    % Two copies, top and bottom.
     if numel(convexity)==1
         convexity = [convexity convexity];
     else
         convexity = convexity(:)';
     end
+    
+    % Hexagon in the Z=0 plane.
+    c = 0.5;
+    s = sqrt(3)/2;
+    cornervxs3d = [ 1  0  0;
+                    c  s  0;
+                   -c  s  0;
+                   -1  0  0;
+                   -c -s  0;
+                    c -s  0 ];
+    numcornervxs = size( cornervxs3d, 1 );
+    stagperm = [ staggerings(1):6 1:(staggerings(1)-1) ];
+    cornervxs3d = cornervxs3d( stagperm, : );
+    
+    splitedges = [2 3 5 6];
+    splitedges1 = mod( splitedges, 6 ) + 1;
+    edgevxs3d = ( cornervxs3d( splitedges, : ) + cornervxs3d( splitedges1, : ) )/2;
+    facevxs3d = cornervxs3d( splitedges([4 2]), : )/2;
+          
+    endvxs3d = [ cornervxs3d; edgevxs3d; facevxs3d ];
+    numhexinteriorvxs = 2;
+    numhextotalvxs = size(endvxs3d,1);
+    numhexedgevxs = numhextotalvxs - numhexinteriorvxs;
+          
+    % Scale to required size.
+    endvxs3d = endvxs3d * edgelength;
+    
+    % Two copies, top and bottom.
     convexityOffset = convexity * (1/(2*sqrt(3))) * height;
     hOffsets = [ -1 -1 -1 -1 -1 -1 0 0 0 0 1 1]';
-%     hOffsets = hOffsets(hexReordering);
-    hOffsets1 = hOffsets * convexityOffset(1);
-    hOffsets2 = hOffsets * convexityOffset(2);
-    hOffsets3d1 = [ zeros( numhextotalvxs, 2 ), hOffsets1 ];
-    hOffsets3d2 = [ zeros( numhextotalvxs, 2 ), hOffsets2 ];
+
+    if convexity(1)==0
+        topvxs3d = endvxs3d(1:numcornervxs,:) + [0 0 height/2];
+    else
+        hOffsets3d1 = [ zeros( numhextotalvxs, 2 ), hOffsets * convexityOffset(1) ];
+        topvxs3d = endvxs3d + [0 0 height/2] + hOffsets3d1;
+    end
+    if convexity(2)==0
+        bottomvxs3d = endvxs3d(1:numcornervxs,:) - [0 0 height/2];
+    else
+        hOffsets3d2 = [ zeros( numhextotalvxs, 2 ), hOffsets * convexityOffset(2) ];
+        bottomvxs3d = endvxs3d - [0 0 height/2] - hOffsets3d2;
+    end
     
-    vxs3d = [ vxs3d + [0 0 height/2] + hOffsets3d1; vxs3d - [0 0 height/2] - hOffsets3d2 ];
+    allvxs3d = [ topvxs3d; bottomvxs3d ];
     
     % Move to centre.
-    vxs3d = centre + vxs3d;
+    allvxs3d = centre + allvxs3d;
     
     % The indexing of each face is ordered so that the right-handed
     % face normals point into the volume.
-    if convexity(1)==0
-        topfaces = { uint32( [ 1 10 6 9 5 4 8 3 7 2 ]' ) };
-    else
-        topfaces = { uint32( [1 10 11 12 7 2]' ); ...
-                     uint32( [7 12 8 3]' ); ...
-                     uint32( [8 12 11 9 5 4]' ); ...
-                     uint32( [9 11 10 6]' ) };
-    end
-    if convexity(2)==0
-        bottomfaces = { uint32( [ 1 10 6 9 5 4 8 3 7 2 ]' ) };
-    else
-        bottomfaces = { uint32( [1 10 11 12 7 2]' ); ...
-                     uint32( [7 12 8 3]' ); ...
-                     uint32( [8 12 11 9 5 4]' ); ...
-                     uint32( [9 11 10 6]' ) };
-    end
+    [topfaces,topedges,topnumvxs] = hexfaces( convexity(1)==0 );
+    [bottomfaces,bottomedges,~] = hexfaces( convexity(2)==0 );
     for i=1:length(bottomfaces)
-        bottomfaces{i} = bottomfaces{i}(end:-1:1) + numhextotalvxs;
+        bottomfaces{i} = bottomfaces{i}(end:-1:1,1) + topnumvxs;
     end
-    foo = [ (1:6)', zeros(6,1), [2:6 1]' ];
-    foo(splitedges,2) = (7:10)';
-    foo1 = foo;
-    foo1(foo1 ~= 0) = foo1(foo1 ~= 0) + numhextotalvxs;
-    
-    sidefacesarray = uint32( [ foo, foo1( :, end:-1:1 ) ] );
-    numsidefaces = size(sidefacesarray,1);
-    sidefaces = cell( numsidefaces, 1 );
-    for i=1:numsidefaces
-        sidefaces{i} = sidefacesarray(i,sidefacesarray(i,:) ~= 0)';
+    bottomedges = bottomedges(:,end:-1:1);
+    bottomedges(bottomedges ~= 0) = bottomedges(bottomedges ~= 0) + topnumvxs;
+    sidefacesarray = [ topedges, bottomedges ];
+    sidefacescell = cell( size(sidefacesarray,1), 1 );
+    for i=1:size(sidefacesarray,1)
+        sf = sidefacesarray(i,:);
+        sf = sf(sf~=0);        
+        sidefacescell{i} = sf';
     end
-    
-%     sidefaces = [ (1:numhexedgevxs); ...
-%                   [2:numhexedgevxs 1]; ...
-%                   [(numhextotalvxs+2):(numhextotalvxs+numhexedgevxs) (numhextotalvxs+1)]; ...
-%                   (numhextotalvxs+1):(numhextotalvxs+numhexedgevxs) ];
-%     sidefaces = num2cell( sidefaces, 1 )';
-                  
-    faceIndexing = [ topfaces; bottomfaces; sidefaces ];
 
-    volcells = completeSingleVolCell( vxs3d, faceIndexing );
+    faceIndexing = [ topfaces; bottomfaces; sidefacescell ];
+
+    volcells = completeSingleVolCell( allvxs3d, faceIndexing );
+end
+
+function [faces,edges,numvxs] = hexfaces( flat )
+    if flat
+        numvxs = 6;
+        faces = { uint32( [ 1 (numvxs:-1:2) ]' ) };
+        edges = [ faces{1} faces{1}([2:end 1]) ];
+    else
+        numvxs = 12;
+        faces = { uint32( [1 10 11 12 7 2]' ); ...
+                     uint32( [7 12 8 3]' ); ...
+                     uint32( [8 12 11 9 5 4]' ); ...
+                     uint32( [9 11 10 6]' ) };
+        edges = uint32( [ 1 10  6;
+                          6  9  5;
+                          5  4  0;
+                          4  8  3;
+                          3  7  2;
+                          2  1  0 ] );
+    end
 end
 

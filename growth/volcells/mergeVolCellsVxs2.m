@@ -1,5 +1,5 @@
 function newvolcells = mergeVolCellsVxs2( volcells, tol, transitive )
-%newvolcells = mergeVolCellsVxs( volcells, tol, transitive )
+%newvolcells = mergeVolCellsVxs2( volcells, tol, transitive )
 %   Merge vertexes of a volumetric mesh that are closer than TOL.
 
     [~,retained_vxs,remap_vxs] = mergenodesprox( volcells.vxs3d, tol, transitive );

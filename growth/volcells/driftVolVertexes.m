@@ -1,4 +1,8 @@
 function m = driftVolVertexes( m )
+% NOT USED
+% INCOMPLETE
+% PErHAPS SUPERSEDED BY THE VERTEX CREEP CODE IN THE I.F.
+
     [~,~,m.volcells] = validVolcells( m.volcells );
     numvxs = getNumberOfVolVertexes( m.volcells );
     numedges = getNumberOfVolEdges( m.volcells );

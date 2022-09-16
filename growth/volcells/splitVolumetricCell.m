@@ -415,7 +415,9 @@ function newvolcells = splitVolumetricCell( volcells, vci, divcentre, divnormal 
     [cycle1,perm1] = findCycle1( newwalledgevxs );
     if isempty(cycle1)
         % Something went wrong.
-        error( 'Cannot form new face from new edges and vertexes.' );
+        timedFprintf( '**** Splitting cell %d: cannot form new face from new edges and vertexes.\n', vci );
+        newvolcells = volcells;
+        return
     end
     
     newwallvxs = cycle1;

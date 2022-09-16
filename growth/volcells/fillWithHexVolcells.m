@@ -16,7 +16,7 @@ function volcells = fillWithHexVolcells( bbox, initpoint, height, edgelength )
     
     toplatticepoints = latticepts(:,3) >= max( latticepts(:,3) ) - 1e-5;
     
-    % Replicate volcells1 over latticepts.
+    % Replicate volcells0 and volcells1 over latticepts.
     allvolcells = emptystructarray( [size(latticepts,1),1], volcells1 );
     for i=1:size(latticepts,1)
         if toplatticepoints(i)

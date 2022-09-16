@@ -5,7 +5,7 @@ function [c,ia,ic,as,sp,aix] = uniqueRowsTol( a, tol )
 %   considering only exact equality. The default value of TOL is 0, in
 %   which case this is identical to unique( a, 'rows', 'stable' ).
 %
-%[c,ia,ic,as,aix] = uniqueRowsTol( a, tol )
+%[c,ia,ic,as,sp,aix] = uniqueRowsTol( a, tol )
 %   AS is the result of sortrows( A ), generalised for the tolerance.
 %   SP is the corresponding permutation: AS = A(SP,:).
 %   AIX is derived from A by replacing each value of A by its rank in the

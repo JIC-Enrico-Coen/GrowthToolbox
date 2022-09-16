@@ -91,6 +91,9 @@ function m = doTubuleBranching( m, dt )
         CURVATURE_EFFECT_ON_BRANCHING = 1;
         curvatureEffectPerVertex = CURVATURE_EFFECT_ON_BRANCHING * sum( reshape( branchPerCurvature( m.tricellvxs( vxci, : ) ), [], 3 ) .* vxbcs, 2 );
         allvxprobs( [range, ai+ns+1] ) = allvxprobs( [range, ai+ns+1] ) + curvatureEffectPerVertex .* trackcurvaturePerVertex;
+        if any( trackcurvaturePerVertex > 0 )
+            xxxx = 1;
+        end
         xxxx = 1;
         
         ai = ai+ns+1;

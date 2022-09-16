@@ -241,7 +241,7 @@ end
     end
     
 % If the prism nodes are valid, check there are the right number.
-    if m.globalProps.prismnodesvalid
+    if m.globalProps.prismnodesvalid && ~isVolumetricMesh(m)
         if size(m.prismnodes,1) ~= size(m.nodes,1)*2
             result = 0;
             complain2( errorseverity(2), ...

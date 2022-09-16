@@ -1,5 +1,8 @@
 function vxdeficit = meshcurvature( m )
 %vxdeficit = meshcurvature( m )
+%
+% THIS PROCEDURE IS NEVER USED. It is likely experimental and incomplete.
+%
 %   Calculate a measure of the curvature of a foliate mesh. At each
 %   interior vertex we find the difference between the sum of angles around
 %   the vertex and 2pi. For border vertexes we compare with the angle

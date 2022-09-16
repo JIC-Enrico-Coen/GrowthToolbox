@@ -9,8 +9,6 @@ function in = invertArray( a, v )
 %   If V is omitted, it is taken to be 1:round(max(A(:))).  If A is a
 %   permutation of this, then IN is the inverse permutation, although this
 %   can be calculated more simply by writing IN(A) = 1:numel(A).
-%
-%   IN is always returned as a row vector.
 
     if nargin < 2
         v = 1:round(max(a(:)));
