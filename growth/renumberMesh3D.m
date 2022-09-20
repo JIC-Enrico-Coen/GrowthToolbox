@@ -538,7 +538,7 @@ function newdelinfo = propagateDeletions( m, delinfo )
         newdelinfo.(f2) = forbidReference( newdelinfo.(f2), delinfo.(f1), getDeepField( m, fn ) );
     end
     
-    delinfo.volface = requireReference( delinfo.volface, delinfo.volsolid, m.volcells.polyfaces );
+    delinfo.volface = requireReference( delinfo.volface, delinfo.volsolid, getDeepField( m, 'volcells.polyfaces' ) );
 
         
         
