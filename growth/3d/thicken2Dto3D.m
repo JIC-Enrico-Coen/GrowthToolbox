@@ -1,4 +1,4 @@
-function [mesh,vxparents] = thicken2Dto3D( mesh2d, axisdivs, height, fetype )
+function [mesh,vxparents,feparents] = thicken2Dto3D( mesh2d, axisdivs, height, fetype )
 %mesh = thicken2Dto3D( mesh2d, axisdivs, height )
 %
 %   mesh2d is a 2d mesh in the XY plane, with fields nodes and tricellvxs.
