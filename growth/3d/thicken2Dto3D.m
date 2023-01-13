@@ -32,11 +32,15 @@ function [mesh,vxparents,feparents] = thicken2Dto3D( mesh2d, axisdivs, height, f
                           'fevolumes', repmat( layervolumes, axisdivs, 1 ) );
                       
     newm.globalDynamicProps.currentVolume = sum( newm.FEsets.fevolumes );
+    
+    feparents = repmat( (1:getNumberOfFEs(mesh2d))', axisdivs, 1 );
 
     oldnumvxs = size( newm.FEnodes, 1 );
     switch fetype
         case 'T4Q'
-            [newm,vxparents,feparents] = convertP6toT4Q( newm );
+            [newm,vxparents,feparents1] = convertP6toT4Q( newm );
+            feparents2 = feparents(feparents1);
+            feparents = feparents2;
             newnumvxs = size( newm.FEnodes, 1 );
         otherwise
             vxparents = [ (1:oldnumvxs)', zeros( oldnumvxs, 2 ) ];
