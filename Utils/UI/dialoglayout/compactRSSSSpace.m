@@ -46,7 +46,7 @@ function s = compactRSSSSpace( s )
             end
             imhoriz = s.attribs.innermargin(1)*max(0,s.attribs.columns-1);
             imvert = s.attribs.innermargin(2)*max(0,s.attribs.rows-1);
-            outer = s.attribs.outermargin*2;
+            outer = s.attribs.outermargin([1 3]) + s.attribs.outermargin([2 4]);
             newminsize = max( s.attribs.minsize, ...
                 [ sum(mincolwidths)+imhoriz+outer(1), sum(minrowheights)+imvert+outer(2) ] );
             if isfield( s.attribs, 'interiorsize' )

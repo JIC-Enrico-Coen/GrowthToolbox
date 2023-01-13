@@ -35,11 +35,6 @@ function m = leaf_deleteStreamlines( m, varargin )
     end
     
     if s.alldata
-        fns = fieldnames( m.tubules.statistics );
-        for i=1:length(fns)
-            m.tubules.statistics.(fns{i}) = 0;
-        end
-        m.tubules.statistics.lifetimes = zeros(0,2);
-        m.tubules.maxid = 0;
+        m.tubules = initTubules();
     end
 end

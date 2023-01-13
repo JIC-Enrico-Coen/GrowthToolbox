@@ -108,7 +108,7 @@ function [m,ok] = leaf_iterate( m, varargin )
     starttime = m.globalDynamicProps.currenttime;
     
     full3d = usesNewFEs( m );
-    
+
     m = invalidateLineage( m );
     
     timedFprintf( 1, 'About to perform %d iterations.\n', numsteps );
@@ -310,23 +310,44 @@ function [m,ok] = leaf_iterate( m, varargin )
         step = step+1;
         
         [isstagetime,stagetime] = isCurrentStage( m );
+        timedFprintf( 'isstagetime %d, stagetime %g\n', isstagetime, stagetime );
         if isstagetime || m.globalProps.recordAllStages
-            if m.globalProps.recordAllStages
-                timedFprintf( 1, 'Recording all stages, so recording stage %f for time %f.\n', stagetime, m.globalDynamicProps.currenttime );
+            if (~isstagetime) && m.globalProps.recordAllStages
+                timedFprintf( 1, 'Not a stage time, but recording all stages, so recording a stage at time %g.\n', m.globalDynamicProps.currenttime );
             else
-                timedFprintf( 1, 'Stage time %f reached at model time %f, so recording stage file.\n', stagetime, m.globalDynamicProps.currenttime );
+                timedFprintf( 1, 'Stage time %g reached at model time %g, so recording stage file.\n', stagetime, m.globalDynamicProps.currenttime );
             end
             if isempty( m.globalProps.currentrun )
                 timedFprintf( 1, 'No current run, so saving stage to project directory.\n' );
                 [m,ok] = leaf_savestage( m );
             else
-                timedFprintf( 1, 'Saving stage to run directory %s.\n', m.globalProps.currentrun );
-                [m,ok] = leaf_savestage( m, fullfile( m.globalProps.currentrun, 'meshes' ) );
+                currentrun = m.globalProps.currentrun;
+                timedFprintf( 'Current run is ''%s''.\n', currentrun );
+                if isempty(currentrun)
+                    timedFprintf( 'No current run.\n' );
+                else
+                    fullmodeldir = getModelDir( m );
+                    fullrundir = fullfile( fullmodeldir, 'runs', currentrun );
+                    if ~exist( fullrundir, 'dir' )
+                        timedFprintf( 'Run directory %s does not exist.\n', fullrundir );
+                    else
+                        timedFprintf( 1, 'Saving stage to run directory %s.\n', fullrundir );
+                        fullmeshesdir = fullfile( fullrundir, 'meshes' );
+                        [ok,~] = mkdir( fullmeshesdir );
+                        if ok
+                            [m,ok] = leaf_savestage( m, fullmeshesdir );
+                        else
+                            timedFprintf( 1, 'Could not create meshes dir %s.\n', fullmeshesdir );
+                        end
+                    end
+                end
             end
             if ~ok
                 timedFprintf( 1, 'Problem saving stage %f.\n', ...
                     m.globalDynamicProps.currenttime );
             end
+        else
+            timedFprintf( 1, 'Not saving a stage at time %g, as not a stage time and not recording all stages.\n', m.globalDynamicProps.currenttime );
         end
         
         fwrite( 1, [simStatusString(m), newline()] );

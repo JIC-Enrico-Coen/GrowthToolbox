@@ -19,7 +19,7 @@ function m = recordframe( m, frame )
                 m.plotdefaults.bgcolor );
     end
     
-    m=leaf_record_mesh_frame(m);
+%     m=leaf_record_mesh_frame(m);
     try
         m.globalProps.mov = addmovieframe( m.globalProps.mov, frame );
         fprintf( 1, '%s: Recording movie frame at time %f, iteration %d.\n', ...

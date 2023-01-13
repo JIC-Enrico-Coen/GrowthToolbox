@@ -18,22 +18,22 @@ function m = doTubuleCreation( m, dt )
     totalcreationrate = sum(creationPerCorner(:))/3;
 %     expectedcreation = totalcreationrate * dt;
 
-%     creationtimes = randArrivals( totalcreationrate, dt );
-    [numtocreate,creationtimes] = poissevents( totalcreationrate, dt );
-    if numtocreate==0
+    [requestednum,creationtimes] = poissevents( totalcreationrate, dt );
+    grantednum = requestMTcreation( m, requestednum );
+    if grantednum==0
         return;
     end
+    creationtimes = creationtimes( randsubset( requestednum, grantednum ) );
     
 %     numtocreate = length(creationtimes); % poissrnd( expectedcreation );
 
     % Place the new microtubules randomly.
-    [elementindexes,bcs] = randPointsOnSurface( m.nodes, m.tricellvxs, creationPerCorner, [], [], [], [], [], numtocreate );
-    dirbc = zeros( numtocreate, 3 );
-    for i=1:numtocreate
+    [elementindexes,bcs] = randPointsOnSurface( m.nodes, m.tricellvxs, creationPerCorner, [], [], [], [], [], grantednum );
+    dirbc = zeros( grantednum, 3 );
+    for i=1:grantednum
         vxs = m.nodes( m.tricellvxs(elementindexes(i),:), : );
         dirbc(i,:) = randDirectionBC( vxs, 1 );
     end
-%     dirbc = randomDirectionBC( numtocreate );
     m = leaf_createStreamlines( m, ...
             'elementindex', elementindexes, ...
             'barycoords', bcs, ...

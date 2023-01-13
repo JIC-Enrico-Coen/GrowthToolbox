@@ -65,7 +65,7 @@ function [m,ok,moviefile] = leaf_movie( m, varargin )
     if ~isempty(m.globalProps.mov)
         moviefilepath = m.globalProps.mov.Path;
         moviefilename = m.globalProps.mov.Filename;
-        fprintf( 1, 'Closing movie file %s.\n', fullfile( moviefilepath, moviefilename ) );
+        timedFprintf( 1, 'Closing movie file %s.\n', fullfile( moviefilepath, moviefilename ) );
         try
             close(m.globalProps.mov);
         catch e
@@ -85,7 +85,7 @@ function [m,ok,moviefile] = leaf_movie( m, varargin )
                   && isfield( m.globalProps.RecordMeshes, 'saveframe' ) ...
                   && m.globalProps.RecordMeshes.saveframe )
                 m.globalProps.RecordMeshes.saveframe=false;
-%                 fprintf( 1, 'Saving final frame at time %f as figure file %s.fig.\n', ...
+%                 timedFprintf( 1, 'Saving final frame at time %f as figure file %s.fig.\n', ...
 %                     m.globalDynamicProps.currenttime, figureFilename );
 %                 try
 %                     saveas( m.pictures(1), figureFilename, 'fig' );
@@ -93,7 +93,7 @@ function [m,ok,moviefile] = leaf_movie( m, varargin )
 %                     GFtboxAlert( 1, 'Could not save figure to %s.fig.', figureFilename );
 %                 end
                 finalPicFileName = [figureFilename,'.png'];
-                fprintf( 1, 'Saving snapshot of final frame to %s.\n', ...
+                timedFprintf( 1, 'Saving snapshot of final frame to %s.\n', ...
                     finalPicFileName );
                 frame = getGFtboxImage(m,[],m.plotdefaults.drawcolorbar);
                 try
@@ -109,7 +109,7 @@ function [m,ok,moviefile] = leaf_movie( m, varargin )
                 if exist(interaction_filename,'file')==2
                     try
                         copyfile(interaction_filename,targetname);
-                        fprintf(1,'Copied %s to %s\n',interaction_filename,targetname);
+                        timedFprintf(1,'Copied %s to %s\n',interaction_filename,targetname);
                     catch
                         GFtboxAlert( 1, 'Could not copy interaction function to %s.', targetname );
                     end
@@ -224,15 +224,15 @@ function [m,ok,moviefile] = leaf_movie( m, varargin )
             haveQuality = false;
         end
         open( m.globalProps.mov );
-        fprintf( 1, 'Starting movie file %s.\n', fullfile( moviefilepath, moviefilename ) );
+        timedFprintf( 1, 'Starting movie file %s.\n', fullfile( moviefilepath, moviefilename ) );
         if haveQuality
-            fprintf( 1, 'Using %s (%s) compressor, %d quality.  Frame rate %d fps.\n', ...
+            timedFprintf( 1, 'Using %s (%s) compressor, %d quality.  Frame rate %d fps.\n', ...
                 s.compression, ...
                 get( m.globalProps.mov, 'VideoFormat' ), ...
                 get( m.globalProps.mov, 'Quality' ), ...
                 get( m.globalProps.mov, 'FrameRate' ) );
         else
-            fprintf( 1, 'Using %s (%s) compressor.  Frame rate %d fps.\n', ...
+            timedFprintf( 1, 'Using %s (%s) compressor.  Frame rate %d fps.\n', ...
                 s.compression, ...
                 get( m.globalProps.mov, 'VideoFormat' ), ...
                 get( m.globalProps.mov, 'FrameRate' ) );

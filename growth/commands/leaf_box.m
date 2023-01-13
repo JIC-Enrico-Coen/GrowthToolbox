@@ -52,7 +52,9 @@ function [m,ok] = leaf_box( m, varargin )
     s.edgeradius = min( s.edgeradius, min( s.size )/2 );
     
     [ok,handles,m,savedstate] = prepareForGUIInteraction( m );
-    if ~ok, return; end
+    if ~ok
+        return;
+    end
     savedstate.replot = true;
     savedstate.install = true;
     if s.new

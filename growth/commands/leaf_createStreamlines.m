@@ -29,7 +29,6 @@ function m = leaf_createStreamlines( m, varargin )
 %   See also: leaf_growStreamlines, leaf_deleteStreamlines.
 %
 %   Topics: Streamlines.
-
     [s,ok] = safemakestruct( mfilename(), varargin );
     if ~ok, return; end
     s = defaultfields( s, ...
@@ -79,6 +78,10 @@ function m = leaf_createStreamlines( m, varargin )
     streamline = m.tubules.defaulttrack;
     streamline = repmat( streamline, numstreamlines, 1 );
     currentID = m.tubules.maxid;
+    
+%     timedFprintf( 'Creating %d tubules.\n', numstreamlines );
+    newtubuleinfo = zeros( numstreamlines, 5 );
+    newtubuleinfo(:,5) = double(Steps(m)+1);
     for i=1:numstreamlines
         streamline(i).id = currentID+i;
         streamline(i).barycoords = ss(i).barycoords;
@@ -107,6 +110,7 @@ function m = leaf_createStreamlines( m, varargin )
             'directionbc', 'double', ...
             'directionglobal', 'double', ...
             'status', 'struct' );
+        newtubuleinfo(i,1:4) = [ streamline(i).segcellindex, streamline(i).barycoords ];
     end
     
     if isempty(m.tubules.tracks)
@@ -115,5 +119,12 @@ function m = leaf_createStreamlines( m, varargin )
         m.tubules.tracks( (end+1):(end+numstreamlines) ) = streamline;
     end
     m.tubules.maxid = m.tubules.maxid + numstreamlines;
-    m.tubules.statistics.created = m.tubules.statistics.created + numstreamlines;
+    
+    % Update stats.
+%     m.tubules.statistics.created = m.tubules.statistics.created + numstreamlines;
+    
+    if ~isfield(  m.tubules.statistics, 'creationinfo' )
+        m.tubules.statistics.creationinfo = zeros(0,5);
+    end
+    m.tubules.statistics.creationinfo = [ m.tubules.statistics.creationinfo; newtubuleinfo ];
 end

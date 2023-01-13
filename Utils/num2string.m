@@ -1,5 +1,5 @@
 function s = num2string( n, decpl )
-%s = num2string( n )
+%s = num2string( n, decpl )
 %   Convert the number n to a string without unnecessary zeroes or decimal
 %   points.  decpl (default 6) is the maximum number of decimal places to
 %   allow.

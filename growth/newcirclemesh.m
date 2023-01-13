@@ -1,9 +1,12 @@
-function [m,rimnodes] = newcirclemesh( sz, circumdivs, nrings, centre, hollow, inneredges, ...
+function [m,rimnodes,vxringindexes,faceringindexes] = newcirclemesh( sz, circumdivs, nrings, centre, hollow, inneredges, ...
                                        dealign, sector, coneangle )
-%[m,rimnodes] = newcirclemesh( sz, circum, nrings, centre, inner, dealign, sector, coneangle )
+%[m,rimnodes,edgeringindexes,faceringindexes] = newcirclemesh( sz, circum, nrings, centre, hollow, inneredges, ...
+%                                        dealign, sector, coneangle )
 
     m = [];
     rimnodes = [];
+    vxringindexes = [];
+    faceringindexes = [];
 
     % Fill in default values for all arguments.
     if (nargin < 1) || isempty(sz)
@@ -67,7 +70,7 @@ function [m,rimnodes] = newcirclemesh( sz, circumdivs, nrings, centre, hollow, i
         end
 
         if totalrings==1
-            vxsPerRing = circumdivs;
+            vxsPerRing = reshape( circumdivs, 1, [] );
         elseif hollow==0
             vxsPerRing = arithprog( inneredges, circumdivs, nrings );
         else
@@ -285,4 +288,10 @@ function [m,rimnodes] = newcirclemesh( sz, circumdivs, nrings, centre, hollow, i
 %         rimnodes = [ (numnodes-circums(totalrings)+1); ...
 %                      (numnodes:-1:(numnodes-circums(totalrings)+2))' ];
     rimnodes = ((numnodes-vxsPerRing(end)+1):numnodes)';
+    
+    zz = [ 0 cumsum( vxsPerRing ) ];
+    for i=2:length(zz)
+        vxringindexes( (zz(i-1)+1):zz(i) ) = i-1;
+    end
+    faceringindexes = (round( mean( vxringindexes( m.tricellvxs ) * 2, 2 ) ) - 1)/2;
 end

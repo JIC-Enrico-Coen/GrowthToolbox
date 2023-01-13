@@ -6,6 +6,8 @@ function m = addStaticData( m, s )
 %   changes require reindexing the per-morphogen fields of m.
 
 global gPerMgenDynamicDefaults gSecondlayerRunFieldDefaults gSecondlayerStaticFields gPerCellFactorDynamicDefaults
+    
+    m.ownModelOptions = getModelOptions( m );
 
     s = upgradeStaticData( s, m );
     
@@ -86,29 +88,27 @@ global gPerMgenDynamicDefaults gSecondlayerRunFieldDefaults gSecondlayerStaticFi
         end
         newtoold(newindex) = oldindex;
     end
-    if (length(newtoold)==length(dIndexToName)) && all( newtoold==(1:length(dIndexToName)) )
-        % No change in morphogens.
-        return;
-    end
+    if (length(newtoold) ~= length(dIndexToName)) || ~all( newtoold==(1:length(dIndexToName)) )
     
-    oldtonew = zeros(1,length(dIndexToName));
-    for oldindex=1:length(dIndexToName)
-        try
-            newindex = sNameToIndex.(dIndexToName{oldindex});
-        catch
-            newindex = 0;
+        oldtonew = zeros(1,length(dIndexToName));
+        for oldindex=1:length(dIndexToName)
+            try
+                newindex = sNameToIndex.(dIndexToName{oldindex});
+            catch
+                newindex = 0;
+            end
+            oldtonew(oldindex) = newindex;
         end
-        oldtonew(oldindex) = newindex;
+
+        reindexMgens = reindexDictionary( dNameToIndex, dIndexToName, sNameToIndex, sIndexToName );
+        perMgenFields = fieldnames( gPerMgenDynamicDefaults );
+        for i=1:length(perMgenFields)
+            fn = perMgenFields{i};
+            m.(fn) = reindexArrayByDictionary( reindexMgens, m.(fn), gPerMgenDynamicDefaults.(fn) );
+        end
+
+        m.secondlayer.indexededgeproperties(1) = struct( 'LineWidth', m.plotdefaults.bioAlinesize, ...
+                                                         'Color', m.plotdefaults.bioAlinecolor );
     end
-    
-    reindexMgens = reindexDictionary( dNameToIndex, dIndexToName, sNameToIndex, sIndexToName );
-    perMgenFields = fieldnames( gPerMgenDynamicDefaults );
-    for i=1:length(perMgenFields)
-        fn = perMgenFields{i};
-        m.(fn) = reindexArrayByDictionary( reindexMgens, m.(fn), gPerMgenDynamicDefaults.(fn) );
-    end
-    
-    m.secondlayer.indexededgeproperties(1) = struct( 'LineWidth', m.plotdefaults.bioAlinesize, ...
-                                                     'Color', m.plotdefaults.bioAlinecolor );
 end
 

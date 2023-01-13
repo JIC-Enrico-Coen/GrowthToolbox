@@ -61,7 +61,8 @@ function s = shrinkStreamline( m, s, amount, fromhead )
             vxend = segi+2;
             fractionToKeep = 0;
             if vxend > length(s.vxcellindex)
-                sdfadfds
+                vxend = length(s.vxcellindex)
+                xxxx = 1;
             end
         end
         if fractionToKeep > 0
@@ -91,16 +92,20 @@ function s = shrinkStreamline( m, s, amount, fromhead )
         end
         if ~isempty( s.status.severance )
             sevvxs = [s.status.severance.vertex];
-            dropped = sevvxs >= discardvx;
             if fractionToKeep > 0
-                sevbcs = [s.status.severance.bc];
-                finalvxs = sevvxs == vxstart;
-                adjusted = finalvxs & (sevbcs < fractionToKeep);
-                dropped( finalvxs & ~adjusted ) = true;
-                for ii = find(adjusted)
-                    s.status.severance(ii).bc = s.status.severance(ii).bc / fractionToKeep;
-                end
+                dropped = sevvxs >= discardvx;
+            else
+                dropped = sevvxs >= discardvx-1;
             end
+%             if fractionToKeep > 0
+%                 sevbcs = [s.status.severance.bc];
+%                 finalvxs = sevvxs == vxstart;
+%                 adjusted = finalvxs & (sevbcs < fractionToKeep);
+%                 dropped( finalvxs & ~adjusted ) = true;
+%                 for ii = find(adjusted)
+%                     s.status.severance(ii).bc = s.status.severance(ii).bc / fractionToKeep;
+%                 end
+%             end
             s.status.severance( dropped ) = [];
         end
         
@@ -158,16 +163,20 @@ function s = shrinkStreamline( m, s, amount, fromhead )
         end
         if ~isempty( s.status.severance )
             sevvxs = [s.status.severance.vertex];
-            dropped = sevvxs <= discardvx;
-            if fractionToKeep < 1
-                sevbcs = [s.status.severance.bc];
-                initalvxs = sevvxs == vxstart;
-                adjusted = initalvxs & (1-sevbcs < fractionToKeep);
-                dropped( initalvxs & ~adjusted ) = true;
-                for ii = find(adjusted)
-                    s.status.severance(ii).bc = 1 - (1 - s.status.severance(ii).bc) / fractionToKeep;
-                end
+            if fractionToKeep == 0
+                dropped = sevvxs <= discardvx+1;
+            else
+                dropped = sevvxs <= discardvx;
             end
+%             if fractionToKeep < 1
+%                 sevbcs = [s.status.severance.bc];
+%                 initalvxs = sevvxs == vxstart;
+%                 adjusted = initalvxs & (1-sevbcs < fractionToKeep);
+%                 dropped( initalvxs & ~adjusted ) = true;
+%                 for ii = find(adjusted)
+%                     s.status.severance(ii).bc = 1 - (1 - s.status.severance(ii).bc) / fractionToKeep;
+%                 end
+%             end
             s.status.severance( dropped ) = [];
             for ii=1:length(s.status.severance)
                 s.status.severance(ii).vertex = s.status.severance(ii).vertex - discardvx;

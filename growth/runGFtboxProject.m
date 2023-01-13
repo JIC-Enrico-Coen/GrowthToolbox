@@ -115,10 +115,10 @@ function runGFtboxProject( project, varargin )
     logfilename = fullfile( s.resultsdir, [mfilename() '_log.txt'] );
     logfid = fopen( logfilename, 'a' );
     if logfid == -1
-        fprintf( 1, '%s: Cannot append to log file %s.\n', mfilename(), logfilename );
+        timedFprintf( 1, 'Cannot append to log file %s.\n', logfilename );
         return;
     end
-    fprintf( 1, 'Writing log file %s\n', logfilename );
+    timedFprintf( 1, 'Writing log file %s\n', logfilename );
     
     config = readGFtboxConfig();
 
@@ -301,8 +301,8 @@ function runGFtboxProject( project, varargin )
         if ~isempty(logstring) && (logstring(end) ~= newline)
             logstring = [ logstring newline ];
         end
-        fwrite( 1, logstring );
-        fwrite( logfid, logstring );
+        timedFprintf( 1, '%s', logstring );
+        timedFprintf( logfid, '%s', logstring );
     end
 
     function endlog()

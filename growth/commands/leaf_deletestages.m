@@ -76,18 +76,16 @@ function m = leaf_deletestages( m, varargin )
         timesDeleted1 = processFiles( modeldir, dirnames(filepattern), timefilter, true );
         [~] = processFiles( fullfile( modeldir, 'snapshots' ), dirnames(filepattern2), timefilter, false );
 %         processFiles( modeldir, dirnames(filepattern3), timefilter, false );
-        if ~isempty(timesDeleted1)
-            if s.times
-                if haveFilter
-                    m.stagetimes = setdiff( m.stagetimes, timesDeleted1 );
-                else
-                    m.stagetimes = [];
-                end
+        if s.times
+            if haveFilter
+                m.stagetimes = setdiff( m.stagetimes, timesDeleted1 );
+            else
+                m.stagetimes = [];
             end
-            m.globalProps.savedrunname = '';
-            m.globalProps.savedrundesc = '';
-            saveStatic = true;
         end
+        m.globalProps.savedrunname = '';
+        m.globalProps.savedrundesc = '';
+        saveStatic = true;
     else
         oldStageTimes = m.stagetimes;
         if haveFilter

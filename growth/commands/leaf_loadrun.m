@@ -59,8 +59,16 @@ function [m,ok] = leaf_loadrun( m, varargin )
     
     meshdir = fullfile(rundir,'meshes');
     
-    allmeshnames = dir(fullfile(meshdir,'*_s0*.mat'));
-    if isempty(allmeshnames)
+    allrunfiles = dir(fullfile(meshdir,'*_s*.mat'));
+    allrunfilenames = { allrunfiles.name };
+    results = regexp( allrunfilenames, '_s[0-9]+\.mat$' );
+    isstagefile = false( 1, length(results) );
+    for i=1:length(results)
+        isstagefile(i) = ~isempty( results{i} );
+    end
+    stagefilenames = allrunfilenames( isstagefile );
+    
+    if isempty(stagefilenames)
         fprintf( 1, 'No stage files found in remote directory\n    %s\nOld stage files not deleted.\n', ...
             meshdir );
         return;
@@ -78,10 +86,10 @@ function [m,ok] = leaf_loadrun( m, varargin )
     m = leaf_deletestages( m, 'stages', true, 'times', true );
     
     % Copy stage files from experiment into project directory.
-    numstages = length(allmeshnames);
+    numstages = length(stagefilenames);
     stagetimes = inf(1,numstages);
     for i = 1:numstages
-        result = allmeshnames(i).name;
+        result = stagefilenames{i};
         stagefilename = fullfile(meshdir,result);
         copyfile(stagefilename,modeldir);
         [~,~,stagetimes(i)] = parseStageFileName( stagefilename );

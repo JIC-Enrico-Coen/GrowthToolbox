@@ -1,8 +1,12 @@
-function m = convertP6toT4Q( m )
+function [m,vxparents,feparents] = convertP6toT4Q( m )
 %m = convertP6toT4Q( m )
 %   Convert a mesh made of pentahedra to one made of quadratic tetrahedra.
 %
 %   Each pentahedron is divided into 14 tetrahedra.
+%
+%   vxparents is an N*3 matrix which maps each vertex of the new mesh to
+%   its parent in the old mesh. This parent is either a vertex (column 1),
+%   a face (column 2), or an element (column 3).
 
 % The new vertexes in isoparametric coordinates are:
 %   Centre: [1/3 1/3 0]
@@ -19,6 +23,8 @@ global FE_P6 FE_T4Q
     allvxs = [ FE_P6.canonicalVertexes; centre; facecentres ];
     numOldVxsPerFe = size(FE_P6.canonicalVertexes,1);
     numNewVxsPerFe = size(allvxs,1) - numOldVxsPerFe;
+    
+    feparents = [];
     
     t4vxs = [ 1 2 3 7; % bottom
               4 6 5 7; % top
@@ -39,6 +45,8 @@ global FE_P6 FE_T4Q
     
     m.FEconnectivity = connectivity3D( m );
 
+    oldNumVxs = getNumberOfVertexes( m );
+    
     vxsPerQuad = 4;
     spaceDims = 3;
     quadfacemap = m.FEconnectivity.faces(:,4)~=0;
@@ -69,4 +77,12 @@ global FE_P6 FE_T4Q
     m.FEconnectivity = [];
     m.FEconnectivity = connectivity3D( m );
     m = completeVolumetricMesh( m );
+    
+    newNumVxs = getNumberOfVertexes( m );
+    numPentaCentres = size(pentacentres,1);
+    numFaceCentres = size(quadfacecentres,1);
+    vxparents = zeros( newNumVxs, 3 );
+    vxparents( 1:oldNumVxs, 1 ) = (1:oldNumVxs)';
+    vxparents( (oldNumVxs+1):(oldNumVxs+numPentaCentres), 2 ) = (1:numPentaCentres)';
+    vxparents( (oldNumVxs+numPentaCentres+1):(oldNumVxs+numPentaCentres+numFaceCentres), 3 ) = (1:numFaceCentres)';
 end

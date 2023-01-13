@@ -12,10 +12,15 @@ function [dbc,dbc_err,n] = baryDirCoords( vxs, n, d )
         n = trinormal( vxs );
     end
     
-    m = mean(vxs,1);
-    dbc = baryCoords( vxs, n, d+m, false ) - [1/3 1/3 1/3];
+    mvxs = mean(vxs,1);
+    dbc = baryCoords( vxs, n, d+mvxs, false ) - [1/3 1/3 1/3];
     norms = sqrt( sum( dbc.^2, 2 ) );
     dbc = dbc./norms;
     
     dbc_err = vecangle( dbc*vxs, d );
+    
+    if sum(dbc) > 1e-4
+        xxxx = 1;
+        dbc = normaliseDirBaryCoords( dbc );
+    end
 end

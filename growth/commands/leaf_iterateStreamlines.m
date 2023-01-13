@@ -19,10 +19,12 @@ function [m,ok] = leaf_iterateStreamlines( m )
     end
     
     numrescued = 0;
+    rescueinfo = zeros(0,5);
+    numsevered = 0;
+    severinginfo = zeros(0,5);
     ease_of_creation = limitMTcreation( m );
     
-    % Perform all severances that have fallen due.
-    npsbefore = numPendingSeverances( m );
+    % Perform all pending events that have fallen due.
     si = 0;
     interrupted = false;
     MAXITERS = length( m.tubules.tracks ) * 5;
@@ -30,8 +32,8 @@ function [m,ok] = leaf_iterateStreamlines( m )
     numsteps = 0;
     numdots = 0;
     DOTS_PER_LINE = 80;
-    numsevs = getNumberOfSeverances( m );
-    fprintf( 1, '%s: processing %d severances for %d streamlines.\n', mfilename(), numsevs, length( m.tubules.tracks ) );
+    oldnumsevs = getNumberOfSeverances( m );
+    fprintf( 1, '%s: processing %d severances for %d streamlines.\n', mfilename(), oldnumsevs, length( m.tubules.tracks ) );
     while (si < length( m.tubules.tracks )) && ~interrupted
         if teststopbutton(m)
             interrupted = true;
@@ -60,46 +62,106 @@ function [m,ok] = leaf_iterateStreamlines( m )
             if sevpi > length( mt.status.severance )
                 continue;
             end
-            if sevs(sevpi).time <= m.globalDynamicProps.currenttime
-                headcat = rand(1) < m.tubules.tubuleparams.prob_collide_cut_headcat;
-                tailcat = rand(1) > (1-m.tubules.tubuleparams.prob_collide_cut_tailcat) * ease_of_creation;
-                [mttail,mthead] = splitMT( m, mt, sevs(sevpi).vertex, tailcat, headcat );
-                if isempty( mthead )
-                    mttail.status.severance(sevpi) = [];
-                    deltasev = length(mttail.status.severance) - length(mt.status.severance);
-                else
-                    m.tubules.maxid = m.tubules.maxid+1;
-                    mthead.id = m.tubules.maxid;
-                    deltasev = length(mttail.status.severance) + length(mthead.status.severance) - length(mt.status.severance);
-                    m.tubules.tracks(end+1) = mthead;
-                    m.tubules.tracks(si) = mttail;
-                    m.tubules.statistics.severings = m.tubules.statistics.severings+1;
-                end
-                mt = mttail;
-                if deltasev >= 0
+            if sevs(sevpi).time > m.globalDynamicProps.currenttime
+                % Not yet due.
+                continue;
+            end
+            switch sevs(sevpi).eventtype
+                case 'b'
+                    % Branching.
+                    grantednum = requestMTcreation( m, 1 );
+                    if grantednum > 0
+%                         timedFprintf( 'Creating pending branch.\n' );
+                        [m,newbranchinfo,newmtindexes] = spawnBranches( m, si, sevs(sevpi).vertex, [1 0], sevs(sevpi).time - m.globalDynamicProps.currenttime );
+                        sevs(sevpi).eventtype = 'x';
+                        for ti=1:newmtindexes
+                            m.tubules.tracks(ti).status.interactiontime = m.tubules.tubuleparams.branch_interaction_delay;
+                        end
+    
+                        % Update stats.
+%                         if ~isfield( m.tubules.statistics, 'xoverbranchings' )
+%                             m.tubules.statistics.xoverbranchings = 0;
+%                         end
+%                         m.tubules.statistics.xoverbranchings = m.tubules.statistics.xoverbranchings + grantednum;
+                        m.tubules.statistics.xoverbranchinfo = [ m.tubules.statistics.xoverbranchinfo; newbranchinfo ];
+                    end
+                    
+                case 's'
+                    % Severance.
+                    headcat = rand(1) < m.tubules.tubuleparams.prob_collide_cut_headcat;
+                    if ~headcat
+                        % The head of the tail section is supposed to grow, but
+                        % if we cannot get a new growing head, we catastrophe
+                        % instead.
+                        grantednum = requestMTcreation( m, 1 );
+                        headcat = grantednum==0;
+                    end
+                    tailcat = rand(1) > (1-m.tubules.tubuleparams.prob_collide_cut_tailcat) * ease_of_creation;
+                    [mttail,mthead] = splitMT( m, mt, sevs(sevpi).vertex, tailcat, headcat );
+                    if isempty( mthead )
+                        mttail.status.severance(sevpi) = [];
+                        deltasev = length(mttail.status.severance) - length(mt.status.severance);
+                    else
+                        m.tubules.maxid = m.tubules.maxid+1;
+                        mthead.id = m.tubules.maxid;
+                        deltasev = length(mttail.status.severance) + length(mthead.status.severance) - length(mt.status.severance);
+                        m.tubules.tracks(end+1) = mthead;
+                        m.tubules.tracks(si) = mttail;
+%                         m.tubules.statistics.severings = m.tubules.statistics.severings+1;
+                        % severinginfo
+                        numsevered = numsevered+1;
+                        severinginfo( numsevered, : ) = [ sevs(sevpi).FE, sevs(sevpi).bc, Steps(m)+1 ];
+%     pendingEvent = struct( ...
+%             'time', m.globalDynamicProps.currenttime + delay, ...
+%             'vertex', vx, ...
+%             'FE', splitmt.vxcellindex(vx), ...
+%             'bc', splitmt.barycoords(vx,:), ...
+%             ... % 'globalpos', splitmt.globalcoords(vx,:), ...
+%             'eventtype', eventType ...
+%         );
+
+                    end
+                    mt = mttail;
+                    if deltasev >= 0
+                        xxxx = 1;
+                    end
+                    newnumsevs = getNumberOfSeverances( m );
+                    if newnumsevs > oldnumsevs
+                        timedFprintf( 1, 'Error: after processing severances, there are %d new severances.\n', newnumsevs - oldnumsevs );
+                        xxxx = 1;
+                    end
+                    
+                case 'x'
+                    % Ignore.
+                
+                otherwise
+                    timedFprintf( 1, 'Unknown pending event type ''%s''.\n', sevs(sevpi).type );
                     xxxx = 1;
-                end
-                newnumsevs = getNumberOfSeverances( m );
-                if newnumsevs > numsevs
-                    fprintf( 1, '%s: Error: after processing severances, there are %d new severances.\n', mfilename(), newnumsevs - numsevs );
-                    xxxx = 1;
-                end
-%                 if deltasev >= 0
-%                     deltasev
-%                     xxxx = 1;
-%                 end
             end
         end
     end
+    
+    % Remove all resolved events.
+    for i=1:length( m.tubules.tracks )
+        sevs = [m.tubules.tracks(i).status.severance];
+        if ~isempty( sevs )
+            expired = [sevs.eventtype] == 'x';
+            if any( expired )
+                xxxx = 1;
+            end
+            m.tubules.tracks(i).status.severance( expired ) = [];
+        end
+    end
+    
     newnumsevs = getNumberOfSeverances( m );
-    if newnumsevs > numsevs
-        fprintf( 1, '%s: Error: after processing severances, there are %d new severances.\n', mfilename(), newnumsevs - numsevs );
+    if newnumsevs > oldnumsevs
+        fprintf( 1, '%s: Error: after processing severances, there are %d new severances.\n', mfilename(), newnumsevs - oldnumsevs );
         xxxx = 1;
     end
     if mod(numdots, DOTS_PER_LINE) ~= 0
         fwrite( 1, newline );
     end
-    if numsevs > 0
+    if oldnumsevs > 0
         fprintf( 1, '%s: After processing severances, there are %d streamlines. %d steps, %d dots.\n', ...
             mfilename(), length( m.tubules.tracks ), numsteps, numdots );
     end
@@ -107,7 +169,7 @@ function [m,ok] = leaf_iterateStreamlines( m )
     numdots = 0;
     
     npsafter = numPendingSeverances( m );
-    % May want to report npsbefore and npsafter.
+    % May want to report oldnumsevs and npsafter.
     xxxx = 1;
     if interrupted
         ok = false;
@@ -122,6 +184,10 @@ function [m,ok] = leaf_iterateStreamlines( m )
         s = m.tubules.tracks(si);
         if isemptystreamline(s)
             continue;
+        end
+        old_s = s;
+        if any( abs( sum(s.barycoords,2) - 1 ) > 1e-4 ) || (abs(sum(s.directionbc)) > 1e-4)
+            xxxx = 1;
         end
         
         if teststopbutton(m)
@@ -187,6 +253,7 @@ function [m,ok] = leaf_iterateStreamlines( m )
                     if nextrescue < remainingtime
                         s.status.head = 1;
                         numrescued = numrescued+1;
+                        rescueinfo( numrescued, : ) = [ s.vxcellindex(end), s.barycoords(end,:), Steps(m)+1 ];
                         timeused = nextrescue;
                     else
                         s.status.head = -1;
@@ -211,7 +278,14 @@ function [m,ok] = leaf_iterateStreamlines( m )
             end
     
             if headgrowth > 0
+                s1 = s;
                 [m,s,lengthgrown] = extendStreamline( m, s, headgrowth, si );
+                if sum( s.segmentlengths ) < 0.001
+                    xxxx = 1;
+                end
+                if length(s.vxcellindex)==1
+                    xxxx = 1;
+                end
                 timeused = lengthgrown/params.plus_growthrate;
             elseif headgrowth < 0
                 slen = sum( s.segmentlengths );
@@ -253,6 +327,9 @@ function [m,ok] = leaf_iterateStreamlines( m )
         
 %         numiters
         
+        if any( abs( sum(s.barycoords,2) - 1 ) > 1e-4 ) || (abs(sum(s.directionbc)) > 1e-4)
+            xxxx = 1;
+        end
         m.tubules.tracks(si) = s;
     end
     if mod(numdots, DOTS_PER_LINE) ~= 0
@@ -280,9 +357,17 @@ function [m,ok] = leaf_iterateStreamlines( m )
         m.tubules.tracks(i).endtime = m.globalDynamicProps.currenttime + m.globalProps.timestep;
     end
     m.tubules.statistics.died = m.tubules.statistics.died + sum( tracksToDelete );
-    m.tubules.statistics.rescue = m.tubules.statistics.rescue + numrescued;
+%     m.tubules.statistics.rescue = m.tubules.statistics.rescue + numrescued;
+    m.tubules.statistics.rescueinfo = [ m.tubules.statistics.rescueinfo; rescueinfo ];
+    if ~isfield( m.tubules.statistics, 'severinginfo' )
+        m.tubules.statistics.severinginfo = zeros(0,5);
+    end
+    m.tubules.statistics.severinginfo = [ m.tubules.statistics.severinginfo; severinginfo ];
     if interrupted
         ok = false;
+    end
+    if ~isempty(severinginfo)
+        xxxx = 1;
     end
     
     oks = validStreamline( m, m.tubules.tracks );

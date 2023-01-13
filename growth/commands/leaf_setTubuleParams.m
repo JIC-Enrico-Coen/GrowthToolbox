@@ -33,9 +33,9 @@ function m = leaf_setTubuleParams( m, varargin )
         fn = fns{i};
         if ischar( s.(fn) )
             mi = FindMorphogenIndex( m, s.(fn) );
-            if ~isempty(mi)
+%             if ~isempty(mi)
                 m.tubules.tubuleparams.(fn) = s.(fn);
-            end
+%             end
         else
             m.tubules.tubuleparams.(fn) = s.(fn);
         end

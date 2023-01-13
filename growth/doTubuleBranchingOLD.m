@@ -1,5 +1,6 @@
 function m = doTubuleBranchingOLD( m, dt )
 %m = doTubuleBranchingOLD( m, dt )
+% OBSOLETE
 %   Randomly create microtubules branching off existing microtubules during
 %   a small time interval dt. There are three mutually exclusive methods of
 %   specifying branching rates.
@@ -176,9 +177,9 @@ function m = doTubuleBranchingOLD( m, dt )
     end
     
     % Update stats.
-    if ~isfield(  m.tubules.statistics, 'branchings' )
-        m.tubules.statistics.branchings = 0;
-    end
-    m.tubules.statistics.branchings = m.tubules.statistics.branchings + numnewMTs;
+%     if ~isfield(  m.tubules.statistics, 'spontbranchings' )
+%         m.tubules.statistics.spontbranchings = 0;
+%     end
+%     m.tubules.statistics.spontbranchings = m.tubules.statistics.spontbranchings + numnewMTs;
 end
 

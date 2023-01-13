@@ -36,6 +36,14 @@ function [collidedwith,collidedseg,collidedsegbc,collidersegbc,collisiontype,col
 %   collision). This is the angle by which the mt would have to bend to
 %   become parallel or antiparallel to the other tubule. It is always in
 %   the range -pi/2 ... pi/2.
+%
+%   iscross distinguishes two sorts of collision. When true, the
+%   corresponding collision represents one tubule crossing over the other:
+%   their spines intersect. When false, one tubule touched the other: their
+%   spines approached to within a tubule diameter. Unless the two tubules
+%   start out with the head of the growing one already closer than the
+%   tubule diameter, these events will occur in pairs: a touch followed by
+%   a crossing.
 
     INITSIZE = 10;
     collidedwith = zeros(1,INITSIZE);

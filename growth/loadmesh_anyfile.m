@@ -40,6 +40,7 @@ function [m,ok] = loadmesh_anyfile( m, filename, staticdata, interactive, checkV
     
     ok = true;
     
+%     [realprojectdir,relfilename] = findAncestorGFtboxProject( filename );
     [modeldir,modelname,modelext] = fileparts( filename );
     [projectdir,modeldirname] = dirparts( modeldir );
     if ~strcmp( modeldirname, modelname )
@@ -80,6 +81,7 @@ function [m,ok] = loadmesh_anyfile( m, filename, staticdata, interactive, checkV
                     z = load( fullname );
                 catch e %#ok<NASGU>
                     GFtboxAlert( interactive, '%s: Cannot load %s.', mfilename(), fullname )
+                    e
                     ok = false;
                     return;
                 end

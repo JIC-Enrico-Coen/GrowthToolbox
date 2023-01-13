@@ -1,4 +1,4 @@
-function points = plotEllipses( ax, centres, eaxes, resolution, whichaxes, varargin )
+function [points,h] = plotEllipses( ax, centres, eaxes, resolution, whichaxes, varargin )
     if (nargin < 4) || isempty( resolution )
         resolution = 20;
     end
@@ -38,5 +38,9 @@ function points = plotEllipses( ax, centres, eaxes, resolution, whichaxes, varar
         ptsi = ptsi + pointsperellipse;
     end
     
-    plotpts( ax, points, plotoptions{:} );
+    if any(imag(points) ~= 0)
+        xxxx = 1;
+    end
+    
+    h = plotpts( ax, points, plotoptions{:} );
 end

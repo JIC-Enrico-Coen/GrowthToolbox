@@ -33,9 +33,10 @@ function [projectfullpath,status] = findGFtboxProject( projectname, create, crea
 %
 %   In case of error, PROJECTFULLPATH will be empty.
 %
-%   STATUS will be:
+%   STATUS will be a string containing a message to describe any error in
+%   finding the project.
 %
-%       '' if an existing project directory is found or created.
+%       '' if an existing project directory is found.
 %
 %       'No open project' if no project name was given and no project was
 %           open in GFtbox.
@@ -47,6 +48,10 @@ function [projectfullpath,status] = findGFtboxProject( projectname, create, crea
 %
 %       'Project [name] not found' if there is no such directory (and
 %           CREATE is false).
+%
+%       'Project [name] not found in default directories' if the project
+%           could not be found in the default directories (and CREATE is
+%           false).
 %
 %       'Directory [name] is not a GFtbox project' if there is such a
 %           directory, but it is not a GFtbox project (whether or not
@@ -128,7 +133,7 @@ function [projectfullpath,status] = findGFtboxProject( projectname, create, crea
             testpath = fullfile( gftboxConfig.projectsdir{1}, projectname );
             [projectfullpath,status] = makeGFtboxProjectDir( testpath );
         else
-            status = 'NOT FOUND';
+            status = sprintf( 'Project %s not found in default directories', projectname );
         end
     end
 end

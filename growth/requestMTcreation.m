@@ -1,7 +1,7 @@
 function grantednum = requestMTcreation( m, requestednum )
 %grantednum = requestMTcreation( m, requestednum )
 
-    if isempty( m.tubules )
+    if isempty( m.tubules ) || (requestednum==0)
         grantednum = 0;
     else
         if isempty( m.tubules.tracks )

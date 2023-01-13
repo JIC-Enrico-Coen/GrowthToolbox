@@ -33,7 +33,7 @@ function saveExperimentStagesItem_Callback(hObject, eventdata)
         setMeshFigureTitle( handles.output, handles.mesh );
     end
 %     if ~ok
-%         fprintf( 1, 'Saving run %s (%s) failed.\n', name, desc );
+%         timedFprintf( 1, 'Saving run %s (%s) failed.\n', name, desc );
 %     end
     setGFtboxBusy( handles, wasBusy );
 end

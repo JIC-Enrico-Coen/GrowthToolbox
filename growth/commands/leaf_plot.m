@@ -65,7 +65,7 @@ function varargout = leaf_plot( m, varargin )
             theaxes = [];
         end
         externalFigure = true;
-        theaxes = [];
+%         theaxes = [];
         theFigure = s.figure;
         pichandles = guidata( theFigure );
         s = rmfield( s, 'figure' );

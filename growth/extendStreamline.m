@@ -20,6 +20,10 @@ function [m,s,lengthgrown] = extendStreamline( m, s, lengthToGrow, noncolliders 
         return;
     end
     
+    if length(s.vxcellindex)==1
+        xxxx = 1;
+    end
+    
     CLOSE = 1e-5;
     
     remaininglength = lengthToGrow;
@@ -28,6 +32,9 @@ function [m,s,lengthgrown] = extendStreamline( m, s, lengthToGrow, noncolliders 
         return;
     end
     
+    if any( abs( sum(s.barycoords,2) - 1 ) > 1e-4 ) || (abs(sum(s.directionbc)) > 1e-4)
+        xxxx = 1;
+    end
     MAXITERS = 1000;
     numiters = 0;
     ok = true;
@@ -36,6 +43,12 @@ function [m,s,lengthgrown] = extendStreamline( m, s, lengthToGrow, noncolliders 
     while remaininglength > CLOSE
 %         s1 = s;
         [m,s,extended,remaininglength,lengthgrown1] = extrapolateStreamline( m, s, remaininglength, noncolliders );
+        if any( abs( sum(s.barycoords,2) - 1 ) > 1e-4 ) || (abs(sum(s.directionbc)) > 1e-4)
+            xxxx = 1;
+        end
+        if ~extended
+            xxxx = 1;
+        end
         alllengthgrown(end+1) = lengthgrown1;
 %         if ~extended && (remaininglength <= CLOSE)
 %             xxxx = 1;
@@ -56,8 +69,7 @@ function [m,s,lengthgrown] = extendStreamline( m, s, lengthToGrow, noncolliders 
             break;
         end
     end
-    if ok
-    else
+    if ~ok
         fprintf( 1, 'Failed to conclude streamline growth after %d iterations, grew %f, remaining %f.\n', ...
             numiters, lengthgrown, remaininglength );
         alllengthgrown
@@ -66,6 +78,10 @@ function [m,s,lengthgrown] = extendStreamline( m, s, lengthToGrow, noncolliders 
     validStreamline( m, s );
     
     if lengthgrown > lengthToGrow * 1.000001
+        xxxx = 1;
+    end
+    
+    if lengthgrown < 1e-3
         xxxx = 1;
     end
 end

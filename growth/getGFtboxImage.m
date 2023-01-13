@@ -1,9 +1,10 @@
 function frame = getGFtboxImage( m, picture, withColorbar, hires, magnification, antialias )
 %frame = getGFtboxImage( m, picture, withColorbar, hires, magnification, antialias )
-%   Get an image of the mesh.  picture is the axes object that will be
+%   Get an image of the mesh.  PICTURE is the axes object that will be
 %   recorded and defaults to the image in the GFtbox window.  WITHCOLORBAR
 %   is a boolean to specify whether the colorbar should also be imaged.  If
 %   so, it will be butted to the right of the main image.
+%
 %   hires, magnification, antialias specify those properties of the
 %   requested image, and default to the corresponding plotting options of
 %   m.

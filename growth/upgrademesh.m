@@ -812,23 +812,21 @@ function m = upgradeTubules( m )
         m.tubules.tubuleparams.prob_collide_catastrophe_shallow = m.tubules.tubuleparams.prob_collide_catastrophe;
         m.tubules.tubuleparams.prob_collide_catastrophe_steep = m.tubules.tubuleparams.prob_collide_catastrophe;
     end
+    if ~isfield( m.tubules.tubuleparams, 'prob_collide_cut' )
+        m.tubules.tubuleparams.prob_collide_cut = m.tubules.tubuleparams.prob_collide_cut_collided ...
+                                                  + m.tubules.tubuleparams.prob_collide_cut_collider ...
+                                                  - m.tubules.tubuleparams.prob_collide_cut_collided ...
+                                                    * m.tubules.tubuleparams.prob_collide_cut_collider;
+        m.tubules.tubuleparams.prob_collide_cut_collided = 1 - m.tubules.tubuleparams.prob_collide_cut_collider;
+    end
 %     if isfield( m.tubules.tubuleparams, 'prob_collide_catastrophe_steep' )
 %         m.tubules.tubuleparams.prob_collide_catastrophe = m.tubules.tubuleparams.prob_collide_catastrophe_steep;
 %     end
     m.tubules.tubuleparams = safermfield( m.tubules.tubuleparams, setdiff( fieldnames( m.tubules.tubuleparams ), fieldnames( emptyTubules.tubuleparams ) ) );
 
     m.tubules.defaulttrack = upgradeTubule( m.tubules.defaulttrack );
-    if ~isempty( m.tubules.tracks )
-        if isfield( m.tubules.tracks(1).status, 'growhead' )
-            for i=1:length(m.tubules.tracks)
-                m.tubules.tracks(i) = upgradeTubule( m.tubules.tracks(i) );
-            end
-        end
-        if isfield( m.tubules.tracks(1).status, 'lastcat_bc' )
-            for i=1:length(m.tubules.tracks)
-                m.tubules.tracks(i).status = safermfield( m.tubules.tracks(i).status, { 'lastcat_bc', 'lastcat_element' } );
-            end
-        end
+    for i=1:length(m.tubules.tracks)
+        m.tubules.tracks(i) = upgradeTubule( m.tubules.tracks(i) );
     end
     if ~isfield( m.tubules, 'tubuleparams' )
         m.tubules.tubuleparams = m.tubules.defaulttrack.params;
@@ -840,6 +838,14 @@ function tubule = upgradeTubule( tubule )
     if isfield( tubule.status, 'growhead' )
         tubule.status.head = tubule.status.growhead*2 - 1;
         tubule.status = rmfield( tubule.status, 'growhead' );
+    end
+    tubule.status = safermfield( tubule.status, { 'lastcat_bc', 'lastcat_element' } );
+    tubule.status.severance = safermfield( tubule.status.severance, 'headcat', 'tailcat' );
+    if ~isfield( tubule.status.severance, 'eventtype' )
+        tubule.status.severance = addfield( tubule.status.severance, 'eventtype', 's' );
+    end
+    if ~isfield( tubule.status.severance, 'interactiontime' )
+        tubule.status.interactiontime = 0;
     end
 end
 

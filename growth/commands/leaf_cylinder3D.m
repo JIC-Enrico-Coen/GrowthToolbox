@@ -90,9 +90,16 @@ function m = leaf_cylinder3D( m, varargin )
         s.new = true;
     end
 
-    circ = newcirclemesh( [s.size([1 2]) 0], s.circumdivs, s.rings, s.position, s.hollow, s.innerdivs, s.dealign, 1, s.coneangle );
+    [circ,~,vxringindexes,faceringindexes] = newcirclemesh( [s.size([1 2]) 0], s.circumdivs, s.rings, s.position, s.hollow, s.innerdivs, s.dealign, 1, s.coneangle );
+    vxringindexes = vxringindexes(:);
     
-    newm = thicken2Dto3D( circ, s.axisdivs, s.size(3), s.type );
+    [newm,vxparents] = thicken2Dto3D( circ, s.axisdivs, s.size(3), s.type );
+    vxringindexes = 2*vxringindexes - 1;
+    faceringindexes = faceringindexes*2;
+%     vxparents( vxparents(:,2) ~= 0 ) = 
+    
+    
+    
     newm.plotdefaults.drawedges = 2;
     
     if isempty(m)

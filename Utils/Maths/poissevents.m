@@ -3,7 +3,8 @@ function [numevents,times] = poissevents( rate, duration )
 %   This is equivalent to (and calls) numevents = poissrnd(rate*duration),
 %   but in addition returns the times at which the events happen.
 %   Conditional on the number of events, these are uniformly distributed in
-%   the range from 0 to duration.
+%   the range from 0 to duration. The times are returned in increasing
+%   order.
 %
 %   Duration defaults to 1.
 %
@@ -13,5 +14,5 @@ function [numevents,times] = poissevents( rate, duration )
         duration = 1;
     end
     numevents = poissrnd( rate*duration );
-    times = rand( 1, numevents ) * duration;
+    times = sort( rand( 1, numevents ) ) * duration;
 end

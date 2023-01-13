@@ -60,10 +60,10 @@ function result = compareStructs( s1, s2, varargin )
         end
     end
     
-    result = compareStructs1( fid, s1, s2, s.reportok, s.tolerance, 'ROOT', s.maxnum, s.silent );
+    result = compareStructs1( fid, s1, s2, s.reportok, s.tolerance, 'ROOT', s.maxnum, s.silent, {} );
 end
 
-function compatible = compareStructs1( fid, s1, s2, reportCompatible, tolerance, path, maxnum, silent )
+function compatible = compareStructs1( fid, s1, s2, reportCompatible, tolerance, path, maxnum, silent, nofollow )
 %ok = compareStructs1( fid, s1, s2, reportCompatible )
 %   Report on any differences of structure between s1 and s2.
 %   A difference of structure is:
@@ -88,6 +88,7 @@ function compatible = compareStructs1( fid, s1, s2, reportCompatible, tolerance,
 %   return as soon as an incompatibility is found.
 
     compatible = true;
+    reportCompatible = reportCompatible && ~silent;
     
     % Check they are the same class.
     c1 = class(s1);
@@ -98,11 +99,6 @@ function compatible = compareStructs1( fid, s1, s2, reportCompatible, tolerance,
             fprintf( fid, 'At %s, classes are %s and %s.\n', ...
                 path, c1, c2 );
         end
-        return;
-    end
-    
-    % Do not attempt to compare Matlab internal classes.
-    if ~isempty(regexp( c1, '^matlab\.', 'once' )) || ~isempty(regexp( c2, '^matlab\.', 'once' ))
         return;
     end
     
@@ -131,7 +127,7 @@ function compatible = compareStructs1( fid, s1, s2, reportCompatible, tolerance,
             end
             return;
         end
-        if reportCompatible && compatible && ~silent
+        if reportCompatible && compatible
             fprintf( fid, 'Compatible at %s\n', path );
         end
         return;
@@ -150,7 +146,7 @@ function compatible = compareStructs1( fid, s1, s2, reportCompatible, tolerance,
                 end
             end
         end
-        if reportCompatible && compatible && ~silent
+        if reportCompatible && compatible
             fprintf( fid, 'Compatible at %s\n', path );
         end
         return;
@@ -160,7 +156,7 @@ function compatible = compareStructs1( fid, s1, s2, reportCompatible, tolerance,
     if iscell(s1) && iscell(s2)
         for i=1:min(numel(s1),numel(s2))
             ok = compareStructs1( fid, s1{i}, s2{i}, ...
-                reportCompatible, tolerance, sprintf( '%s.{%d}', path, i ), maxnum, true );
+                reportCompatible, tolerance, sprintf( '%s.{%d}', path, i ), maxnum, true, nofollow );
             compatible = compatible && ok;
             if ~compatible
                 if ~silent
@@ -169,20 +165,21 @@ function compatible = compareStructs1( fid, s1, s2, reportCompatible, tolerance,
                 return;
             end
         end
-        if reportCompatible && compatible && ~silent
+        if reportCompatible && compatible
             fprintf( fid, 'Compatible at %s\n', path );
         end
         return;
     end
     
-    % Compare structs and objects.
-    if (isstruct(s1) || isobject(s1)) && (isstruct(s2) || isobject(s2))
+    % Compare structs.
+    if isstruct(s1)
         % Check they have the same field names.
         f1 = fieldnames(s1);
         f2 = fieldnames(s2);
         f1minus2 = setdiff(f1,f2);
         f2minus1 = setdiff(f2,f1);
         f12 = intersect(f1,f2);
+        f12 = setdiff( f12, nofollow );
         if ~isempty(f1minus2)
             compatible = false;
             if silent
@@ -209,11 +206,8 @@ function compatible = compareStructs1( fid, s1, s2, reportCompatible, tolerance,
         if n==1
             for i=1:length(f12)
                 fn = f12{i};
-                if strcmp( fn, 'facevxs' )
-                    xxxx = 1;
-                end
                 ok = compareStructs1( fid, s1.(fn), s2.(fn), ...
-                    reportCompatible, tolerance, [ path, '.', fn ], maxnum, silent );
+                    reportCompatible, tolerance, [ path, '.', fn ], maxnum, silent, nofollow );
                 compatible = compatible && ok;
                 if silent && ~compatible
                     return;
@@ -229,7 +223,7 @@ function compatible = compareStructs1( fid, s1, s2, reportCompatible, tolerance,
                 oks = false(1,length(f12));
                 for i=1:length(f12)
                     oks(i) = compareStructs1( fid, s1(si).(f12{i}), s2(si).(f12{i}), ...
-                        reportCompatible, tolerance, [ path, sprintf( '(%d).', si ), f12{i} ], maxnum, si > maxnum );
+                        reportCompatible, tolerance, [ path, sprintf( '(%d).', si ), f12{i} ], maxnum, si > maxnum, nofollow );
                     compat1 = compat1 && oks(i);
                     if silent && ~compat1
                         return;
@@ -248,9 +242,97 @@ function compatible = compareStructs1( fid, s1, s2, reportCompatible, tolerance,
             end
             compatible = compatible && compat1;
         end
+        if reportCompatible && compatible
+            fprintf( fid, 'Compatible at %s\n', path );
+        end
+        return;
     end
     
-    if reportCompatible && compatible && ~silent
-        fprintf( fid, 'Compatible at %s\n', path );
+    % Try simple equality.
+    try
+        if all( s1(:)==s2(:) )
+            if reportCompatible
+                fprintf( fid, 'Compatible at %s\n', path );
+            end
+            return;
+        end
+    catch
+        % Equality didn't work. Try something else.
+    end
+    
+    % Deleted handles are deemed to all be the same, but different from
+    % extant handles.
+    isdh1 = isDeletedHandle( s1 );
+    isdh2 = isDeletedHandle( s2 );
+    if any( isdh1(:) ~= isdh2(:) )
+        compatible = false;
+        if ~silent
+            fprintf( fid, 'At %s, some handles are deleted and some not.\n', path );
+        end
+        return;
+    end
+    if all( isdh1(:) )
+        % They consist entirely of deleted handles.
+        if reportCompatible
+            fprintf( fid, 'Compatible at %s (deleted handles of class %s)\n', path, c1 );
+        end
+        return;
+    end
+    
+    % Try converting the objects to structures.
+    try
+        ss1 = get( s1 );
+        ss2 = get( s2 );
+        compatible = compareStructs1( fid, ss1, ss2, reportCompatible, tolerance, path, maxnum, silent, [ nofollow, 'Parent' ] );
+        if reportCompatible
+            fprintf( fid, 'Compatible at %s\n', path );
+        end
+        return;
+    catch
+        % The objects do not support the get() function.
+    end
+    
+    % Try direct equality.
+    try
+        equal = s1==s2;
+        compatible = equal;
+        if compatible
+            if reportCompatible
+                fprintf( fid, 'Compatible at %s, class %s.\n', path, c1 );
+            end
+        else
+            fprintf( fid, 'At %s, class %s, elements differ.\n', path, c1 );
+        end
+        return;
+    catch
+        % They do not support equality.
+    end
+    
+    % As a last resort, try converting them to text.
+    try
+        st1 = formattedDisplayText(s1);
+        st2 = formattedDisplayText(s2);
+        compatible = strcmp( st1, st2 );
+        if compatible
+            if reportCompatible
+                fprintf( fid, 'Compatible at %s, class %s.\n', path, c1 );
+            end
+        else
+            if ~silent
+                fprintf( fid, 'At %s, classes of type %s differ.\n%s%s', ...
+                    path, c1, st1, st2 );
+            end
+        end
+        return;
+    catch
+        % The objects do not support conversion to text.
+    end
+
+    % We can find no way of comparing these. We do not count this as an
+    % incompatibility, but we do print a message if we are printing any
+    % messages.
+    if ~silent
+        fprintf( fid, 'At %s, Matlab classes of type %s cannot be compared. Treated as equal.\n', ...
+            path, c1 );
     end
 end

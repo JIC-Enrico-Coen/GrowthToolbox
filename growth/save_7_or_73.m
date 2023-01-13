@@ -14,7 +14,7 @@ function saved = save_7_or_73( filename, x, verbose )
     saved7 = true;
     try
         if verbose
-            fprintf( 1, 'Saving to %s.\n', filename );
+            timedFprintf( 1, 'Saving to %s.\n', filename );
         end
         save( filename, '-struct', 'x', '-v7' );
         try
@@ -40,20 +40,20 @@ function saved = save_7_or_73( filename, x, verbose )
         end
     catch e
         if verbose
-            fprintf( 1, 'Could not save to %s: error %s (%s)\n', filename, e.message, e.identifier );
+            timedFprintf( 1, 'Could not save to %s: error %s (%s)\n', filename, e.message, e.identifier );
         end
         saved = false;
     end
     if ~saved7
         if verbose
-            fprintf( 1, 'Saving in v7 format failed, trying v7.3 format.\n    This will take several minutes and may generate a file several GB in size.\n' );
+            timedFprintf( 1, 'Saving in v7 format failed, trying v7.3 format.\n    This will take several minutes and may generate a file several GB in size.\n' );
         end
         try
             save( filename, '-struct', 'x', '-v7.3' );
         catch e
             if verbose
-                fprintf( 1, 'Could not save to $s: error %s (%s)\n', filename, e.message, e.identifier );
-                fprintf( 1, '    Data not saved.\n' );
+                timedFprintf( 1, 'Could not save to $s: error %s (%s)\n', filename, e.message, e.identifier );
+                timedFprintf( 1, '    Data not saved.\n' );
             end
             saved = false;
         end

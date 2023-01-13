@@ -11,7 +11,7 @@ function drawColorbar( h, clabels, cmap, crange, cmaptype, backgroundColor, redr
     if ~ishandle(h), return; end
     
     % set( h, 'Visible', 'on' );
-    userdata = get(h,'Userdata');
+    userData = get(h,'Userdata');
 
 %     if nargin==2
 %         % Second argument is a struct holding the parameters.
@@ -27,24 +27,24 @@ function drawColorbar( h, clabels, cmap, crange, cmaptype, backgroundColor, redr
 %         backgroundColor = params.backgroundColor;
 %     end
     
-    if isempty(userdata)
+    if isempty(userData)
         if nargin==1
             return;
         end
         needColorbarUpdate = true;
     elseif nargin==1
         needColorbarUpdate = true;
-        clabels = userdata.clabels;
-        cmap = userdata.cmap;
-        cmaptype = userdata.cmaptype;
-        crange = userdata.crange;
-        backgroundColor = userdata.backgroundColor;
+        clabels = userData.clabels;
+        cmap = userData.cmap;
+        cmaptype = userData.cmaptype;
+        crange = userData.crange;
+        backgroundColor = userData.backgroundColor;
         redraw = true;
     else
-        needColorBounds = any( crange([1 2]) ~= userdata.crange([1 2]) );
-        needColorbarUpdate = needColorBounds || ~strcmp( cmaptype, userdata.cmaptype ) ...
-            || (size(cmap,1) ~= size(userdata.cmap,1)) ...
-            || any(cmap(:) ~= userdata.cmap(:) );
+        needColorBounds = any( crange([1 2]) ~= userData.crange([1 2]) );
+        needColorbarUpdate = needColorBounds || ~strcmp( cmaptype, userData.cmaptype ) ...
+            || (size(cmap,1) ~= size(userData.cmap,1)) ...
+            || any(cmap(:) ~= userData.cmap(:) );
     end
     
     if ischar(clabels)
@@ -54,12 +54,12 @@ function drawColorbar( h, clabels, cmap, crange, cmaptype, backgroundColor, redr
     clabelhi = clabels{2};
     clabello = clabels{3};
     
-    userdata.clabels = {ctitle,clabelhi,clabello};
-    userdata.cmap = cmap;
-    userdata.cmaptype = cmaptype;
-    userdata.crange = crange;
-    userdata.backgroundColor = backgroundColor;
-    set(h,'Userdata',userdata);
+    userData.clabels = {ctitle,clabelhi,clabello};
+    userData.cmap = cmap;
+    userData.cmaptype = cmaptype;
+    userData.crange = crange;
+    userData.backgroundColor = backgroundColor;
+    set(h,'Userdata',userData);
     
     if ~redraw
         return;

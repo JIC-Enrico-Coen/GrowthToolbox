@@ -233,7 +233,7 @@ function [m,ok,img,imgfilename] = leaf_snapshot( m, varargin )
     end
     if wantfile && newfile
         imgfilename = newfilename( imgfilename );
-        fprintf( 1, 'Saving %s of frame %d to %s in %s.\n', ...
+        timedFprintf( 1, 'Saving %s of frame %d to %s in %s.\n', ...
             imtype, framecount, imgfilename, pwd );
     end
     s = safermfield( s, 'hires', 'thumbnail', 'newfile', 'magnification', 'antialias', 'includeIF' );
@@ -250,7 +250,7 @@ function [m,ok,img,imgfilename] = leaf_snapshot( m, varargin )
         for k=1:length(m.monitor_figs)
             figurestr=['-f',num2str(m.monitor_figs(k))];
             print(figurestr,'-dpng',[imgfilename(1:end-4),'_mon',num2str(m.monitor_figs(k)),'.png']);
-            fprintf(1,'Saving monitor Figure %d\n',m.monitor_figs(k));
+            timedFprintf(1,'Saving monitor Figure %d\n',m.monitor_figs(k));
         end
         figure(current_figure);
     end
@@ -276,9 +276,9 @@ function [m,ok,img,imgfilename] = leaf_snapshot( m, varargin )
         if exist(interaction_filename,'file')==2
             [success,msg,~] = copyfile(interaction_filename,targetname,'f');
             if success
-                fprintf(1,'Copied %s to %s\n',interaction_filename,targetname);
+                timedFprintf(1,'Copied %s to %s\n',interaction_filename,targetname);
             else
-                fprintf(1,'Failed to copy %s to %s\n    %s\n',interaction_filename,targetname,msg);
+                timedFprintf(1,'Failed to copy %s to %s\n    %s\n',interaction_filename,targetname,msg);
             end
         end
         if olddir, cd( olddir ); end

@@ -47,8 +47,13 @@ function params = getTubuleParamsModifiedByMorphogens( m, a, b )
                 continue;
             end
             pervertex = m.morphogens(:,mi);
-        else
+        elseif isempty(params.(fn))
+            pervertex = zeros( getNumberOfVertexes(m), 1 );
+        elseif length( params.(fn) )==getNumberOfVertexes(m)
             pervertex = params.(fn);
+        else
+            params.(fn) = 0;
+            continue;
         end
         
         if getAllVxs

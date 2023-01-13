@@ -517,20 +517,30 @@ function setGlobals()
         'branch_forwards_mean', ... % radians
         'branch_backwards_mean', ... % radians
         'branch_shrinktail_delay', ... % time
+        'branch_interaction_delay', ... % time
+        'edge_catastrophe_edges', ... % boolean map of edges
+        'edge_catastrophe_amount', ... % probability
+        'edge_pause_prob', ... % probability
+        'edge_pause_time', ... % time
         'prob_plus_catastrophe', ... % probability/time
         'edge_plus_catastrophe', ... % probability/time
         'prob_plus_stop', ... % probability/time
         'prob_plus_rescue', ... % probability/time
-        'prob_collide_interact', ... % probability per collision
+        'prob_collide_zipcat', ... % probability per collision
         'prob_collide_catastrophe_shallow', ... % probability per collision
         'prob_collide_catastrophe_steep', ... % probability per collision
         'prob_collide_zipper_shallow', ... % probability per collision
         'prob_collide_zipper_steep', ... % probability per collision
-        'prob_collide_cut_collided', ... % probability per collision that the mt collided with is severed
-        'prob_collide_cut_collider', ... % probability per collision that the colliding mt is severed
+        'prob_collide_branch', ... % probability per collision that the collider generates a new branch from the crossover point.
+        'min_angle_crossover_branch', ... % When a crossover happens at below this angle, no new branch can be generated from the crossover point.
+        'prob_collide_cut', ... % probability per collision that one of the mts involved is severed
+        'prob_collide_cut_collider', ... % probability per severance that the colliding mt is severed.
+        ... % 'prob_collide_cut_collided', ... % probability per severance that the mt collided with is severed
+        ...                              % (Redundant with preceding: these must add to 1.)
         'prob_collide_cut_tailcat', ... % probability, given that a cut happens, that the tail of the leading half catastrophizes;
         'prob_collide_cut_headcat', ... % probability, given that a cut happens, that the head of the trailing half catastrophizes;
         'delay_cut', ... % The time after a crossover that cutting happens, in those cases where it does.
+        'delay_branch', ... % The time after a crossover that branching happens, in those cases where it does.
         'min_cut_angle', ... % radians
         'min_collide_angle', ... % radians
         ... % 'prob_cleavage', ... % probability per crossover

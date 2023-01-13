@@ -1,5 +1,6 @@
 function times = randArrivals( lambda, t )
 %t = randArrivals( lambda, n )
+% OBSOLETE: Use poissevents( lambda, t )
 %   LAMBDA is the rate parameter of a Poisson process. T is a time that
 %   elapses.  TIMES will be the times of events happening in that time, in
 %   ascending order. On average there will be LAMBDA*T of them, with

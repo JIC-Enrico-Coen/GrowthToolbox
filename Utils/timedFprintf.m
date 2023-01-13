@@ -1,4 +1,9 @@
 function timedFprintf( varargin )
+%timedFprintf( ... )
+%   Acts as fprintf, but prefixes the output with a timestamp, the name of
+%   the .m file it was invoked from, the name of the function within that
+%   file (if different), and the line number.
+
     if nargin==0
         return;
     end
@@ -15,9 +20,15 @@ function timedFprintf( varargin )
         offset = 2;
     end
     
-    st = dbstack();
+    st = dbstack('-completenames');
     if length(st) >= offset
-        fprintf( fid, '%s %s(%d): ', datestring(true), st(offset).name, st(offset).line );
+        [~,filename] = fileparts( st(offset).file );
+        funcname = st(offset).name;
+        if strcmp(filename,funcname)
+            fprintf( fid, '%s %s(%d): ', datestring(true), funcname, st(offset).line );
+        else
+            fprintf( fid, '%s %s>%s(%d): ', datestring(true), filename, funcname, st(offset).line );
+        end
     else
         fprintf( fid, '%s: ', datestring(true) );
     end

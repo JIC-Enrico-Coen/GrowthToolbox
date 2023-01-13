@@ -172,7 +172,18 @@ function [t2,initvals] = convertAttribType( ts, t, t1, initvals )
                'lines', 'rows', 'columns', 'min', 'max', ...
                'minorstep', 'majorstep' }
             [t2,errmsg] = parseNumbers( t1, '%f', 1 );
-        case { 'margin', 'innermargin', 'outermargin' }
+        case { 'margin', 'outermargin' }
+            [t2,errmsg] = parseNumbers( t1, '%f', 1, 4 );
+            switch length(t2)
+                case 1
+                    t2 = [t2 t2 t2 t2];
+                case 2
+                    t2 = t2([1 1 2 2]);
+                case 3
+                    t2(4) = t2(3);
+                otherwise
+            end
+        case { 'innermargin' }
             [t2,errmsg] = parseNumbers( t1, '%f', 1, 2 );
             if length(t2)==1
                 t2 = [t2 t2];

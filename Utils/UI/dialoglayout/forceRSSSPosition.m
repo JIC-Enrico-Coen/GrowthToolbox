@@ -55,8 +55,8 @@ end
                     ystart = ystart - excesssize(2);
             end
             if ~isempty( s.children )
+                innerpos = interiorposition + s.attribs.outermargin.*[1 1 -2 -2];
                 if s.attribs.singlechild
-                    innerpos = interiorposition + s.attribs.outermargin([1 2 1 2]).*[1 1 -2 -2];
                     for c=1:length(s.children)
                         s.children{c} = forceRSSSPosition( s.children{c}, innerpos );
                     end
@@ -89,8 +89,10 @@ end
                     if ~any(fillingcols), fillingcols(:) = true; end
                     rowheights = max( heights, [], 2 );
                     colwidths = max( widths, [], 1 );
-                    rowheights(fillingrows) = rowheights(fillingrows) + excesssize(2)/sum(fillingrows);
-                    colwidths(fillingcols) = colwidths(fillingcols) + excesssize(1)/sum(fillingcols);
+                    innerminsize = [ sum(colwidths), sum(rowheights) ] + s.attribs.innermargin.*[s.attribs.columns-1, s.attribs.rows-1];
+                    slack = max( 0, innerpos([3 4]) - innerminsize );
+                    rowheights(fillingrows) = rowheights(fillingrows) + slack(2)/sum(fillingrows);
+                    colwidths(fillingcols) = colwidths(fillingcols) + slack(1)/sum(fillingcols);
                     c = 1;
                     x = xstart;
                     for j=1:s.attribs.columns

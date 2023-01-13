@@ -14,11 +14,11 @@ function ok = saveStaticPartToFile( m, filename )
     mstatic.globalProps = safermfield( mstatic.globalProps, 'bioApresplitproc', 'bioApostsplitproc', 'userpostiterateproc', 'mov' );
     mstatic.plotdefaults = safermfield( mstatic.plotdefaults, 'userpreplotproc', 'useplotproc' );
     mstatic.secondlayer = splitstruct( m.secondlayer, [ gSecondlayerRunFields, gSecondlayerStaticFields ] );
-    fprintf( 1, 'Saving static part to %s.\n', staticname );
+    timedFprintf( 1, 'Saving static part to %s.\n', staticname );
     try
         save( staticname, '-struct', 'mstatic' );
         ok = true;
     catch e
-        fprintf( 1, '%s\n', getReport(e) );
+        timedFprintf( 1, '%s\n', getReport(e) );
     end
 end

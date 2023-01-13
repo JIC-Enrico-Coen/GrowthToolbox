@@ -83,6 +83,8 @@ function [a,a_each,eigs_each] = anisoMirabet( dirs, wts )
                 case 'length'
                     wts = normdir(~baddirs);
             end
+        else
+            wts = wts( ~baddirs );
         end
         if (numdirs==0) || (sum(wts)==0)
             a = NaN;

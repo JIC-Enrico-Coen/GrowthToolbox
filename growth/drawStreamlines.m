@@ -80,6 +80,7 @@ function slhandles = drawStreamlines( theaxes, m, s )
         'Color', m.plotdefaults.streamlinecolor, ...
         'LineWidth', m.plotdefaults.streamlinethick );
     dottype = 'o';
+    
     if (size(allvxs,1) > 1) && (m.plotdefaults.streamlineenddotsize > 0)
         shrinkingtails = tailstatus==0;
         cattails = tailstatus==1;
@@ -98,6 +99,7 @@ function slhandles = drawStreamlines( theaxes, m, s )
                 'MarkerFaceColor', begincolor );
         end
     end
+    
     if m.plotdefaults.streamlineenddotsize > 0
 %             endcolor = 'g';
 %             slhandles.end = plotpts( theaxes, allend, dottype, ...
@@ -130,6 +132,7 @@ function slhandles = drawStreamlines( theaxes, m, s )
                 'MarkerFaceColor', endcolor );
         end
     end
+    
     if m.plotdefaults.streamlineseverdotsize > 0
         if any( issevvx )
             middlecolor = m.plotdefaults.streamlinecolor;
@@ -140,6 +143,7 @@ function slhandles = drawStreamlines( theaxes, m, s )
             xxxx = 1;
         end
     end
+    
     if m.plotdefaults.streamlinemiddotsize > 0
         if any( ~issevvx )
             middlecolor = m.plotdefaults.streamlinecolor;
@@ -150,29 +154,5 @@ function slhandles = drawStreamlines( theaxes, m, s )
         end
     end
     
-    
-%     for i=1:length(s)
-%         if ~isempty( s(i).vxcellindex )
-%             allvxs = baryToEuc( m, s(i).vxcellindex, s(i).barycoords, m.plotdefaults.streamlineoffset );
-%             plotpts( theaxes, allvxs, '-', ...
-%                 'Color', m.plotdefaults.streamlinecolor, ...
-%                 'LineWidth', m.plotdefaults.streamlinethick );
-%             if (size(allvxs,1) > 1) && (m.plotdefaults.streamlineenddotsize > 0)
-%                 plotpts( theaxes, allvxs(1,:), '.', ...
-%                     'Color', [0.25 0.25 0.25], ...
-%                     'MarkerSize', m.plotdefaults.streamlineenddotsize );
-%             end
-%             if m.plotdefaults.streamlineenddotsize > 0
-%                 plotpts( theaxes, allvxs(end,:), '.', ...
-%                     'Color', 'g', ...
-%                     'MarkerSize', m.plotdefaults.streamlineenddotsize );
-%             end
-%             if m.plotdefaults.streamlinemiddotsize > 0
-%                 plotpts( theaxes, allvxs(2:(end-1),:), '.', ...
-%                     'Color', m.plotdefaults.streamlinecolor, ...
-%                     'MarkerSize', m.plotdefaults.streamlinemiddotsize );
-%             end
-%         end
-%     end
     set(theaxes,'NextPlot',oldhold);
 end

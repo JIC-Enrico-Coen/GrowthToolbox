@@ -3,7 +3,7 @@ function x = safermfield( x, varargin )
 %   Like RMFIELD, but does not throw an exception if a field is not present
 %   or if no fields are given.
 
-    if isempty(x), return; end
+    if ~isstruct(x), return; end
     OLDMATLAB = false;
     if isempty(varargin)
         return;

@@ -16,8 +16,6 @@ function varargout = GFtbox(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Edit the above text to modify the response to help GFtbox
-
 % Last Modified by GUIDE v2.5 10-May-2022 14:12:07
 
 gui_Singleton = 1;
@@ -38,6 +36,7 @@ end
 
 if (nargin > 0) && ischar(varargin{1})
     gui_State.gui_Callback = str2func(varargin{1});
+%     gui_State.gui_Callback
 end
 
 % varargin{:}

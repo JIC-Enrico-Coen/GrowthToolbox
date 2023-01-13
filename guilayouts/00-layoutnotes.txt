@@ -98,8 +98,8 @@ These grouping nodes are the only ones which can have a visible border
 around them.  The visible border appears by default, but attributes can be
 given to specify that there should be no border.
 
-3. GUI widgets: figure, panel, colorchooser, radiogroup, text, edit, listbox,
-    pushbutton, togglebutton, radiobutton, checkbox, popupmenu, menu.
+3. GUI widgets: figure, axes, panel, colorchooser, radiogroup, text, edit,
+    listbox, pushbutton, togglebutton, radiobutton, checkbox, popupmenu, menu.
 
 Every node of any of these types will correspond to a GUI handle when the
 dialog is created.  'colorchooser' is actually implemented by a panel that
@@ -152,6 +152,7 @@ string:
     In text items, this is the text.
     In edit items, this is the initial value of the text.
     In panels, this is the title of the panel.
+    In axeses, this is the title of the axes.
     In checkboxes and buttons of all types, this is the name displayed beside
         the checkbox or on the button.
     In listboxes, this is the contents.  Multiple strings should be separated

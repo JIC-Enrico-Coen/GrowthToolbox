@@ -56,6 +56,7 @@ function [mttail,mthead] = splitMT( m, mt, vxindex, cattail, cathead )
     mttail.segmentlengths = mt.segmentlengths( 1:(vxindex-1) );
     
     [mttail.directionbc,mttail.directionglobal] = streamlineSegmentDirection( m, mt, vxindex-1 );
+    
     if ~checkZeroBcsInStreamline( mttail )
         xxxx = 1;
     end

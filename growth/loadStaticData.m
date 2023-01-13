@@ -8,6 +8,8 @@ function [m,ok] = loadStaticData( m, staticdata )
 %   If staticdata is a struct, it is assumed to be the static data.
 %
 %   ok will be true if and only if static data was loaded.
+%   If static data is loaded, the previous static data is copied to the
+%   field m.ownGlobalProps.
 
     ok = true;
     

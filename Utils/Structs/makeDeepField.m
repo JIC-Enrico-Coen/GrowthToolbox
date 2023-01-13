@@ -7,7 +7,7 @@ function [m,ok] = makeDeepField( m, v, varargin )
 %   only difference from setDeepField, which does not create any field that
 %   does not exist.
 %
-%   If part of the specified path does exist, but ends with a non-empry,
+%   If part of the specified path does exist, but ends with a non-empty,
 %   non-struct value, then m is unchanged and ok is false.
 %
 %   See also: getDeepField, setDeepField

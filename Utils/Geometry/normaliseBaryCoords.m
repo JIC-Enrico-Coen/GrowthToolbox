@@ -1,9 +1,10 @@
 function bc = normaliseBaryCoords( bc )
 %bc = normaliseBaryCoords( bc )
 %   bc is a matrix in which each row is a set of barycentric coordinates
-%   for a simplex. This presupposes that the sum of each row is 1.
+%   for a simplex.
+%
 %   This procedure normalises the coordinates so that they all lie in the
-%   range of 0 to 1, while preserving the property of summing to 1.
+%   range of 0 to 1, and ensures that they sum to 1.
 
     dims = size(bc,2);
     nonpos = bc <= 0;

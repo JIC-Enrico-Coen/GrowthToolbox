@@ -89,14 +89,19 @@ function [m,ok] = leaf_stagesmovie( m, varargin )
     % Get the figure we are plotting into.
     theaxes = m.pictures(1);
     
+    % Save any handles the user may have saved.
+    old_userdata_unsaved = m.userdata_unsaved;
+    
     % Load the first stage file.
     [m,ok] = leaf_reload( m, stageTimes(1) );
     if ok
 %         fprintf( 1, '%f %f %f\n', m.nodes(1,:) );
         m.pictures = theaxes;
+        m.userdata_unsaved = old_userdata_unsaved;
         m = leaf_plot( m );
         % Process GUI events.
         setMyLegend( m );
+        old_userdata_unsaved = m.userdata_unsaved;
     else
         return;
     end
@@ -120,11 +125,13 @@ function [m,ok] = leaf_stagesmovie( m, varargin )
 %             fprintf( 1, '%f %f %f\n', m.nodes(1,:) );
             m.globalProps.mov = movieprops;
             m.pictures = theaxes;
+            m.userdata_unsaved = old_userdata_unsaved;
             m = leaf_plot( m );
             setMyLegend( m );
             m = recordframe( m );
             
             savesnapshot( m );
+            old_userdata_unsaved = m.userdata_unsaved;
         end
         if userinterrupt( sb ) && (i < numframes)
             fprintf( 1, 'Movie terminated with %d of %d frames, time %f - %f.\n', i, numframes, stageTimes(1), stageTimes(i) );

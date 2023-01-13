@@ -1,4 +1,4 @@
-function mesh = thicken2Dto3D( mesh2d, axisdivs, height, fetype )
+function [mesh,vxparents] = thicken2Dto3D( mesh2d, axisdivs, height, fetype )
 %mesh = thicken2Dto3D( mesh2d, axisdivs, height )
 %
 %   mesh2d is a 2d mesh in the XY plane, with fields nodes and tricellvxs.
@@ -7,11 +7,11 @@ function mesh = thicken2Dto3D( mesh2d, axisdivs, height, fetype )
 %   mesh2d axisdivs+1 times along the Z axis, to the given height, and
 %   constructing pentahedral elements joining the layers.
 
-    mesh = [];
     mesh2d = safermfield( mesh2d, 'globalProps' ); % Some methods of creating 2D meshes make this field, which is not relevant here.
     a = findFEareas( mesh2d );
     
-    num2dnodes = size(mesh2d.nodes,1);
+    num2dnodes = size( mesh2d.nodes, 1 );
+    num2dfaces = size( mesh2d.tricellvxs, 1 );
     mesh2d.nodes = repmat( mesh2d.nodes, axisdivs+1, 1 );
     
     heights = (0:axisdivs)*(height/axisdivs) - height/2;
@@ -33,12 +33,18 @@ function mesh = thicken2Dto3D( mesh2d, axisdivs, height, fetype )
                       
     newm.globalDynamicProps.currentVolume = sum( newm.FEsets.fevolumes );
 
+    oldnumvxs = size( newm.FEnodes, 1 );
     switch fetype
         case 'T4Q'
-            newm = convertP6toT4Q( newm );
+            [newm,vxparents,feparents] = convertP6toT4Q( newm );
+            newnumvxs = size( newm.FEnodes, 1 );
         otherwise
+            vxparents = [ (1:oldnumvxs)', zeros( oldnumvxs, 2 ) ];
     end
 
     mesh = completeVolumetricMesh( newm );
-
+    
+    % For each new vertex, find all its neighbours. These should all have
+    % non-zero ring indexes, whose values are two integers differing by 2.
+    % The ring index of the vertex is the integer between them.
 end
