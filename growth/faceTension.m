@@ -42,9 +42,9 @@ function [ft,faceNormals] = faceTension( m )
 %     unitFaceNormals( isnan(unitFaceNormals) ) = 0;
 %     normalFaceTensions = faceTensions .* tensionCosAngles;
     
-    % The factor of cos(tensionAngles) is applied to get the normal
+    % The factor of cos(tensionAngles)^2 is applied to get the normal
     % component of the tension.
-    ft = faceTensions .* tensionCosAngles;
+    ft = faceTensions .* tensionCosAngles.^2;
     
     % There is no tension at the surface.
     ft(~innerFaces) = 0;

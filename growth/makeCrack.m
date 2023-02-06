@@ -1,16 +1,21 @@
-function [m,splitVxs] = makeCrack( m, candidateVertexes, candidateFaces )
+function [m,splitVertexList,reindexVxs] = makeCrack( m, candidateVertexes, candidateFaces )
 %m = makeCrack( m, candidateVertexes, candidateFaces )
 %   Make a crack in the mesh along the given set of vertexes and faces.
 %   For volumetric meshes only.
 %   candidateVertexes is a set of vertexes to potentially split.
 %   candidateFaces is a set of faces to potentially split.
 %   The union of these will be taken.
+%
+%   splitVxs is a list of all the vertexes of the old mesh that were split.
+%
+%   reindexVxs maps each vertex index of the new mesh to its parent vertex
+%   index in the old mesh.
 
     if nargin < 3
         candidateFaces = [];
     end
-    splitVxs = [];
 
+    % Convert the arguments to boolean maps.
     if islogical( candidateVertexes )
         candidateVertexMap = candidateVertexes(:);
     else
@@ -25,15 +30,19 @@ function [m,splitVxs] = makeCrack( m, candidateVertexes, candidateFaces )
         candidateFaceMap( candidateFaces(:) ) = true;
     end
     
+    splitVertexList = [];
+    reindexVxs = (1:getNumberOfVertexes(m))';
+    
+    % All vertexes of candidate faces are also candidate vertexes.
     morevertexes = unique( m.FEconnectivity.faces( candidateFaceMap, : ) );
     candidateVertexMap( morevertexes ) = true;
 
-% Find the set of triangles among these vertexes. Discard any vertexes not part of any such triangle.
+% Find the set of faces, all of whose vertexes are candidate vertexes.
     candidateFaceVxs = candidateVertexMap( m.FEconnectivity.faces );
     candidateFaces = all( candidateFaceVxs, 2 );
     candidateFaceMap = false( size( m.FEconnectivity.faces, 1 ), 1 );
     candidateFaceMap( candidateFaces ) = true;
-    
+% Any vertexes not part of any candidate face are no longer candidate vertexes.
     candidateVertexList = unique( m.FEconnectivity.faces( candidateFaces, : ) );
 
 % Consider each vertex that might be split. The set of splitting triangles that it belongs to
@@ -42,10 +51,6 @@ function [m,splitVxs] = makeCrack( m, candidateVertexes, candidateFaces )
 
     [vxfes,~] = invertIndexArray( m.FEsets.fevxs, getNumberOfVertexes(m), 'cell' );
     vxfes = vxfes(candidateVertexList);
-    [vxfaces,~] = invertIndexArray( m.FEconnectivity.faces, getNumberOfVertexes(m), 'cell' );
-    vxfaces = vxfaces(candidateVertexList);
-%     candidateFaceMap = false( size( m.FEconnectivity.edgeends, 1 ), 1 );
-%     candidateFaceMap( cell2mat( vxfaces' ) ) = true;
     
     % For each vertex we now have its list of elements and list of faces.
     % From this we must construct the adjacency relationship among the
@@ -53,12 +58,11 @@ function [m,splitVxs] = makeCrack( m, candidateVertexes, candidateFaces )
     
     realSplits = false( length(candidateVertexList), 1 );
     numrealsplits = 0;
-    vxcpts = cell( length(candidateVertexList), 1 );
+    vxFEcpts = cell( length(candidateVertexList), 1 );
     totcpts = 0;
-    for i=1:length(candidateVertexList)
-        vi = candidateVertexList(i);
-        fes = vxfes{i};
-        numvxfes = length(fes);
+    for cVLi=1:length(candidateVertexList)
+        vi = candidateVertexList(cVLi);
+        fes = vxfes{cVLi};
         fefaces = m.FEconnectivity.fefaces( fes, : );
         aa = [ fefaces, fes(:) ];
         facefes = aa( :, [1 5 2 5 3 5 4 5] );
@@ -69,8 +73,7 @@ function [m,splitVxs] = makeCrack( m, candidateVertexes, candidateFaces )
         % Discard entries for faces that do not include vi.
         keepfaces = any( m.FEconnectivity.faces( facefes(:,1), : )==vi, 2 );
         % ERROR: in testing we find that keepfaces is all true. But it
-        % should be false for the faces of the elements that to not include
-        % vi.
+        % should be false for those faces that do not include vi.
         facefes( ~keepfaces, : ) = [];
         % facefes now represents the adjacency graph.
         % We need to remove candidate splitting faces from this.
@@ -96,36 +99,37 @@ function [m,splitVxs] = makeCrack( m, candidateVertexes, candidateFaces )
         cpts = conncomp(g);
         
         if max(cpts) > 1
-            % This vertex is to be split.
+            % This vertex is to be split into as many copies as there are
+            % components.
             numrealsplits = numrealsplits+1;
-            realSplits(i) = true;
-            vxcpts{numrealsplits} = sortrows( [cpts(:),uf] );
+            realSplits(cVLi) = true;
+            vxFEcpts{numrealsplits} = sortrows( [cpts(:),uf] );
             totcpts = totcpts + max(cpts);
         end
     end
     if numrealsplits==0
-        xxxx = 1;
+        % No vertexes were split.
         return;
     end
-    candidateVertexList = candidateVertexList(realSplits);
-    vxcpts((numrealsplits+1):end) = [];
+    splitVertexList = candidateVertexList(realSplits);
+    vxFEcpts((numrealsplits+1):end) = [];
     
-    % candidateVertexList is now a list of the vertexes that are to be
+    % splitVertexList is a list of the vertexes that are to be
     % split. vxcpts lists for each vertex the components that the elements
     % neighbouring that vertex belongs to.
     
-    % Each vertex in candidateVertexList must now be split into one vertex
+    % Each vertex in splitVertexList must now be split into one vertex
     % for each component. The original vertex will be used for the first
     % component.
     
-    numnewvxs = totcpts - length( candidateVertexList );
+    numnewvxs = totcpts - length( splitVertexList );
     numvxs = getNumberOfVertexes(m);
     currentNumvxs = numvxs;
     newvxsused = 0;
     reindexVxs = (1:(numvxs+numnewvxs))';
-    for i=1:length(candidateVertexList)
-        vi = candidateVertexList(i);
-        vxcpt = vxcpts{i};
+    for sVLi=1:length(splitVertexList)
+        vi = splitVertexList(sVLi);
+        vxcpt = vxFEcpts{sVLi};
         [starts,ends] = runends( vxcpt(:,1) );
         newNumvxs = currentNumvxs+length(starts)-1;
         reindexVxs( (currentNumvxs+1):newNumvxs ) = vi;
@@ -139,8 +143,6 @@ function [m,splitVxs] = makeCrack( m, candidateVertexes, candidateFaces )
         end
     end
     
-    splitVxs = [ candidateVertexList; ((numvxs+1):(numvxs+numnewvxs))' ];
-    
 %     m.FEnodes = m.FEnodes( reindexVxs, : );
     m = replicateVxs( m, reindexVxs );
     
@@ -150,7 +152,7 @@ function [m,splitVxs] = makeCrack( m, candidateVertexes, candidateFaces )
     % Update the connectivity.
     m.FEconnectivity = connectivity3D( m );
     
-    ok = validmesh( m )
+    ok = validmesh( m );
     xxxx = 1;
 end
 
@@ -164,10 +166,6 @@ function m = replicateVxs( m, vxlist )
         fn = gFIELDTYPES{i,1};
         % fn is the name of a deep field of m. If it is absent or empty, do
         % nothing.
-        
-        if strcmp( fn, 'visible.nodes' )
-            xxxx = 1;
-        end
         
         v = getDeepField( m, fn );
         if isempty( v )

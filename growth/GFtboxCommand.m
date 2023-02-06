@@ -208,7 +208,7 @@ function bareExptID = GFtboxCommand( varargin )
         % In the remote user's home directory.
     ClusterProjectFiles = 'ClusterFiles';
     LocalClusterProjectFiles = fullfile( LocalProjectFullPath, ClusterProjectFiles );
-    if ~DryRun
+    if true % ~DryRun
         [ok,~,~] = mkdir( LocalClusterProjectFiles );
         if ~ok
             error( 'Cannot make local output directory %s', LocalClusterProjectFiles );
@@ -272,6 +272,9 @@ function bareExptID = GFtboxCommand( varargin )
     end
     
     % Decide timestep, number of steps, and stages to save.
+    if strcmp( stages, 'all' )
+        stages = m.stagetimes;
+    end
     if isempty( stages )
         timePerRun = modeloptions.stepsperrun * m.globalProps.timestep;
         stages = timePerRun*(1:modeloptions.runsperset);
@@ -403,7 +406,7 @@ function bareExptID = GFtboxCommand( varargin )
         fprintf(h_master,'#!/bin/bash\n');
         for ri=1:numruns
             fprintf( h_master, 'sbatch < %s\n', clusterfullfile( RemoteScriptDirectory, subfilename{ri} ) );
-            fprintf( h_master, 'sleep 1\n' );
+%             fprintf( h_master, 'sleep 1\n' );
         end
         fclose(h_master);
         ok = sendShellScript( sh_fullfilename, ['./' sh_basefilename], true );

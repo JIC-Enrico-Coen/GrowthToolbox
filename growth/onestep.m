@@ -79,10 +79,10 @@ function [m,ok,splitdata] = onestep( m, useGrowthTensors, useMorphogens )
     
     if growthByFE
         timedFprintf( 1, 'Growth computation beginning for iteration %d (time %g - %g).\n', ...
-            m.globalDynamicProps.currentIter, m.globalDynamicProps.currenttime, m.globalDynamicProps.currenttime + m.globalProps.timestep );
+            m.globalDynamicProps.currentIter + 1, m.globalDynamicProps.currenttime, m.globalDynamicProps.currenttime + m.globalProps.timestep );
     else
         timedFprintf( 1, 'No growth or residual strain for iteration %d (time %g - %g).\n', ...
-            m.globalDynamicProps.currentIter, m.globalDynamicProps.currenttime, m.globalDynamicProps.currenttime + m.globalProps.timestep );
+            m.globalDynamicProps.currentIter + 1, m.globalDynamicProps.currenttime, m.globalDynamicProps.currenttime + m.globalProps.timestep );
     end
     
     if growthByFE

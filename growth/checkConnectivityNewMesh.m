@@ -192,30 +192,43 @@ vertexloctype: [27×1 double]
 %         bad
 %     end
     surfaceEdgeVxTypes = unique( c.vertexloctype(c.edgeends( c.edgeloctype>0, : )) );
-    bad = find(any(surfaceEdgeVxTypes==0,2));
-    if ~isempty(bad)
+    badEdges1 = find(any(surfaceEdgeVxTypes==0,2));
+    if ~isempty(badEdges1)
         errs = errs+1;
-        timedFprintf( '%d surface edges have interior vertexes.\n', length(bad) );
+        timedFprintf( '%d surface edges have interior vertexes.\n', length(badEdges1) );
         fprintf( 1, 'Bad edges:      ' );
-        fprintf( 1, ' %d', bad );
+        fprintf( 1, ' %d', badEdges1 );
         fprintf( 1, '\n' );
     end
     
-    % Every surface edge must belong to at least two surface faces.  % Why
-    % not exactly two?
+    % Every surface edge must belong to exactly two surface faces.
     surfaceEdgeFaces = c.edgefaces( c.edgeloctype>0, : );
-    surfaceEdgeFaces(surfaceEdgeFaces>0) = c.faceloctype(surfaceEdgeFaces(surfaceEdgeFaces>0));
-    surfaceFacesPerSurfaceEdge = sum( surfaceEdgeFaces > 0, 2 );
-    bad = find(surfaceFacesPerSurfaceEdge ~= 2);
-    if ~isempty(bad)
+    surfaceEdgeFaceLocType = surfaceEdgeFaces;
+    surfaceEdgeFaceLocType(surfaceEdgeFaces>0) = c.faceloctype(surfaceEdgeFaces(surfaceEdgeFaces>0));
+    surfaceFacesPerSurfaceEdge = sum( surfaceEdgeFaceLocType > 0, 2 );
+    badAmongSurface = find(surfaceFacesPerSurfaceEdge ~= 2);
+    surfaceEdges = find( c.edgeloctype>0 );
+    badEdges2 = surfaceEdges(badAmongSurface);
+    if ~isempty(badEdges2)
         errs = errs+1;
-        timedFprintf( '%d surface edges belong to other than two surface faces.\n', length(bad) );
+        timedFprintf( '%d of %d surface edges belong to other than two surface faces.\n', length(badEdges2), length(surfaceFacesPerSurfaceEdge) );
         fprintf( 1, 'Bad edges:      ' );
-        fprintf( 1, ' %d', bad );
-        fprintf( 1, '\n' );
+        maxprintcount = 100;
+        if length(badEdges2) <= maxprintcount
+            fprintf( 1, ' %d', badEdges2 );
+            fprintf( 1, '\n' );
+        else
+            fprintf( 1, ' %d', badEdges2(1:maxprintcount) );
+            fprintf( 1, ' ...\n' );
+        end
         fprintf( 1, 'Number of faces:' );
-        fprintf( 1, ' %d', surfaceEdgeFaces(bad) );
-        fprintf( 1, '\n' );
+        if length(badEdges2) <= maxprintcount
+            fprintf( 1, ' %d', surfaceFacesPerSurfaceEdge(badAmongSurface) );
+            fprintf( 1, '\n' );
+        else
+            fprintf( 1, ' %d', surfaceFacesPerSurfaceEdge(badAmongSurface(1:maxprintcount)) );
+            fprintf( 1, ' ...\n' );
+        end
         xxxx = 1;
     end
     

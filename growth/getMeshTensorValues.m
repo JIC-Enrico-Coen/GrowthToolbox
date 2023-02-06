@@ -45,7 +45,7 @@ function [values,components,frames,selectedCpts] = getMeshTensorValues( m, oq, o
     if ~israte && (m.globalProps.timestep > 0)
         components = components*m.globalProps.timestep;
     end
-    if ~isstress  % TESTING!! In production this should be "if isstress".
+    if isstress  % TESTING!! In production this should be "if isstress".
         components = components .* m.cellbulkmodulus;
     end
     selectedCpts = [];

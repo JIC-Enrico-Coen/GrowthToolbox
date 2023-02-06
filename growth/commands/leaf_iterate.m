@@ -123,10 +123,10 @@ function [m,ok] = leaf_iterate( m, varargin )
         end
         startTime = cputime;
         starttic = tic;
-        timedFprintf( 1, 'Starting iteration %d, time %.3f.\n', ...
-        	m.globalDynamicProps.currentIter+1, m.globalDynamicProps.currenttime );
-        timedFprintf( 2, 'Starting iteration %d, time %.3f.\n', ...
-        	m.globalDynamicProps.currentIter+1, m.globalDynamicProps.currenttime );
+        timedFprintf( 1, 'Starting iteration %d, sim time %.3g - %.3g.\n', ...
+        	m.globalDynamicProps.currentIter+1, m.globalDynamicProps.currenttime, m.globalDynamicProps.currenttime + m.globalProps.timestep );
+        timedFprintf( 2, 'Starting iteration %d, sim time %.3g - %.3g.\n', ...
+        	m.globalDynamicProps.currentIter+1, m.globalDynamicProps.currenttime, m.globalDynamicProps.currenttime + m.globalProps.timestep );
         if teststopbutton(m)
             ok = false;
             break;
@@ -234,13 +234,6 @@ function [m,ok] = leaf_iterate( m, varargin )
             end
         end
         
-        if m.globalProps.newcallbacks
-            [m,~] = invokeIFcallback( m, 'Postiterate' );
-        elseif isa( m.globalProps.userpostiterateproc, 'function_handle' )
-            timedFprintf( 1, 'Calling user post-iterate procedure %s.\n', ...
-                func2str( m.globalProps.userpostiterateproc ) );
-            m = m.globalProps.userpostiterateproc( m );
-        end
         m = updateValidityTime( m, stepstarttime );
         if any( m.secondlayer.edgeattriblength==0 )
             xxxx = 1;
@@ -261,6 +254,15 @@ function [m,ok] = leaf_iterate( m, varargin )
             if areafactor ~= 0
                 m.secondlayer.cellvalues(:,areafactor) = m.secondlayer.cellarea;
             end
+        end
+        
+        % Invoke the PostIterate callback.
+        if m.globalProps.newcallbacks
+            [m,~] = invokeIFcallback( m, 'Postiterate' );
+        elseif isa( m.globalProps.userpostiterateproc, 'function_handle' )
+            timedFprintf( 1, 'Calling user post-iterate procedure %s.\n', ...
+                func2str( m.globalProps.userpostiterateproc ) );
+            m = m.globalProps.userpostiterateproc( m );
         end
         
         if isempty(handles)

@@ -53,9 +53,21 @@ function m = completeVolumetricMesh( m )
     % m.polfreezebc = zeros( numFEs, 3 ); % Not meaningful for volumetric FEs.
     m.polfrozen = false( numFEs, 1 );
     m.polsetfrozen = false;
-    m.cellbulkmodulus = repmat( m.globalProps.bulkmodulus, [numFEs, 1] );
-    m.cellpoisson = repmat( m.globalProps.poissonsRatio, [numFEs, 1] );
-    m.cellstiffness = repmat( m.globalProps.D, [1,1,numFEs] );
+    if numel( m.globalProps.bulkmodulus, 3 )==1
+        m.cellbulkmodulus = repmat( m.globalProps.bulkmodulus, [numFEs, 1] );
+    else
+        m.cellbulkmodulus = m.globalProps.bulkmodulus;
+    end
+    if numel( m.globalProps.bulkmodulus, 3 )==1
+        m.cellpoisson = repmat( m.globalProps.poissonsRatio, [numFEs, 1] );
+    else
+        m.cellpoisson = m.globalProps.poissonsRatio;
+    end
+    if size( m.globalProps.D, 3 )==1
+        m.cellstiffness = repmat( m.globalProps.D, [1,1,numFEs] );
+    else
+        m.cellstiffness = m.globalProps.D;
+    end
     m.transportfield = cell( 1, numMorphogens );
     m = makeedgethreshsq( m );
     m = generateCellData( m );

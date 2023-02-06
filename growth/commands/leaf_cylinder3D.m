@@ -37,6 +37,10 @@ function m = leaf_cylinder3D( m, varargin )
 %       quadratic tetrahedra respectively (combining in groups of 14 to
 %       make pentahedra).
 %
+%   'subdivision': Either 14 (the default) or 17. This only matters when
+%       'type' is T4 or T4Q, and specifies one of two different ways of
+%       subdividing a pentahedron into tetrahedra.
+%
 %   'new':  A boolean, true by default.  If M is
 %       empty, true is implied.  True means that an
 %       entirely new mesh is created.  False means that
@@ -65,7 +69,8 @@ function m = leaf_cylinder3D( m, varargin )
         'axisdivs', 4, ...
         'hollow', 0, ...
         'dealign', false, ...
-        'coneangle', 0 );
+        'coneangle', 0, ...
+        'subdivision', 14 );
     s = defaultfields( s, ...
         'size', [ s.xwidth, s.ywidth, s.zwidth ], ...
         'position', [0 0 0], ...
@@ -77,8 +82,14 @@ function m = leaf_cylinder3D( m, varargin )
     % volumetric meshes.
     s = safermfield( s, 'xwidth', 'ywidth', 'zwidth', 'thickness' );
     ok = checkcommandargs( mfilename(), s, 'exact', ...
-        'size', 'rings', 'circumdivs', 'axisdivs', 'innerdivs', 'hollow', 'position', 'type', 'new', 'dealign', 'coneangle' );
+        'size', 'rings', 'circumdivs', 'axisdivs', 'innerdivs', 'hollow', 'position', 'type', 'new', 'dealign', 'coneangle', 'subdivision' );
     if ~ok, return; end
+    allowedSubdivs = [14 20];
+    if isempty( find( s.subdivision==allowedSubdivs, 1 ) )
+        ok = false;
+        timedFprintf( 'Option ''subdivision'' must be either %d (the default) or %d, %d found.\n', allowedSubdivs, s.subdivision );
+        return;
+    end
 
     [ok,handles,m,savedstate] = prepareForGUIInteraction( m );
     if ~ok, return; end
@@ -90,13 +101,36 @@ function m = leaf_cylinder3D( m, varargin )
         s.new = true;
     end
 
-    [circ,~,vxringindexes,faceringindexes] = newcirclemesh( [s.size([1 2]) 0], s.circumdivs, s.rings, s.position, s.hollow, s.innerdivs, s.dealign, 1, s.coneangle );
+    [circ,~,vxringindexes] = newcirclemesh( [s.size([1 2]) 0], s.circumdivs, s.rings, s.position, s.hollow, s.innerdivs, s.dealign, 1, s.coneangle );
     vxringindexes = vxringindexes(:);
+    vxringindexes = 2 * vxringindexes - 1;
     
-    [newm,vxparents,elementparents] = thicken2Dto3D( circ, s.axisdivs, s.size(3), s.type );
-    vxringindexes = 2*vxringindexes - 1;
-    faceringindexes = faceringindexes*2;
-%     vxparents( vxparents(:,2) ~= 0 ) = 
+    [newm,vxparents] = thicken2Dto3D( circ, s.axisdivs, s.size(3), s.type, s.subdivision );
+    numvxs = getNumberOfVertexes( newm );
+    
+    % We want to assign each vertex of the mesh to a ring. To do this, we
+    % look at the ring index of the parent of every vertex of the new mesh,
+    % if it descends from a vertex of the original flat mesh. We notionally
+    % define this index to be 0 for all of the new vertexes introduced by
+    % subdividing the pentahedra into tetrahedra.
+    %
+    % For every vertex of the new mesh we find the set of its neighbouring
+    % vertexes, find their ring indexes, and look only at what non-zero
+    % ring indexes occur in that set. The ring index of the vertex is the
+    % mean of thos indexes (which should always be an integer).
+    
+    vxnbs = vxVxNbs( newm );
+    newvxringindexes = zeros( numvxs, 1 );
+    for vi=1:numvxs
+        if vxparents(vi,1)==0
+            vps = vxparents( vxnbs{vi} );
+            vpsnz = vps(vps ~= 0);
+            vxris = unique( vxringindexes( vpsnz ) );
+            newvxringindexes(vi) = mean( vxris );
+        else
+            newvxringindexes(vi) = vxringindexes( vxparents(vi,1) );
+        end
+    end
     
     
     
@@ -110,6 +144,7 @@ function m = leaf_cylinder3D( m, varargin )
     s.FEtype = s.type;
     s.type = 'cylinder3d';
     m.meshparams = s;
+    m.auxdata.vxringindexes = newvxringindexes;
     
     m = concludeGUIInteraction( handles, m, savedstate );
 end
