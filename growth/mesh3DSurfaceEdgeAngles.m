@@ -1,20 +1,40 @@
-function allEdgeAngles = mesh3DSurfaceEdgeAngles( m )
-%allEdgeAngles = mesh3DSurfaceEdgeAngles( m )
+function allEdgeAngles = mesh3DSurfaceEdgeAngles( m, onlyvisible )
+%allEdgeAngles = mesh3DSurfaceEdgeAngles( m, onlyvisible )
 %   For a volumetric mesh, find the angle across each edge that lies on the
 %   surface of the mesh. The result is an N*1 array indexed by edge, for
 %   all edges. Edges not on the surface are assigned a value of -1. Edges on
 %   the surface will have a value between 0 and pi.
+%
+%   If ONLYVISIBLE is true, the surface of the visible part of the mesh is
+%   processed. Otherwise, the surface of the whole of the mesh.
 
     allEdgeAngles = zeros( getNumberOfEdges(m), 1 ) - 1;
 
     if isVolumetricMesh( m )
         % Find the surface faces. These are the ones that belong to exactly one
         % finite element.
-        surfaceFaces = m.FEconnectivity.facefes(:,2)==0;
+        if onlyvisible && ~isempty( m.visible )
+%             selectedElements = m.visible.surfelements;
+%             foo = m.FEconnectivity.facefes;
+%             foo0 = foo;
+%             nzfoo = foo( foo ~= 0 );
+%             foo2 = selectedElements( nzfoo );
+%             nzfoo( ~foo2 ) = 0;
+%             foo( foo ~= 0 ) = nzfoo;
+%             surfaceFaces1 = all( foo ~= 0, 2 );
+            surfaceFaces = m.visible.surffaces;
+        else
+            surfaceFaces = m.FEconnectivity.facefes(:,2)==0;
+        end
+        
+        
+        
+        
+        
 
         % Find the surface edges. These are all the edges of the surface faces.
         surfaceFaceEdges = [ m.FEconnectivity.faceedges(surfaceFaces,:), find( surfaceFaces ) ];
-        % surfaceFaceEdges has four columns. the first three contain the edges
+        % surfaceFaceEdges has four columns. The first three contain the edges
         % of the face whose index appears in the fourth column.
         foo1 = surfaceFaceEdges( :, [1 4 2 4 3 4] );
         foo2 = reshape( foo1', 2, [] )';

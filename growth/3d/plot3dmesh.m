@@ -35,7 +35,7 @@ function [m,h,g] = plot3dmesh( m, ax, perVertexQuantity, perFEQuantity )
         
         if m.plotdefaults.drawedges==1
             if isfield( m.plotdefaults, 'edgesharpness' ) && ~isempty( m.plotdefaults.edgesharpness )
-                edgeAngles = mesh3DSurfaceEdgeAngles( m );
+                edgeAngles = mesh3DSurfaceEdgeAngles( m, true );
                 sharpEdges = edgeAngles >= m.plotdefaults.edgesharpness;
                 edgesToDraw = sharpEdges & m.visible.surfedges;
 

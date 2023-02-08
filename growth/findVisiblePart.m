@@ -54,10 +54,10 @@ function m = findVisiblePart( m )
     end
 
     if full3d
-        % An element is visible if all its vertexes are visible.
+        % An element is in the visible part of the mesh if all its vertexes are.
         viselementmap = all( reshape( visnodemap( m.FEsets(1).fevxs ), size(m.FEsets(1).fevxs) ), 2 );
         
-        % A face is visible if it is a face of at least one visible element.
+        % A face is in the visible part if it is a face of at least one visible element.
         % A face is surface-visible if it is a face of exactly one visible element.
         visfaceindexes = sort( reshape( m.FEconnectivity.fefaces( viselementmap, : ), [], 1 ) );
         surfvisfaceindexes = visfaceindexes;
