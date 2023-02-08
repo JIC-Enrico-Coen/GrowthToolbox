@@ -7,5 +7,5 @@ function normals = trinormals( vxs, tris )
     v2 = shiftdim( trivecs(3,:,:) - trivecs(1,:,:), 1 );
     normals = cross( v1, v2, 1 )';
     norms = sqrt(sum(normals.^2,2));
-    normals = normals ./ repmat( norms, 1, 3 );
+    normals = normals ./ norms;
 end

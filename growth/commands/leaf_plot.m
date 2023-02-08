@@ -236,7 +236,7 @@ function varargout = leaf_plot( m, varargin )
             s.crange = extendToZero( s.crange );
         end
         colormap( pichandles.picture, s.cmap );
-        caxis( pichandles.picture, s.crange([1 2]) );
+        mycaxis( pichandles.picture, s.crange([1 2]) );
     end
 
     commonpatchargs = { 'Parent', theaxes, ...
@@ -835,7 +835,7 @@ function plotWidgets( axs, s, ismultiple )
 
     if ismultiple
         colormap( axs, s.cmap );
-        caxis( axs, s.crange([1 2]) );
+        mycaxis( axs, s.crange([1 2]) );
         cla(axs);
         copyobj( get( theaxes, 'Children' ), ph.picture ); % ?? theaxes is not defined.
     end

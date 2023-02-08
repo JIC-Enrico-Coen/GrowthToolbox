@@ -31,11 +31,14 @@ function [ft,faceNormals] = faceTension( m )
     faceVec12 = m.FEnodes( m.FEconnectivity.faces(:,2), : ) - m.FEnodes( m.FEconnectivity.faces(:,1), : );
     faceVec13 = m.FEnodes( m.FEconnectivity.faces(:,3), : ) - m.FEnodes( m.FEconnectivity.faces(:,1), : );
     faceNormals = cross( faceVec12, faceVec13 );
+    
+%     faceNormals1 = mesh3DFaceNormals( m );
 %     faceNormals = faceNormals ./ sqrt( sum( faceNormals.^2, 2 ) );
 %     faceNormals( isnan(faceNormals) ) = 0;
     
     tensionAngles = vecangle( faceTensionsDir, faceNormals );
     tensionCosAngles = cos( tensionAngles );
+    tensionCosAnglesSq = tensionCosAngles.^2;
     
 %     faceNormalLengths = sqrt( sum( faceNormals.^2, 2 ) ); % Twice the face areas.
 %     unitFaceNormals = faceNormals ./ faceNormalLengths;
@@ -44,7 +47,7 @@ function [ft,faceNormals] = faceTension( m )
     
     % The factor of cos(tensionAngles)^2 is applied to get the normal
     % component of the tension.
-    ft = faceTensions .* tensionCosAngles.^2;
+    ft = faceTensions .* tensionCosAnglesSq;
     
     % There is no tension at the surface.
     ft(~innerFaces) = 0;
