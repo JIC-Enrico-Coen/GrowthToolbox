@@ -120,7 +120,7 @@ function stuffname = quantityString( m )
                 stuffname = [ stuffname, ' ', xx{1}{2} ];
             end
         else
-            p = '^(actual|resultant|specified|residual)(growth|bend|anisotropy|relativeanisotropy)(|rate)$';
+            p = '^(actual|resultant|specified|residual)(growth|stress|bend|anisotropy|relativeanisotropy)(|rate)$';
             xx = regexp( m.plotdefaults.outputquantity, p, 'tokens' );
             if ~isempty(xx)
                 switch xx{1}{1}

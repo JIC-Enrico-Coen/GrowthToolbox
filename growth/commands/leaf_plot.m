@@ -1141,6 +1141,7 @@ function m = calculatePlotData( m, side )
     else
         % Nothing to be plotted.
         % m.plotdata.description = '';
+        xxxx = 1;
     end
 end
 
