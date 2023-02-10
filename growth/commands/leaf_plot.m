@@ -206,6 +206,7 @@ function varargout = leaf_plot( m, varargin )
                     end
                 elseif ~isempty( s.(fn_output) )
                     o = regexprep( s.(fn_output), 'actual', 'resultant' );  % Hack.
+                    o = regexprep( s.(fn_output), 'stress', 'growth' );  % Hack.
                     o = regexprep( o, 'rate(A|B)?$', '' );
                     monocolors = m.outputcolors.(o);
                 else

@@ -71,7 +71,7 @@ function [cmap,range] = monoColormap( range, hues, split, steps )
         negcolors = [ zerocolor; negcolor ];
     end
     
-    if length(range)==2
+    if (length(range)==2) || split
         range(3) = 0;
     end
     

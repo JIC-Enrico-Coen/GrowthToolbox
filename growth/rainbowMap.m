@@ -21,7 +21,10 @@ function [c,range] = rainbowMap( range, midwhite, nsteps )
         c = [1 1 1;1 1 1];
         return;
     end
-    midwhite = midwhite || (length(range) > 2);
+    if ~midwhite
+        range(3) = range(1);
+    end
+%     midwhite = midwhite || (length(range) > 2);
     if length(range) > 2
         zrange = range;
     elseif midwhite
