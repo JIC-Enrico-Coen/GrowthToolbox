@@ -511,7 +511,12 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
     end
     U1 = insertFixedDFS( UC, renumber, numDFs, ...
                         fixedDFs, [], m.globalDynamicProps.stitchDFs, [], [], [] );
-    U = insertFixedDFS3( UC, renumber, numDFs, m.globalDynamicProps.stitchDFsets, fixedDFs, zeros(size(fixedDFs)) );
+    if isfield( m.globalDynamicProps, 'stitchDFsets' )
+        stitchDFsets = m.globalDynamicProps.stitchDFsets;
+    else
+        stitchDFsets = [];
+    end
+    U = insertFixedDFS3( UC, renumber, numDFs, stitchDFsets, fixedDFs, zeros(size(fixedDFs)) );
     if requireK
             % Warning: insertFixedDFS2 only uses the first three arguments,
             % therefore it will not be correct if there is any stitching,
