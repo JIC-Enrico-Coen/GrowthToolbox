@@ -15,11 +15,16 @@ function perFEvertex = FEToFEvertex( m, perFE, method )
 
 %   Each vertex gets the average of the values of the FEs it is a vertex
 %   of, weighted by the areas or volumes of the FEs.
+%
+%   The METHOD argument is not implemented. If it were, it would operate in
+%   the same way as for related functions such as perVertexToperFE.
+%   Instead, the calculation dome by this function is as if METHOD were
+%   always 'mid'.
 
     if nargin < 3
         method = 'mid';
     end
-    cf = combiningFunctionIndexed( method );  % NOT IMPLEMENTED
+    cf = combiningFunctionIndexed( method );  % NOT USED.
     
     numFE = getNumberOfFEs( m );
     numFEvertex = getNumberOfVertexes( m );
@@ -33,7 +38,7 @@ function perFEvertex = FEToFEvertex( m, perFE, method )
     if true
         if isVolumetricMesh( m )
             vxsPerFE = size(m.FEsets.fevxs,2);
-            measurePerFEvertex1 = cf( m.FEsets.fevxs, repmat( m.FEsets.fevolumes, 1, vxsPerFE ) );
+%             measurePerFEvertex1 = cf( m.FEsets.fevxs, repmat( m.FEsets.fevolumes, 1, vxsPerFE ) );
             measurePerFEvertex = sumArray( m.FEsets.fevxs, repmat( m.FEsets.fevolumes, 1, vxsPerFE ) );
             perFEvol = perFE .* repmat( m.FEsets.fevolumes, 1, valuesPerItem );
 

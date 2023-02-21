@@ -110,6 +110,7 @@ global FE_P6 FE_T4Q
 
     if div14
         edgecentres = zeros(0,3);
+        edgecentreindexes = zeros(0,3);
     else
         % Find the edges that are to be split
         trifaces = fep6faces( fep6_trifaces, 1:3 );
@@ -121,7 +122,6 @@ global FE_P6 FE_T4Q
         uniqueEdgeEnds = m.FEconnectivity.edgeends( oldverticaledges, : );
         edgecentres = (m.FEnodes(uniqueEdgeEnds(:,1),:) + m.FEnodes(uniqueEdgeEnds(:,2),:))/2;
         edgecentreindexes = ic;
-        
     end
     
     m.FEnodes = [ m.FEnodes; pentacentres; quadfacecentres; edgecentres ];

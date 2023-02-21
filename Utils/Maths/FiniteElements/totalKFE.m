@@ -314,7 +314,6 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
       % F(selectedDFs) = 0;
       % rKR = rank(K)
     end
-    fixedMoves = [];
     stitchPairs = zeros(0,2);
     
     fixedDFmap = m.fixedDFmap;
@@ -325,16 +324,16 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
         % freedom, we implement it not by eliminating equations, but by
         % rigidly translating the mesh afterwards.
         oneFixedDFs = fixedDFmap( oneFixedNode, : );
-        if m.globalProps.twoD
-            fixedDFmap( oneFixedNode, : ) = false;
-        else
-            fixedDFmap( oneFixedNode, : ) = false;
-        end
+        fixedDFmap( oneFixedNode, : ) = false;
     else
         oneFixedNode = [];
     end
     fixedDFs = find( reshape( fixedDFmap', [], 1 ) );
-    [K,F,renumber] = eliminateEquations( K, F, fixedDFs );
+    if isfield( m.globalDynamicProps, 'stitchDFsets' )
+        [K,F,renumber] = eliminateEquations( K, F, fixedDFs, m.globalDynamicProps.stitchDFsets );
+    else
+        [K,F,renumber] = eliminateEquations( K, F, fixedDFs );
+    end
     
     if userinterrupt( sb )
         m.displacements(:) = [];
@@ -510,8 +509,9 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
                     m.globalProps.solver );
         end
     end
-    U = insertFixedDFS( UC, renumber, numDFs, ...
-        fixedDFs, [], m.globalDynamicProps.stitchDFs, [], [], fixedMoves );
+    U1 = insertFixedDFS( UC, renumber, numDFs, ...
+                        fixedDFs, [], m.globalDynamicProps.stitchDFs, [], [], [] );
+    U = insertFixedDFS3( UC, renumber, numDFs, m.globalDynamicProps.stitchDFsets, fixedDFs, zeros(size(fixedDFs)) );
     if requireK
             % Warning: insertFixedDFS2 only uses the first three arguments,
             % therefore it will not be correct if there is any stitching,
@@ -521,7 +521,7 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
     end
     if requireF
         F = insertFixedDFS( F, renumber, numDFs, ...
-            m.globalDynamicProps.stitchDFs, [], stitchPairs, [], [], fixedMoves );
+            m.globalDynamicProps.stitchDFs, [], stitchPairs, [], [], [] );
     end
     U = reshape(U, dfsPerNode, numnodes )';
     if requireF

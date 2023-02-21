@@ -7,7 +7,7 @@ function [m,numElided] = elideSmallFaces( m, threshold )
     edgeendtype = m.FEconnectivity.vertexloctype( m.FEconnectivity.edgeends(edges,:) );
     edges = edges( edgeendtype(:,1)==edgeendtype(:,2) );
     if nedges > length(edges)
-        fprintf( 1, '%s: %d edges relected as connecting interior to surface.\n', mfilename(), nedges - length(edges) );
+        fprintf( 1, '%s: %d edges detected as connecting interior to surface.\n', mfilename(), nedges - length(edges) );
     end
     numElided = length(edges);
     if numElided > 0

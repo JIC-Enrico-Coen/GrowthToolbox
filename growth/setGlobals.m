@@ -57,6 +57,7 @@ function setGlobals()
         'FEnodes', { 'fevx', 'dim' }, '', 'vol';
         'FEsets', { '', '' }, '', 'vol';
         'FEsets.fevxs', { 'fe', 'vxperfe' }, 'fevx', 'vol';
+        'FEsets.fevolumes', { 'fe', '' }, 'double', 'vol';
         'nodes', { 'fevx', 'dim' }, '', 'fol';
         'prismnodes', { 'prismvx', 'dim' }, '', 'fol';
         ... % 'sharpedges', { 'feedge', 1 }, 'logical', 'vol'; % The sharpness of edges cannot be automatically updated,
@@ -81,6 +82,7 @@ function setGlobals()
         'visible.surfelements', { 'fe' }, '', '';
         'mgenIndexToName', { 'mgen' }, '', '';
         'fixedDFmap', { 'prismvx', 'dim' }, '', '';
+        'stitchDFsets', { 'prismvx', 'dim' }, '', '';
         'displacements', { 'fevx', 'dim' }, '', '';
         'effectiveGrowthTensor', { 'fe', 'rowtensor' }, '', '';
         'directGrowthTensors', { 'fe', 'rowtensor' }, '', '';
@@ -373,6 +375,7 @@ function setGlobals()
             'mgenswitch', ...
             'transportfield', ...
             'fixedDFmap', ...
+            'stitchDFsets', ...
             'gradpolgrowth', ...
             'gradpolgrowth2', ...
             'polfreeze', ...

@@ -1,7 +1,7 @@
 function [a,n] = weightedAverageArray( indexes, values, weights, shape )
 %[a,n] = weightedAverageArray( indexes, values, weights, shape )
 %   Given an array VALUES, an array INDEXES of the same shape as VALUES
-%   consisting of indexes into another array of shape SHAPE, , and an array
+%   consisting of indexes into another array of shape SHAPE, and an array
 %   of weights of shape SHAPE, construct an array A of the shape such that
 %   A(I) = the weighted average of the elements of VALUES for which the
 %   corresponding element of INDEXES is I.  N is a list of the total weight

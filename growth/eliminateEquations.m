@@ -1,10 +1,10 @@
-function [K,f,renumber] = eliminateEquations( K, f, ...
-    rowsToElim, stitchrows, oppositePairs, stitchPairs, rowsToFix, fixedMoves )
-%(K,f] = eliminateEquations( K, f, rowsToElim, stitchrows, oppositePairs, stitchPairs, oppMoves )
+function [K,f,renumber] = eliminateEquations( K, f, rowsToElim, stitchDFsets, ...
+    oppositePairs, stitchPairs, rowsToFix, fixedMoves )
+%(K,f] = eliminateEquations( K, f, rowsToElim, stitchDFsets, oppositePairs, stitchPairs, oppMoves )
 %
 %    For each i in rowsToElim, delete row i of f and row and column i of K.
 %
-%    For each array in stitchrows, impose the constraint that the
+%    For each array in stitchDFsets, impose the constraint that the
 %    corresponding set of variables are all equal.
 %
 %    For each pair [i,j] in oppositePairs, impose the condition that the
@@ -25,7 +25,7 @@ function [K,f,renumber] = eliminateEquations( K, f, ...
 %   
 
     if nargin < 4
-        stitchrows = [];
+        stitchDFsets = [];
     end
     if nargin < 5
         oppositePairs = [];
@@ -49,19 +49,27 @@ function [K,f,renumber] = eliminateEquations( K, f, ...
         stitchPairs( srows, : ) = [];
         rowsToElim = unique( [ rowsToElim(:), zeroopp(:), zerostitched(:) ] );
     end
-    if iscell(stitchrows)
-        for i=1:length(stitchrows)
-            r = stitchrows{i};
+    if iscell(stitchDFsets)
+        for i=1:length(stitchDFsets)
+            r = stitchDFsets{i};
+            if islogical(r)
+                r = find(r);
+            end
             nr = 1/length(r);
-            K(:,r(1)) = nr * sum( K(:,r), 2 );
+            K(:,r(1)) = sum( K(:,r), 2 );
+            K(r(1),:) = nr * sum( K(r,:), 1 );
             f(r(1)) = nr * sum( f(r) );
             rowsToElim = [ rowsToElim; r(2:end) ];
         end
     else
-        for i=1:size(stitchrows,1)
-            r = stitchrows(i,:);
+        for i=1:size(stitchDFsets,1)
+            r = stitchDFsets(i,:);
+            if islogical(r)
+                r = find(r);
+            end
             nr = 1/length(r);
-            K(:,r(1)) = nr * sum( K(:,r), 2 );
+            K(:,r(1)) = sum( K(:,r), 2 );
+            K(r(1),:) = nr * sum( K(r,:), 1 );
             f(r(1)) = nr * sum( f(r) );
             rowsToElim = [ rowsToElim; r(2:end) ];
         end

@@ -290,7 +290,7 @@ function [m,delinfo] = renumberMesh3D( m, varargin )
             xxxx = 1;
         end
         
-        if ~isempty( regexp( fn, '^volcells' ) )
+        if ~isempty( regexp( fn, '^volcells', 'once' ) )
             xxxx = 1;
         end
         
@@ -328,6 +328,7 @@ function [m,delinfo] = renumberMesh3D( m, varargin )
             end
             
 % WHY IS THIS COMMENTED OUT?
+% Because reindex1() is not implemented.
 %             if iscell(v) && ~isempty( cellcontentstypes )
 %                 for ci=1:numel(v)
 %                     v{ci} = reindex1( v{ci}, reindexer );
