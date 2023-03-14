@@ -7,13 +7,14 @@ function s = orientMesh( s )
 
     numCells = size(s.tricellvxs,1);
     numEdges = size(s.edgeends,1);
-    interioredges = s.edgecells(:,2) ~= 0;
+    aa = sumArray( s.celledges, ones(size(s.tricellvxs)), [max(s.celledges(:)),1] );
+    interioredges = aa >= 2; % s.edgecells(:,2) ~= 0;
     edgevv = [s.celledges(:) [s.tricellvxs(:,[2 3]); s.tricellvxs(:,[3 1]); s.tricellvxs(:,[1 2])] ];
     edgevv( ~interioredges(edgevv(:,1)), : ) = [];
     edgevv = sortrows(edgevv);
     edgevv = reshape( edgevv', 6, [] )';
-    edgeagreement = true(numEdges,1);
-    edgeagreement(interioredges) = edgevv(:,2) == edgevv(:,6);
+    edgeagreement = true(size(edgevv,1),1);
+    edgeagreement(interioredges(edgevv(:,1))) = edgevv(:,2) == edgevv(:,6);
     
     if all(edgeagreement)
         fprintf( 1, '%s: all edges correct.\n', mfilename() );
@@ -25,6 +26,16 @@ function s = orientMesh( s )
     cellstoignoremap = false( numCells, 1 );
     cellstoignoremap(1) = true;
     numCellsCorrected = 0;
+
+% TEMP HACK 2023 Mar 01: Skip this code. Do not reorient the cells. The
+% reason is that because of changes above, edgeagreement and edgevv are no
+% longer indexed by edges. Instead, edgevv(:,1) is the edge referred to,
+% and an edge may appear more than once there. The code below must be
+% amended to handle this.
+
+    timedFprintf( 1, 'Cell flipping disabled.\n', numCellsCorrected );
+    return;
+
     
     while ~isempty(cellstobeprocessedlist)
         ci = cellstobeprocessedlist(end);
@@ -48,6 +59,6 @@ function s = orientMesh( s )
         cellstobeprocessedlist = [ cellstobeprocessedlist(1:end-1); newcells ];
     end
     
-    fprintf( 1, '%s: %d cells flipped.\n', mfilename(), numCellsCorrected );
+    timedFprintf( 1, '%d cells flipped.\n', numCellsCorrected );
 end
 

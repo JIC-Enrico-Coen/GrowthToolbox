@@ -30,7 +30,8 @@ function [s,embedding] = extractSurface( m, oriented )
     if nargin < 2
         oriented = true;
     end
-    surfacefacemap = m.FEconnectivity.faceloctype==1;
+    surfacefacemap = m.FEconnectivity.facefes(:,2)==0; % m.FEconnectivity.faceloctype==1;
+    surfacefaceindexes = find( surfacefacemap );
     surfaceedgeindexes = unique( m.FEconnectivity.faceedges( surfacefacemap, : ) );
     surfacevertexindexes = unique( m.FEconnectivity.faces( surfacefacemap, : ) );
     
@@ -43,7 +44,7 @@ function [s,embedding] = extractSurface( m, oriented )
         
     embedding.faceVolToSurfaceIndex = zeros( numVolFaces, 1 );
     embedding.faceVolToSurfaceIndex(surfacefacemap) = 1:numSurfaceFaces;
-    embedding.faceSurfaceToVolIndex = find(surfacefacemap);
+    embedding.faceSurfaceToVolIndex = surfacefaceindexes;
     embedding.edgeVolToSurfaceIndex = zeros( numVolEdges, 1 );
     embedding.edgeVolToSurfaceIndex(surfaceedgeindexes) = 1:numSurfaceEdges;
     embedding.edgeSurfaceToVolIndex = surfaceedgeindexes;
@@ -98,6 +99,7 @@ function [s,embedding] = extractSurface( m, oriented )
     % 1 1 1: needs either cyclic permutation of 3.  How do we determine
     % which one?
     
+    p = zeros(1,3);
     for ci=1:size(s.tricellvxs,1)
         tcv = s.tricellvxs(ci,:);
         e1 = ends1(ci,:);
@@ -107,7 +109,7 @@ function [s,embedding] = extractSurface( m, oriented )
         end
         s.tricellvxs(ci,p) = s.tricellvxs(ci,:);
     end
-    
+    [aa,nn] = sumArray( s.celledges, ones(size(s.tricellvxs)), [max(s.celledges(:)),1] );
     if oriented
         s = orientMesh( s );
     end

@@ -37,7 +37,7 @@ function m = leaf_cylinder3D( m, varargin )
 %       quadratic tetrahedra respectively (combining in groups of 14 to
 %       make pentahedra).
 %
-%   'subdivision': Either 14 (the default) or 17. This only matters when
+%   'subdivision': Either 14 (the default) or 20. This only matters when
 %       'type' is T4 or T4Q, and specifies one of two different ways of
 %       subdividing a pentahedron into tetrahedra.
 %

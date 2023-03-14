@@ -79,6 +79,13 @@ function m = leaf_setproperty( m, varargin )
         end
     end
     
+    if isfield(s,'poisson')
+        m.cellpoisson = s.poisson + zeros( getNumberOfFEs( m ), 1 );
+    end
+    if isfield(s,'bulkmodulus')
+        m.cellbulkmodulus = s.bulkmodulus + zeros( getNumberOfFEs( m ), 1 );
+    end
+    
     if isfield(s,'poisson') || isfield(s,'poissonsRatio') || isfield(s,'bulkmodulus')
         m = updateElasticity( m );
     end

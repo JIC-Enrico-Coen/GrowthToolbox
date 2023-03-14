@@ -260,111 +260,145 @@ function [m,delinfo] = renumberMesh3D( m, varargin )
             continue;
         end
         
-        dimtypes = gFIELDTYPES{i,2};
-        % dimtypes lists the types of the dimensions of the array.
-        if ischar( dimtypes )
-            dimtypes = { dimtypes };
-        end
-        
-        if ~isempty( dimtypes )
-            if strcmp( dimtypes{1}, '{' )
-                endcellargs = find( strcmp( dimtypes(2:end), '}' ), 1 );
-                cellcontentstypes = dimtypes( (endcellargs+1):end );
-                dimtypes = dimtypes( 2:(endcellargs-1) );
-            else
-                cellcontentstypes = {};
-            end
-        end
-        
-        valuetype = gFIELDTYPES{i,3};
-        % valuetype is the type of the values stored in the array.
-        
-%         meshtype = gFIELDTYPES{i,4};
-        % meshtype specifies whether the field is to be found only in
-        % volumetric meshes, only in foliate meshes, or in all meshes.
-        
-        vdims = length(size(v));
-        changed = false;
-%         fprintf( 1, 'Reindexing field %s.\n', fn );
-        if strcmp( fn, 'secondlayer.vxFEMcell' )
-            xxxx = 1;
-        end
-        
-        if ~isempty( regexp( fn, '^volcells', 'once' ) )
-            xxxx = 1;
-        end
-        
-        % Reindex every applicable dimension.
-        for j=1:length(dimtypes)
-            dimtype = dimtypes{j};
-            if strcmp(dimtype,'prismvx') && full3d
-                dimtype = 'fevx';
-            end
-            if ~isfield( delinfo, dimtype )
-                continue;
-            end
-            reindexer = delinfo.(dimtype);
+        if strcmp( fn, 'globalDynamicProps.stitchDFsets' )
+            % Special case handling.
+            % m.globalDynamicProps.stitchDFsets is a cell array of an
+            % arbitrary length, each element of which is a list of vertex
+            % degree of freedom indexes.
+            reindexer = delinfo.fevx;
             if isempty(reindexer.keepmap)
                 continue;
             end
-            changed = true;
-            whichcase = j+10*vdims;
-            switch whichcase
-                case 11
-                    v = reshape( v(reindexer.keepmap), [], 1 );
-                case 21
-                    v = v(reindexer.keepmap,:);
-                case 22
-                    v = v(:,reindexer.keepmap);
-                case 31
-                    v = v(reindexer.keepmap,:,:);
-                case 32
-                    v = v(:,reindexer.keepmap,:);
-                case 33
-                    v = v(:,:,reindexer.keepmap);
-                otherwise
-                    % Not handled.
-                    error( '%s: unexpected case %d.', mfilename(), whichcase );
+            v1 = cell(size(v));
+            for si=1:numel(v)
+                % v1{si} should be set to the set of all new vertex
+                % indexes that are mapped by vxlist to members of
+                % v{si}.
+                
+                v{si} = int32( v{si} );
+                
+                % Split the values in v{si} into their vertex index and
+                % df.
+                sdf_vxs = int32( floor((v{si}-1)/3)+1 );
+                sdf_dfs = int32( mod( v{si}-1, 3 ) + 1 );
+                
+                % Remap the vertex indexes.
+                newsdf_vxs = delinfo.fevx.remap( sdf_vxs );
+                
+                % Delete from both arrays the deleted vertexes.
+                newsdf_dfs = sdf_dfs;
+                newsdf_dfs(newsdf_vxs==0) = [];
+                newsdf_vxs(newsdf_vxs==0) = [];
+                
+                v1{si} = reshape( 3*(newsdf_vxs - 1) + newsdf_dfs, [], 1 );
             end
-            
-% WHY IS THIS COMMENTED OUT?
-% Because reindex1() is not implemented.
-%             if iscell(v) && ~isempty( cellcontentstypes )
-%                 for ci=1:numel(v)
-%                     v{ci} = reindex1( v{ci}, reindexer );
-%                 end
-%             end
-        end
-        
-        % Remap the values.
-        if ~isempty( valuetype )
-            haszero = valuetype(1)=='z';
-            if haszero
-                valuetype(1) = [];
+        else
+            dimtypes = gFIELDTYPES{i,2};
+            % dimtypes lists the types of the dimensions of the array.
+            if ischar( dimtypes )
+                dimtypes = { dimtypes };
             end
-            if isfield( delinfo, valuetype )
-                if strcmp(valuetype,'prismvx') && full3d
-                    valuetype = 'fevx';
+
+            if ~isempty( dimtypes )
+                if strcmp( dimtypes{1}, '{' )
+                    endcellargs = find( strcmp( dimtypes(2:end), '}' ), 1 );
+                    cellcontentstypes = dimtypes( (endcellargs+1):end );
+                    dimtypes = dimtypes( 2:(endcellargs-1) );
+                else
+                    cellcontentstypes = {};
                 end
-                reindexer = delinfo.(valuetype);
-                if ~isempty(reindexer.dellist)
-                    changed = true;
-                    if iscell(v)
-                        if haszero
-                            for vi=1:numel(v)
-                                v{vi}(v{vi}>0) = reindexer.remap(v{vi}(v{vi}>0));
+            end
+
+            valuetype = gFIELDTYPES{i,3};
+            % valuetype is the type of the values stored in the array.
+
+    %         meshtype = gFIELDTYPES{i,4};
+            % meshtype specifies whether the field is to be found only in
+            % volumetric meshes, only in foliate meshes, or in all meshes.
+
+            vdims = length(size(v));
+            changed = false;
+    %         fprintf( 1, 'Reindexing field %s.\n', fn );
+            if strcmp( fn, 'secondlayer.vxFEMcell' )
+                xxxx = 1;
+            end
+
+            if ~isempty( regexp( fn, '^volcells', 'once' ) )
+                xxxx = 1;
+            end
+
+            % Reindex every applicable dimension.
+            for j=1:length(dimtypes)
+                dimtype = dimtypes{j};
+                if strcmp(dimtype,'prismvx') && full3d
+                    dimtype = 'fevx';
+                end
+                if ~isfield( delinfo, dimtype )
+                    continue;
+                end
+                reindexer = delinfo.(dimtype);
+                if isempty(reindexer.keepmap)
+                    continue;
+                end
+                changed = true;
+                whichcase = j+10*vdims;
+                switch whichcase
+                    case 11
+                        v = reshape( v(reindexer.keepmap), [], 1 );
+                    case 21
+                        v = v(reindexer.keepmap,:);
+                    case 22
+                        v = v(:,reindexer.keepmap);
+                    case 31
+                        v = v(reindexer.keepmap,:,:);
+                    case 32
+                        v = v(:,reindexer.keepmap,:);
+                    case 33
+                        v = v(:,:,reindexer.keepmap);
+                    otherwise
+                        % Not handled.
+                        error( '%s: unexpected case %d.', mfilename(), whichcase );
+                end
+
+    % WHY IS THIS COMMENTED OUT?
+    % Because reindex1() is not implemented.
+    %             if iscell(v) && ~isempty( cellcontentstypes )
+    %                 for ci=1:numel(v)
+    %                     v{ci} = reindex1( v{ci}, reindexer );
+    %                 end
+    %             end
+            end
+
+            % Remap the values.
+            if ~isempty( valuetype )
+                haszero = valuetype(1)=='z';
+                if haszero
+                    valuetype(1) = [];
+                end
+                if isfield( delinfo, valuetype )
+                    if strcmp(valuetype,'prismvx') && full3d
+                        valuetype = 'fevx';
+                    end
+                    reindexer = delinfo.(valuetype);
+                    if ~isempty(reindexer.dellist)
+                        changed = true;
+                        if iscell(v)
+                            if haszero
+                                for vi=1:numel(v)
+                                    v{vi}(v{vi}>0) = reindexer.remap(v{vi}(v{vi}>0));
+                                end
+                            else
+                                for vi=1:numel(v)
+                                    v{vi} = reindexer.remap(v{vi});
+                                end
                             end
                         else
-                            for vi=1:numel(v)
-                                v{vi} = reindexer.remap(v{vi});
+                            if haszero
+                                v(v>0) = reindexer.remap(v(v>0));
+                            else
+                                v1 = reindexer.remap(v);
+                                v = v1;
                             end
-                        end
-                    else
-                        if haszero
-                            v(v>0) = reindexer.remap(v(v>0));
-                        else
-                            v1 = reindexer.remap(v);
-                            v = v1;
                         end
                     end
                 end

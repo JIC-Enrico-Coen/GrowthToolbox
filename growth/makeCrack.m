@@ -189,6 +189,7 @@ function [m,splitVertexList,reindexVxs] = makeCrack( m, candidateVertexes, candi
     
 %     m.FEnodes = m.FEnodes( reindexVxs, : );
     m = replicateVxs( m, reindexVxs );
+    m.auxdata.vxringindexes = m.auxdata.vxringindexes(reindexVxs);
     
     % We have now updated the vertexes and elements, and all per-vertex
     % information.
@@ -217,42 +218,74 @@ function m = replicateVxs( m, vxlist )
             continue;
         end
         
-        dimtypes = gFIELDTYPES{i,2};
-        % dimtypes lists the types of the dimensions of the array.
-        if ischar( dimtypes )
-            dimtypes = { dimtypes };
-        end
-        
-        vdims = length(size(v));
-        changed = false;
-        
-        % Reindex every applicable dimension.
-        for j=1:length(dimtypes)
-            dimtype = dimtypes{j};
-            if strcmp(dimtype,'prismvx')
-                dimtype = 'fevx';
+        if strcmp( fn, 'globalDynamicProps.stitchDFsets' )
+            % Special case handling.
+            % m.globalDynamicProps.stitchDFsets is a cell array of an
+            % arbitrary length, each element of which is a list of vertex
+            % degree of freedom indexes.
+            oldnumvxs = max(vxlist);
+            v1 = cell(size(v));
+            for si=1:numel(v)
+                % v1{si} should be set to the set of all new vertex
+                % indexes that are mapped by vxlist to members of
+                % v{si}.
+                fixedvxs = floor((v{si}-1)/3)+1;
+                fixeddfs = mod( v{si}-1, 3 ) + 1;
+                
+                fixedvxsmap = false( oldnumvxs, 1 );
+                fixedvxsmap( fixedvxs ) = true;
+                
+                fixeddfsmap = zeros( oldnumvxs, 1 );
+                fixeddfsmap( fixedvxs ) = fixeddfs;
+                
+                newfixedvxsmap = fixedvxsmap( vxlist );
+                newfixedvxs = find( newfixedvxsmap );
+                
+                newfixeddfsmap = fixeddfsmap( vxlist );
+                newfixeddfs = newfixeddfsmap( newfixedvxsmap );
+                
+                v1{si} = 3*(newfixedvxs - 1) + newfixeddfs;
             end
-            if ~strcmp(dimtype,'fevx')
-                continue;
+            v = v1;
+        else
+        
+            dimtypes = gFIELDTYPES{i,2};
+            % dimtypes lists the types of the dimensions of the array.
+            if ischar( dimtypes )
+                dimtypes = { dimtypes };
             end
-            changed = true;
-            whichcase = j+10*vdims;
-            switch whichcase
-                case 11
-                    v = reshape( v(vxlist), [], 1 );
-                case 21
-                    v = v(vxlist,:);
-                case 22
-                    v = v(:,vxlist);
-                case 31
-                    v = v(vxlist,:,:);
-                case 32
-                    v = v(:,vxlist,:);
-                case 33
-                    v = v(:,:,vxlist);
-                otherwise
-                    % Not handled.
-                    error( '%s: unexpected case %d.', mfilename(), whichcase );
+
+            vdims = length(size(v));
+            changed = false;
+
+            % Reindex every applicable dimension.
+            for j=1:length(dimtypes)
+                dimtype = dimtypes{j};
+                if strcmp(dimtype,'prismvx')
+                    dimtype = 'fevx';
+                end
+                if ~strcmp(dimtype,'fevx')
+                    continue;
+                end
+                changed = true;
+                whichcase = j+10*vdims;
+                switch whichcase
+                    case 11
+                        v = reshape( v(vxlist), [], 1 );
+                    case 21
+                        v = v(vxlist,:);
+                    case 22
+                        v = v(:,vxlist);
+                    case 31
+                        v = v(vxlist,:,:);
+                    case 32
+                        v = v(:,vxlist,:);
+                    case 33
+                        v = v(:,:,vxlist);
+                    otherwise
+                        % Not handled.
+                        error( '%s: unexpected case %d.', mfilename(), whichcase );
+                end
             end
         end
         
@@ -261,6 +294,10 @@ function m = replicateVxs( m, vxlist )
             m = setDeepField( m, v, fn );
         end
     end
+end
+
+function a = replicateValues( a, vxlist )
+    
 end
 
 function fns = checkCandidateFaceNormals( m, faces )
