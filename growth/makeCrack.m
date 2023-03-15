@@ -189,7 +189,9 @@ function [m,splitVertexList,reindexVxs] = makeCrack( m, candidateVertexes, candi
     
 %     m.FEnodes = m.FEnodes( reindexVxs, : );
     m = replicateVxs( m, reindexVxs );
-    m.auxdata.vxringindexes = m.auxdata.vxringindexes(reindexVxs);
+    if isfield( m.auxdata, 'vxringindexes' )
+        m.auxdata.vxringindexes = m.auxdata.vxringindexes(reindexVxs);
+    end
     
     % We have now updated the vertexes and elements, and all per-vertex
     % information.
