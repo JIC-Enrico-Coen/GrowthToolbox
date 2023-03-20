@@ -31,5 +31,4 @@ function cmap = makeCmap( colors, nsteps, frac )
         ci = c(i);
         cmap(i,:) = colors(ci+1,:)*e(i) + colors(ci+2,:)*d(i);
     end
-%     cmap(nsteps+1,:) = colors(end,:);
 end
