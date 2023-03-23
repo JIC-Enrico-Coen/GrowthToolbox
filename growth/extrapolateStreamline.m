@@ -212,7 +212,7 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
         
         if does_edge_cat
             % Catastrophise now.
-            [m,s,stopped] = stopStreamline( m, s, 3 );
+            [m,s,stopped] = stopStreamline( m, s, 'e' );
             remaininglength = 0;
         else
             % Cross over to the next element, then call this procedure again.
