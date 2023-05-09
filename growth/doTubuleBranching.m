@@ -41,6 +41,7 @@ function m = doTubuleBranching( m, dt )
     end
     
     branchPerVertex = max( 0, leaf_getTubuleParamsPerVertex( m, 'prob_branch_length_time' ) );
+    tailBranchPerVertex = leaf_getTubuleParamsPerVertex( m, 'prob_tail_branch_time' );
     branchPerCurvature = leaf_getTubuleParamsPerVertex( m, 'prob_branch_length_curvature_time' );
         
 
@@ -66,6 +67,7 @@ function m = doTubuleBranching( m, dt )
     alllengths = zeros( totalsegments + numtubules, 1 );
     alltubules = zeros( totalsegments + numtubules, 1, 'int32' );
     allsegindexes = zeros( totalsegments + numtubules, 1, 'int32' );
+    tailbranchprob = zeros( numtubules, 1 );
     ai = 0;
     for ii=1:numtubules
         track = m.tubules.tracks(ii);
@@ -79,6 +81,8 @@ function m = doTubuleBranching( m, dt )
         alllengths( range ) = track.segmentlengths;
         alltubules( range ) = ii;
         allsegindexes( range ) = 1:ns;
+        
+        tailbranchprob(ii) = sum( reshape( tailBranchPerVertex( m.tricellvxs( vxci(1), : ) ), [], 3 ) .* vxbcs(1,:), 2 );
         
         alldirglobals = [ track.globalcoords(2:end,:) - track.globalcoords(1:(end-1),:); [0 0 0] ];
         alldirglobals = alldirglobals ./ sqrt(sum(alldirglobals.^2,2));
@@ -104,11 +108,25 @@ function m = doTubuleBranching( m, dt )
         xxxx = 1;
     end
     
+    tailbranches = rand(size(tailbranchprob)) < tailbranchprob;
+    selectedTubules1 = find( tailbranches );
+    numtailbranches = length( selectedTubules1 );
+    if any(tailbranches)
+        bsegindexes1 = ones( numtailbranches, 1 );
+        branchSegbc1 = [ ones( numtailbranches, 1 ), zeros( numtailbranches, 1 ) ];
+        branchTimes1 = rand( numtailbranches, 1 );
+        
+        bsegindexes = [ bsegindexes; bsegindexes1 ];
+        branchSegbc = [ branchSegbc; branchSegbc1 ];
+        branchTimes = [ branchTimes; branchTimes1 ];
+    end
+    
     % Account for the limited supply of microtubule heads.
-    numNewTubules = requestMTcreation( m, numNewTubulesRequested );
+    numNewTubules = requestMTcreation( m, numNewTubulesRequested + numtailbranches );
     if numNewTubules==0
         return;
     end
+    fprintf( 1, 'General branches: %d. Tail branches: %d.\n', numNewTubulesRequested, numtailbranches );
     selectedTubules = randsubset( numNewTubulesRequested, numNewTubules );
     bsegindexes = bsegindexes( selectedTubules );
     branchSegbc = branchSegbc( selectedTubules, : );

@@ -13,47 +13,59 @@ function param = getTubuleParamModifiedByMorphogens( m, fn, a, b )
 
     param = [];
     
+    if ~isfield( m.tubules.tubuleparams, fn )
+        return;
+    end
+    
     getAllVxs = nargin==2;
     getForTubule = nargin==3;
     getPoints = nargin > 3;
     
-    if getForTubule
+    if getAllVxs
+        numPoints = getNumberOfVertexes( m );
+    elseif getForTubule
         if isemptystreamline( a )
             return;
         end
         s = a;
-    end
-    
-    if getPoints
+        numPoints = 1;
+    elseif getPoints
         if isempty(a) || isempty(b)
             return;
         end
         cis = a;
         bcs = b;
-    end
-    
-    if ~isfield( m.tubules.tubuleparams, fn )
-        return;
+        numPoints = length(cis);
     end
     
     param = m.tubules.tubuleparams.(fn);
     
-    if isnumeric(param) && (numel(param)==1)
+    if isnumeric(param) && (size(param,1)==1)
+        % The parameter is not position-dependent. Replicate its fixed
+        % value according to the number of values demanded.
+        param = repmat( param, numPoints, 1 );
         return;
     end
     
     if ischar( param )
+        % The parameter specifies a morphogen by name.
         mi = FindMorphogenIndex( m, param );
         if isempty(mi)
-            param = 0;
+            % No value: return zeros.
+            param = zeros( numPoints, 1 );
             return;
         end
         pervertex = m.morphogens(:,mi);
     elseif isempty(param)
-        pervertex = zeros( getNumberOfVertexes(m), 1 );
+        % No value: return zeros.
+        pervertex = zeros( numPoints, 1 );
     else
+        % param is assumed to specify one value per vertex.
         pervertex = param;
     end
+    
+    % At this point, pervertex is the value of the param at every
+    % vertex.
 
     if getAllVxs
         param = pervertex;
@@ -69,8 +81,21 @@ function param = getTubuleParamModifiedByMorphogens( m, fn, a, b )
         if any(isinf(pervertex( m.tricellvxs( ci, : ) )))
             xxxx = 1;
         end
-        param = bc * pervertex( m.tricellvxs( ci, : ) );
+        paramlength = size(param,2);
+        param = zeros( 1, paramlength );
+        for pi = 1:paramlength
+            param(1,pi) = bc * pervertex( m.tricellvxs( ci, : ), pi );
+        end
+        paramx = bc * pervertex( m.tricellvxs( ci, : ) );
+        xxxx = 1;
     else
-        param = sum( reshape( pervertex( m.tricellvxs( cis, : ) ), [], 3 ) .* bcs, 2 );
+        paramlength = size(param,2);
+        param = zeros( length(cis), paramlength );
+        for pi = 1:paramlength
+            pervertex1 = pervertex( pi );
+            param(:,pi) = sum( reshape( pervertex1( m.tricellvxs( cis, : ) ), [], 3 ) .* bcs, 2 );
+        end
+        paramx = sum( reshape( pervertex( m.tricellvxs( cis, : ) ), [], 3 ) .* bcs, 2 );
+        xxxx = 1;
     end
 end

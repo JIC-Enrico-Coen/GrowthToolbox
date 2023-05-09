@@ -819,9 +819,6 @@ function m = upgradeTubules( m )
                                                     * m.tubules.tubuleparams.prob_collide_cut_collider;
         m.tubules.tubuleparams.prob_collide_cut_collided = 1 - m.tubules.tubuleparams.prob_collide_cut_collider;
     end
-%     if isfield( m.tubules.tubuleparams, 'prob_collide_catastrophe_steep' )
-%         m.tubules.tubuleparams.prob_collide_catastrophe = m.tubules.tubuleparams.prob_collide_catastrophe_steep;
-%     end
     m.tubules.tubuleparams = safermfield( m.tubules.tubuleparams, setdiff( fieldnames( m.tubules.tubuleparams ), fieldnames( emptyTubules.tubuleparams ) ) );
 
     m.tubules.defaulttrack = upgradeTubule( m.tubules.defaulttrack );

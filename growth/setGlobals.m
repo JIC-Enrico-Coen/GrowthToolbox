@@ -511,6 +511,7 @@ function setGlobals()
         'prob_branch_tubule_time', ... % probability/(number of tubules)
         'prob_branch_length_time', ... % probability/(length*time)
         'prob_branch_length_curvature_time', ... % probability/(length*time) depending in some way on curvature.
+        'prob_tail_branch_time', ... % probability/time per tubule.
         'prob_branch_forwards', ... % probability
         'prob_branch_parallel', ... % probability
         'prob_branch_antiparallel', ... % probability
@@ -528,39 +529,33 @@ function setGlobals()
         'edge_plus_catastrophe', ... % probability/time
         'prob_plus_stop', ... % probability/time
         'prob_plus_rescue', ... % probability/time
-        'prob_collide_zipcat', ... % probability per collision
-        'prob_collide_catastrophe_shallow', ... % probability per collision
-        'prob_collide_catastrophe_steep', ... % probability per collision
-        'prob_collide_zipper_shallow', ... % probability per collision
-        'prob_collide_zipper_steep', ... % probability per collision
+        'rescue_angle_mean', ... % The average deviation of a rescued tubule from its original direction.
+        'rescue_angle_spread', ... % The std dev of the deviation of a rescued tubule from its original direction.
+        ...
+        'collision_angles', ... % angles in radians
+        'probs_zip', ... % vector of probabilities, one element longer than collision_angles
+        'probs_cat', ... %  vector of probabilities, one element longer than collision_angles
+        ...
+        ... % 'min_collide_angle', ... % radians.  OBSOLETE.
+        ... % 'prob_collide_zipcat', ... % probability per collision.  OBSOLETE.
+        ... % 'prob_collide_catastrophe_shallow', ... % probability per collision  OBSOLETE.
+        ... % 'prob_collide_catastrophe_steep', ... % probability per collision  OBSOLETE.
+        ... % 'prob_collide_zipper_shallow', ... % probability per collision  OBSOLETE.
+        ... % 'prob_collide_zipper_steep', ... % probability per collision  OBSOLETE.
+        ...
         'prob_collide_branch', ... % probability per collision that the collider generates a new branch from the crossover point.
         'min_angle_crossover_branch', ... % When a crossover happens at below this angle, no new branch can be generated from the crossover point.
         'prob_collide_cut', ... % probability per collision that one of the mts involved is severed
         'prob_collide_cut_collider', ... % probability per severance that the colliding mt is severed.
-        ... % 'prob_collide_cut_collided', ... % probability per severance that the mt collided with is severed
-        ...                              % (Redundant with preceding: these must add to 1.)
         'prob_collide_cut_tailcat', ... % probability, given that a cut happens, that the tail of the leading half catastrophizes;
         'prob_collide_cut_headcat', ... % probability, given that a cut happens, that the head of the trailing half catastrophizes;
         'delay_cut', ... % The time after a crossover that cutting happens, in those cases where it does.
         'delay_branch', ... % The time after a crossover that branching happens, in those cases where it does.
         'min_cut_angle', ... % radians
-        'min_collide_angle', ... % radians
-        ... % 'prob_cleavage', ... % probability per crossover
-        ... % 'prob_cleave_catastrophe', ... % probability that when a mt is cleaved, its rear part catastrophises
-        ... % 'mintime_cleavage', ... % if a cleavage happens, the minimum time before cleavage
-        ... % 'maxtime_cleavage', ... % if a cleavage happens, the maximum time before cleavage
         'creation_rate', ... % 1/(length^2 * time)
         'curvature', ... % 1/length
         'max_mt_per_area', ... % 1/length^2
         'radius' }; % length
-    % The three collision probabilities relate to the first three of these
-    % four possible outcomes of a collision:
-    % 1. The collider stops growing and starts shrinking.
-    % 2. The collider zippers to the other microtubule.
-    % 3. The collider carries on, severing the other microtubule.
-    % 4. The collider carries on, neither microtubule being affected.
-    % Since they are exclusive and exhaustive events, the last does not
-    % have a separate parameter, but is 1 minus the other three.
         
     gDEFAULTFIELDS = struct( ...
         'FEsets', [], ...

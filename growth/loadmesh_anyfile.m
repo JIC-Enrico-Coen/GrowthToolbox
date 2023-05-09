@@ -1,4 +1,4 @@
-function [m,ok] = loadmesh_anyfile( m, filename, staticdata, interactive, checkValidity )
+function [m,ok] = loadmesh_anyfile( m, filenamefullpath, staticdata, interactive, checkValidity )
 %m = loadmesh_anyfile( m, filename, staticdata, interactive )
 %   Load a mesh from a file.
 %   The expected format depends on the extension of the filename:
@@ -39,29 +39,33 @@ function [m,ok] = loadmesh_anyfile( m, filename, staticdata, interactive, checkV
     mfileext = '.m';
     
     ok = true;
+    filenamefullpath = makerootpath( filenamefullpath );
     
-%     [realprojectdir,relfilename] = findAncestorGFtboxProject( filename );
-    [modeldir,modelname,modelext] = fileparts( filename );
-    [projectdir,modeldirname] = dirparts( modeldir );
-    if ~strcmp( modeldirname, modelname )
-    %   warning( ['GFtbox:' mfilename()], ...
-    %       '%s: model directory %s and model file %s%s have different names.\n', ...
-    %       mfilename(), modeldirname, modelname, modelext );
+    
+    [realmodeldir,relfilename] = findAncestorGFtboxProject( filenamefullpath );
+    if isempty( realmodeldir )
+        [modeldirfullpath,basefilename,basefileext] = fileparts( filenamefullpath );
+    else
+        modeldirfullpath = realmodeldir;
+        [~,basefilename,basefileext] = fileparts( filenamefullpath );
     end
-    modelnamewithext = [modelname,modelext];
-    fullname = fullfile( modeldir, modelnamewithext );
+    filedirfullpath = fileparts( filenamefullpath );
+    
+    [projectsfullpath,modeldirname] = dirparts( modeldirfullpath );
+    modelnamewithext = [basefilename,basefileext];
 
-    if isempty(modeldir)
+    % filesource is only used for reporting information to the console.
+    if isempty(modeldirfullpath)
         filesource = modelnamewithext;
     else
-        filesource = [ modelnamewithext ' in ' modeldir ];
+        filesource = [ modelnamewithext ' in ' modeldirfullpath ];
     end
-    
-    switch modelext
+        
+    switch basefileext
         case objext
             fprintf( 1, '%s: Loading OBJ file %s.\n', ...
                 mfilename(), filesource );
-            m = readMeshFromOBJ( modeldir, modelnamewithext );
+            m = readMeshFromOBJ( filedirfullpath, modelnamewithext );
             if isempty(m)
                 ok = false;
             else
@@ -72,15 +76,15 @@ function [m,ok] = loadmesh_anyfile( m, filename, staticdata, interactive, checkV
         case matext
             fprintf( 1, '%s: Loading MAT file %s.\n', ...
                 mfilename(), filesource );
-            if ~exist( fullname, 'file' )
-                GFtboxAlert( interactive, '%s: No file %s.', mfilename(), fullname )
+            if ~exist( filenamefullpath, 'file' )
+                GFtboxAlert( interactive, '%s: No file %s.', mfilename(), filenamefullpath )
                 ok = false;
                 return;
             else
                 try
-                    z = load( fullname );
-                catch e %#ok<NASGU>
-                    GFtboxAlert( interactive, '%s: Cannot load %s.', mfilename(), fullname )
+                    z = load( filenamefullpath );
+                catch e
+                    GFtboxAlert( interactive, '%s: Cannot load %s.', mfilename(), filenamefullpath )
                     e
                     ok = false;
                     return;
@@ -108,8 +112,8 @@ function [m,ok] = loadmesh_anyfile( m, filename, staticdata, interactive, checkV
                 m.(fn) = gDEFAULTFIELDS.(fn);
             end
             
-            m.globalProps.projectdir = projectdir;
-            m = makeModelNamesConsistent( m, fullfile( projectdir, modeldirname ) );
+            m.globalProps.projectdir = projectsfullpath;
+            m = makeModelNamesConsistent( m, fullfile( projectsfullpath, modeldirname ) );
             m = upgrademesh( m, checkValidity );
             m.plotdata = struct([]);
             [m,ok] = loadStaticData( m, staticdata );
@@ -122,7 +126,7 @@ function [m,ok] = loadmesh_anyfile( m, filename, staticdata, interactive, checkV
             m.plotdefaults = deleteRawPlotData( m.plotdefaults );
             % The projectdir and modelname are defined by where we loaded
             % the file from.
-            m.globalProps.projectdir = projectdir;
+            m.globalProps.projectdir = projectsfullpath;
             m.globalProps.modelname = modeldirname;
             m.globalProps.allowsave = 1;
             % Movie and handle data are necessarily invalid for a newly
@@ -138,17 +142,17 @@ function [m,ok] = loadmesh_anyfile( m, filename, staticdata, interactive, checkV
         case mfileext
             fprintf( 1, '%s: Executing commands from %s.\n', ...
                 mfilename(), filesource );
-            if ~isempty(modeldir)
-                prevdir = cd(modeldir);
+            if ~isempty(filedirfullpath)
+                prevdir = cd(filedirfullpath);
             end
             m = docommands( m, modelnamewithext, 'nostop' );
-            if ~isempty(modeldir)
+            if ~isempty(filedirfullpath)
                 cd(prevdir);
             end
         otherwise
             ok = false;
             GFtboxAlert( interactive, '%s: Unknown file format: %s.  Mesh not loaded.\n', ...
-                mfilename(), filename );
+                mfilename(), filenamefullpath );
     end
 end
 

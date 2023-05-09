@@ -72,7 +72,17 @@ function [m,ok] = leaf_iterateStreamlines( m )
                     grantednum = requestMTcreation( m, 1 );
                     if grantednum > 0
 %                         timedFprintf( 'Creating pending branch.\n' );
-                        [m,newbranchinfo,newmtindexes] = spawnBranches( m, si, sevs(sevpi).vertex, [1 0], sevs(sevpi).time - m.globalDynamicProps.currenttime );
+                        UNIFORM_CROSSOVER_BRANCHING = true;
+                        if UNIFORM_CROSSOVER_BRANCHING
+                            branchSides = randSign(1,1);
+                            branchAngles = rand(1) * pi;
+                            [m,newbranchinfo,newmtindexes] = spawnBranches( m, si, sevs(sevpi).vertex, [1 0], ...
+                                    sevs(sevpi).time - m.globalDynamicProps.currenttime, ...
+                                    branchSides, branchAngles );
+                        else
+                            [m,newbranchinfo,newmtindexes] = spawnBranches( m, si, sevs(sevpi).vertex, [1 0], ...
+                                    sevs(sevpi).time - m.globalDynamicProps.currenttime );
+                        end
                         sevs(sevpi).eventtype = 'x';
                         for ti=1:newmtindexes
                             m.tubules.tracks(ti).status.interactiontime = m.tubules.tubuleparams.branch_interaction_delay;
@@ -251,10 +261,31 @@ function [m,ok] = leaf_iterateStreamlines( m )
                     % Is shrinking. Might continue or be rescued.
                     nextrescue = sampleexp( params.prob_plus_rescue * ease_of_creation );
                     if nextrescue < remainingtime
+                        % A rescued tubule may change its direction,
+                        % according to the parameters rescue_angle_mean and
+                        % rescue_angle_spread, if present; otherwise the
+                        % original direction is maintained.
                         s.status.head = 1;
                         numrescued = numrescued+1;
                         rescueinfo( numrescued, : ) = [ s.vxcellindex(end), s.barycoords(end,:), Steps(m)+1 ];
                         timeused = nextrescue;
+                        
+                        if isfield( params, 'rescue_angle_mean' ) && ~isempty(params.rescue_angle_mean)
+                            deviation = (params.rescue_angle_mean + params.rescue_angle_spread * randn( 1 )) * randSign( 1 );
+                            currentDirection = s.directionglobal;
+                            currentElement = s.vxcellindex(end);
+                            elementNormal = m.cellFrames(:,3,currentElement)';
+                            elementVxs = m.nodes( m.tricellvxs( currentElement, : ), : );
+                            newDirection = rotateVecAboutVec( currentDirection, elementNormal, deviation );
+                            [theDirBcs,dbc_err] = baryDirCoords( elementVxs, elementNormal, newDirection );
+                            xxxx = 1;
+                            s.directionglobal = newDirection;
+                            s.directionbc = theDirBcs;
+                            if ~isfield( m.tubules.statistics, 'rescueangles' )
+                                m.tubules.statistics.rescueangles = [];
+                            end
+                            m.tubules.statistics.rescueangles(end+1) = deviation;
+                        end
                     else
                         s.status.head = -1;
                         timeused = remainingtime;

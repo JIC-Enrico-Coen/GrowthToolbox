@@ -706,6 +706,8 @@ function s = argToString1( arg )
         s=['''',arg,''''];
     elseif length(arg)==1
         s=num2str(arg);
+    elseif length(arg) <= 10
+        s = [ '[' num2str(arg) ']' ];
     else
         minarg = min(arg);
         maxarg = max(arg);
