@@ -23,7 +23,7 @@ function doSecondLayerClick( varargin )
         end
         fprintf( 1, 'Click on second layer cell %d, area %e.\n', ...
             ci, handles.mesh.secondlayer.cellarea(ci) );
-        2
+        
         isShocked = handles.mesh.secondlayer.cloneindex( ci ) > 1;
         if isShocked
             fprintf( 1, 'doSLC: was shocked: %d\n', handles.mesh.secondlayer.cloneindex( ci ) );
