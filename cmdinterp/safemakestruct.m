@@ -9,6 +9,9 @@ function [s,ok] = safemakestruct( self, varargin )
 %   Unlike STRUCT, SAFEMAKESTRUCT does not treat cell array arguments
 %   specially.
 %
+%   If an option name appears more than once, then the last value given for
+%   it will be used.
+%
 %   The SELF argument is a string used in error messages, and should
 %   typically be the name of the procedure this function was called from
 %   (e.g. as provided by MFILENAME()).  If SELF is empty, no error messages
@@ -16,7 +19,7 @@ function [s,ok] = safemakestruct( self, varargin )
 
     s = struct();
     ok = true;
-    if nargin==1
+    if nargin <= 1
         return;
     end
     if isempty(varargin)

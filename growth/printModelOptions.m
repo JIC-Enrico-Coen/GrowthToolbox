@@ -1,4 +1,4 @@
-function s = printModelOptions( fid, m, reportOptions )
+function s = printModelOptions( fid, m, includedOptions, excludedOptions )
 %printModelOptions( m )
 %printModelOptions( fid, m )
 %printModelOptions( fid, m, optionnames )
@@ -14,11 +14,17 @@ function s = printModelOptions( fid, m, reportOptions )
         return;
     end
     mo = m.modeloptions;
-    if nargin >=3
-        notprinted = setdiff( fieldnames(mo), reportOptions );
+    if (nargin >=3) && ~isempty( includedOptions )
+        notprinted = setdiff( fieldnames(mo), includedOptions );
         mo = safermfield( mo, notprinted );
     end
-
+    
+    if (nargin >=3) && ~isempty( excludedOptions )
+        mo = safermfield( mo, excludedOptions );
+    end
+    
+%     mo = orderfields(mo);
+        
     if fid >= 0
         fprintf( fid, 'Model options:\n' );
     end

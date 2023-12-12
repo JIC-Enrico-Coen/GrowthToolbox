@@ -800,11 +800,27 @@ end
 % end
 
 function m = upgradeTubules( m )
-    global gMTProperties
-
     emptyTubules = initTubules();
-    for i=1:length(m.tubules.tracks)
-        m.tubules.tracks(i) = defaultFromStructRecursive( m.tubules.tracks(i), emptyTubules.defaulttrack );
+    if isempty( m.tubules.tracks )
+        m.tubules.tracks = emptyTubules.tracks;
+        return;
+    end
+    
+    m.tubules.tubuleparams = renameFields( m.tubules.tubuleparams, 'max_mt_per_area', 'max_growing_mt_per_area' );
+    
+    newfields = setdiff( fieldnames( emptyTubules.tracks ), fieldnames( m.tubules.tracks ) );
+    for nfi=1:length(newfields)
+        nf = newfields{nfi};
+        m.tubules.tracks(1).(nf) = [];
+    end
+    
+    for ti=1:length(m.tubules.tracks)
+        m.tubules.tracks(ti) = defaultFromStructRecursive( m.tubules.tracks(ti), emptyTubules.defaulttrack );
+        if isempty( m.tubules.tracks(ti).iscrossovervx )
+            m.tubules.tracks(ti).iscrossovervx = false( length( m.tubules.tracks(ti).vxcellindex ), 1 );
+        elseif size( m.tubules.tracks(ti).iscrossovervx, 1 ) > 1
+            m.tubules.tracks(ti).iscrossovervx = reshape( m.tubules.tracks(ti).iscrossovervx, 1, [] );
+        end
     end
     m.tubules = defaultFromStructRecursive( m.tubules, emptyTubules );
     m.tubules = safermfield( m.tubules, setdiff( fieldnames( m.tubules ), fieldnames( emptyTubules ) ) );
@@ -812,13 +828,28 @@ function m = upgradeTubules( m )
         m.tubules.tubuleparams.prob_collide_catastrophe_shallow = m.tubules.tubuleparams.prob_collide_catastrophe;
         m.tubules.tubuleparams.prob_collide_catastrophe_steep = m.tubules.tubuleparams.prob_collide_catastrophe;
     end
-    if ~isfield( m.tubules.tubuleparams, 'prob_collide_cut' )
+    if ~isfield( m.tubules.tubuleparams, 'prob_collide_cut' ) && isfield( m.tubules.tubuleparams, 'prob_collide_cut_collided' )
+        % Formerly, each of the tubules in a crossover had an independent
+        % probability of being severed. Now, the two possible severances
+        % are exclusive.
         m.tubules.tubuleparams.prob_collide_cut = m.tubules.tubuleparams.prob_collide_cut_collided ...
                                                   + m.tubules.tubuleparams.prob_collide_cut_collider ...
                                                   - m.tubules.tubuleparams.prob_collide_cut_collided ...
                                                     * m.tubules.tubuleparams.prob_collide_cut_collider;
-        m.tubules.tubuleparams.prob_collide_cut_collided = 1 - m.tubules.tubuleparams.prob_collide_cut_collider;
     end
+    if isfield( m.tubules.tubuleparams, 'prob_collide_branch_collider' ) && ~isfield( m.tubules.tubuleparams, 'prob_collide_branch_collided' )
+        % Which of the two tubules involved in a crossover may spawn a new
+        % branch was formerly specified as a probability for the collider.
+        % Now it is specified as a probability for the collided.
+        m.tubules.tubuleparams.prob_collide_branch_collided = 1 - m.tubules.tubuleparams.prob_collide_branch_collider;
+        m.tubules.tubuleparams = rmfield( m.tubules.tubuleparams, 'prob_collide_branch_collider' );
+    end
+    
+    % Rename some 'collide' fields to 'crossover'.
+    m.tubules.tubuleparams = renameFields( m.tubules.tubuleparams, ...
+        { 'prob_collide_branch',   'prob_collide_branch_collided',   'prob_collide_cut',   'prob_collide_cut_collider',   'prob_collide_cut_collided',   'prob_collide_cut' }, ...
+        { 'prob_crossover_branch', 'prob_crossover_branch_collided', 'prob_crossover_cut', 'prob_crossover_cut_collider', 'prob_crossover_cut_collided', 'prob_crossover_cut' } );
+    
     m.tubules.tubuleparams = safermfield( m.tubules.tubuleparams, setdiff( fieldnames( m.tubules.tubuleparams ), fieldnames( emptyTubules.tubuleparams ) ) );
 
     m.tubules.defaulttrack = upgradeTubule( m.tubules.defaulttrack );
@@ -841,8 +872,16 @@ function tubule = upgradeTubule( tubule )
     if ~isfield( tubule.status.severance, 'eventtype' )
         tubule.status.severance = addfield( tubule.status.severance, 'eventtype', 's' );
     end
-    if ~isfield( tubule.status.severance, 'interactiontime' )
+    if ~isfield( tubule.status.severance, 'angleoffset' )
+        tubule.status.severance = addfield( tubule.status.severance, 'angleoffset', 0 );
+    end
+    if ~isfield( tubule.status, 'interactiontime' )
         tubule.status.interactiontime = 0;
+    end
+    if ~isfield( tubule.status.severance, 'globalpos' )
+        for si=1:length(tubule.status.severance)
+            tubule.status.severance(si).globalpos = [NaN NaN NaN];
+        end
     end
 end
 

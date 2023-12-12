@@ -38,7 +38,11 @@ function s = fillRSSSdefaults( s, modal, inheritedattribs )
             s.attribs = defaultFromStruct( s.attribs, ...
                 struct( 'rows', length(s.children), 'columns', 1 ) );
     end
-    defaultSeparation = [ min( s.attribs.margin([1 2]) ), min( s.attribs.margin([3 4]) ) ];
+    if isempty( s.attribs )
+        defaultSeparation = [ 0 0 ];
+    else
+        defaultSeparation = [ min( s.attribs.margin([1 2]) ), min( s.attribs.margin([3 4]) ) ];
+    end
     switch s.type
         case ''
             % Nothing.
@@ -142,8 +146,10 @@ function s = fillRSSSdefaults( s, modal, inheritedattribs )
             for i=1:length(s.children)
                 menumap(i) = strcmp( s.children{i}.type, 'menu' );
             end
-            s.menus = { s.children{menumap} };
-            s.children = { s.children{~menumap} };
+            s.menus = s.children(menumap);
+            s.children = s.children(~menumap);
+%             s.menus = { s.children{menumap} };
+%             s.children = { s.children{~menumap} };
             for i=1:length(s.menus)
                 s.menus{i} = fillRSSSdefaults( s.menus{i}, modal, inheritedattribs );
             end
@@ -217,7 +223,9 @@ function s = fillRSSSdefaults( s, modal, inheritedattribs )
                 'halign', 'center', ...
                 'valign', 'center', ...
                 'innerhalign', 'fill', ...
-                'innervalign', 'fill' ) );
+                'innervalign', 'fill', ...
+                'margin', [ 0 0 0 0 ], ...
+                'inherit', '' ) );
     inheritedfields = splitString( '|', s.attribs.inherit );
     for i=1:length(inheritedfields)
         fn = inheritedfields{i};

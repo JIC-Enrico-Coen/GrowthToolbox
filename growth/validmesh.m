@@ -448,6 +448,16 @@ end
     end
     m.mgenNameToIndex = invertNameArray( m.mgenIndexToName );
     
+    [oks,errfields] = validStreamline( m );
+    if ~all(oks)
+        complain2( errorseverity(1), ...
+            '%d streamlines had errors.', ...
+            sum(~oks) );
+        fprintf( 1, 'These fields contained errors:\n   ' );
+        fprintf( 1, ' %s', errfields{:} );
+        fprintf( 1, '\n' );
+%         ok = false;
+    end
     
     timedFprintf( 1, 'Finished mesh validity check.\n' );
 end

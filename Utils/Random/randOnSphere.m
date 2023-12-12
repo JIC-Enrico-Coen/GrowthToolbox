@@ -1,18 +1,26 @@
-function pts = randOnSphere( n, radius )
-%pts = randOnSphere( n )
-%   Choose n points in 3 dimensions uniformly distributed at random over
-%   the surface of the sphere. of given radius centred at the origin.
-%   Radius defaults to 1.
+function pts = randOnSphere( n, radius, dims )
+%pts = randOnSphere( n, radius, dims )
+%   Choose n points in the given number of dimensions uniformly distributed
+%   at random over the surface of the sphere of given radius centred at the
+%   origin.
+%
+%   Radius defaults to 1 and dims to 3.
+%
+%   The result has size n * dims.
+%
+%   See also: randInSphere.
 
-    if nargin < 2
+    if (nargin < 2) || isempty(radius)
         radius = 1;
     end
+    if nargin < 3
+        dims = 3;
+    end
+    
     if radius==0
         pts = zeros( n, 3 );
     else
-        x = 1 - rand(n,1)*2;
-        y = sqrt(1-x.*x);
-        phi = rand(n,1)*2*pi;
-        pts = radius * [ y.*cos(phi), y.*sin(phi), x ];
+        pts = randn( n, dims );
+        pts = radius * (pts ./ sqrt(sum(pts.^2,2)));
     end
 end

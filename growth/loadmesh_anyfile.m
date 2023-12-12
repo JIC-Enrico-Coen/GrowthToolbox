@@ -63,8 +63,7 @@ function [m,ok] = loadmesh_anyfile( m, filenamefullpath, staticdata, interactive
         
     switch basefileext
         case objext
-            fprintf( 1, '%s: Loading OBJ file %s.\n', ...
-                mfilename(), filesource );
+            timedFprintf( 1, 'Loading OBJ file %s.\n', filesource );
             m = readMeshFromOBJ( filedirfullpath, modelnamewithext );
             if isempty(m)
                 ok = false;
@@ -74,8 +73,7 @@ function [m,ok] = loadmesh_anyfile( m, filenamefullpath, staticdata, interactive
 %                 m = upgrademesh( m, checkValidity );
             end
         case matext
-            fprintf( 1, '%s: Loading MAT file %s.\n', ...
-                mfilename(), filesource );
+            timedFprintf( 1, 'Loading MAT file %s.\n', filesource );
             if ~exist( filenamefullpath, 'file' )
                 GFtboxAlert( interactive, '%s: No file %s.', mfilename(), filenamefullpath )
                 ok = false;
@@ -134,14 +132,15 @@ function [m,ok] = loadmesh_anyfile( m, filenamefullpath, staticdata, interactive
             m.globalProps.mov = [];
             m.globalProps.allowsave = 1;
             m.plothandles = gPlotHandles;
+            % The axis handles will be invalid.
+            m.pictures = [];
             % Finite element types must be recreated from their
             % specifications.
             for i=1:length(m.FEsets)
                 m.FEsets(i).fe = FiniteElementType.MakeFEType( m.FEsets(i).fe );
             end
         case mfileext
-            fprintf( 1, '%s: Executing commands from %s.\n', ...
-                mfilename(), filesource );
+            timedFprintf( 1, 'Executing commands from %s.\n', filesource );
             if ~isempty(filedirfullpath)
                 prevdir = cd(filedirfullpath);
             end

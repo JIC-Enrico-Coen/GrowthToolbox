@@ -492,7 +492,6 @@ function setGlobals()
 
     gVolumetricMorphogenNames = { ...
         'KPAR', 'KPAR2', 'KPER', 'POL', 'POL2' };
-        % 'KPAR', 'KPER', 'KNOR', 'POLARISER', 'POLARISER2' };
     
     xx = [ gVolumetricMorphogenNames; num2cell(1:length(gVolumetricMorphogenNames)) ];
     gVolumetricRoleNameToMgenIndex = struct( xx{:} );
@@ -503,10 +502,14 @@ function setGlobals()
         { 'Area', 'Div. comp.', 'Div. area', 'Age' } );
     
     gMTProperties = { ...
+        'linecolormap', ...
         'plus_growthrate', ... % length/time
         'plus_shrinkrate', ... % length/time
         'minus_shrinkrate', ... % length/time  Normal shrink rate, somewhat smaller than plus_growthrate.
         'minus_catshrinkrate', ... % length/time  Catastrophizing shrink rate, likely the same as plus_shrinkrate.
+        'prob_branch_scaling', ... % dimensionless scaling of all branching rates.
+        'branch_scaling_interp_mode', ..., % An interpolation mode to use with prob_branch_scaling.
+        'density_branch_scaling', ... % Dimensionless scale factor.
         'prob_branch_time', ... % probability/time
         'prob_branch_tubule_time', ... % probability/(number of tubules)
         'prob_branch_length_time', ... % probability/(length*time)
@@ -521,41 +524,47 @@ function setGlobals()
         'branch_backwards_mean', ... % radians
         'branch_shrinktail_delay', ... % time
         'branch_interaction_delay', ... % time
-        'edge_catastrophe_edges', ... % boolean map of edges
         'edge_catastrophe_amount', ... % probability
         'edge_pause_prob', ... % probability
         'edge_pause_time', ... % time
         'prob_plus_catastrophe', ... % probability/time
-        'edge_plus_catastrophe', ... % probability/time
+        'curvature_power', ... % The power of tubule curvature to be used in determining the probability of catastrophe or branching.
+        'plus_curvature_cat', ... % There is a probability of catastrophe per unit length equal to this value times the square of the tubule curvature at the growing head.
+        'plus_catastrophe_scaling', ... % dimensionless
+        ... % 'edge_plus_catastrophe', ... % probability/time  OBSOLETE, handled in i.f., although this means that GFtbox is accessing specific model options.
         'prob_plus_stop', ... % probability/time
         'prob_plus_rescue', ... % probability/time
+        'prob_crossover_rescue', ... % probability/event
+        'min_angle_crossover_rescue', ... % angle in radians
         'rescue_angle_mean', ... % The average deviation of a rescued tubule from its original direction.
         'rescue_angle_spread', ... % The std dev of the deviation of a rescued tubule from its original direction.
         ...
         'collision_angles', ... % angles in radians
         'probs_zip', ... % vector of probabilities, one element longer than collision_angles
         'probs_cat', ... %  vector of probabilities, one element longer than collision_angles
-        ...
-        ... % 'min_collide_angle', ... % radians.  OBSOLETE.
-        ... % 'prob_collide_zipcat', ... % probability per collision.  OBSOLETE.
-        ... % 'prob_collide_catastrophe_shallow', ... % probability per collision  OBSOLETE.
-        ... % 'prob_collide_catastrophe_steep', ... % probability per collision  OBSOLETE.
-        ... % 'prob_collide_zipper_shallow', ... % probability per collision  OBSOLETE.
-        ... % 'prob_collide_zipper_steep', ... % probability per collision  OBSOLETE.
-        ...
-        'prob_collide_branch', ... % probability per collision that the collider generates a new branch from the crossover point.
+        'prob_htcollide_cat', ... % Probability that when the head of a tubule collides with the tail of another in the same direction, it catastrophizes.
+        'prob_crossover_branch', ... % probability per collision that the collider generates a new branch from the crossover point.
+        'prob_crossover_branch_collided', ...
         'min_angle_crossover_branch', ... % When a crossover happens at below this angle, no new branch can be generated from the crossover point.
-        'prob_collide_cut', ... % probability per collision that one of the mts involved is severed
-        'prob_collide_cut_collider', ... % probability per severance that the colliding mt is severed.
-        'prob_collide_cut_tailcat', ... % probability, given that a cut happens, that the tail of the leading half catastrophizes;
-        'prob_collide_cut_headcat', ... % probability, given that a cut happens, that the head of the trailing half catastrophizes;
+        'prob_crossover_cut', ... % probability per crossover that one of the mts involved is severed
+        'prob_crossover_cut_collider', ... % probability per severance that the colliding mt is severed.
+        'prob_crossover_cut_fronttailcat', ... % probability, given that a cut happens, that the head of the trailing half catastrophizes;
+        'prob_crossover_cut_rearheadcat', ... % probability, given that a cut happens, that the tail of the leading half catastrophizes;
+        'prob_crossover_cut_rearheadrescue', ... % probability, given a cut happens with catastrophe of the rear half, that the head of the rear half is rescued.
         'delay_cut', ... % The time after a crossover that cutting happens, in those cases where it does.
         'delay_branch', ... % The time after a crossover that branching happens, in those cases where it does.
         'min_cut_angle', ... % radians
         'creation_rate', ... % 1/(length^2 * time)
         'curvature', ... % 1/length
-        'max_mt_per_area', ... % 1/length^2
-        'radius' }; % length
+        'max_growing_mt_per_area', ... % count / length^2
+        'max_mt_density', ... % dimensionless
+        'min_mt_density', ... % dimensionless
+        'density_max_cat_sharpness', ... % arbitrary units
+        'max_plus_catastrophe_scaling', ... % dimensionless
+        'density_max_branch_sharpness', ... % arbitrary units
+        'density_min_rescue_sharpness', ... % arbitrary units
+        'radius', ... % 1/length^2
+        'headradius' }; % length
         
     gDEFAULTFIELDS = struct( ...
         'FEsets', [], ...

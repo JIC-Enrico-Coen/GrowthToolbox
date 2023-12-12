@@ -29,6 +29,14 @@ function varargout = leaf_plot( m, varargin )
     
     s = safemakestruct( mfilename(), varargin );
     
+    if isfield( s, 'Visible' )
+        figVisibility = strcmp( s.Visible, 'on' );
+        s = rmfield( s, 'Visible' );
+    else
+        figVisibility = [];
+    end
+        
+    
 %     if isfield( s, 'enableplot' ) && ~s.enableplot
 %         % Master switch for disabling all plotting.
 %         if nargout >= 1
@@ -60,7 +68,7 @@ function varargout = leaf_plot( m, varargin )
             return;
         end
         if goodFigure && ~ishghandle(s.figure)
-            theaxes = makeCanvasPicture( mfilename(), 'figure', s.figure );
+            theaxes = makeCanvasPicture( mfilename(), 'figure', s.figure, 'Visible', figVisibility );
         else
             theaxes = [];
         end
@@ -1090,6 +1098,7 @@ function m = calculatePlotData( m, side )
         m.plotdata.description = 'Value';
     elseif ~isempty( m.plotdefaults.(fn_morphogen) )
         mgenindexes = FindMorphogenIndex( m, m.plotdefaults.(fn_morphogen) );
+%         interpMode = m.mgen_interpType{ mgenindexes };
         m.plotdata.(fn_pervertex) = true;
         if length( mgenindexes )==1
             m.plotdata.(fn_value) = getEffectiveMgenLevels( m, mgenindexes );

@@ -117,6 +117,7 @@ function [mt,vx,ok] = insertVertexInMT( m, mt, segindex, bcs )
     if ok
         mt = updateSeverancePointsForInsertion( mt, segindex );
         mt.vxcellindex = [ mt.vxcellindex( 1:segindex ) newvxcellindex mt.vxcellindex( (segindex+1):end ) ];
+        mt.iscrossovervx = [ reshape( mt.iscrossovervx( 1:segindex ), 1, [] ), false, reshape( mt.iscrossovervx( (segindex+1):end ), 1, [] ) ];
         mt.segcellindex = [  mt.segcellindex( 1:segindex ) newvxcellindex mt.segcellindex( (segindex+1):end ) ];
         mt.barycoords = [ mt.barycoords( 1:segindex, : ); newvxbcs; mt.barycoords( (segindex+1):end, : ) ];
         mt.globalcoords = [ mt.globalcoords( 1:segindex, : ); newvxglobalcoords; mt.globalcoords( (segindex+1):end, : ) ];

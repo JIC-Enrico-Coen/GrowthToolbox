@@ -1,6 +1,6 @@
 function [m,s,lengthgrown] = extendStreamline( m, s, lengthToGrow, noncolliders )
 %[m,s,lengthgrown] = extendStreamline( m, s, lengthToGrow, noncolliders )
-%   Extend the si'th streamline of m by a distance len, or until unable to
+%   Extend the streamline s of m by a distance len, or until unable to
 %   go further.
 
 % fprintf( 1, 'Extending streamline %d by %f.\n', si, len );
@@ -50,9 +50,6 @@ function [m,s,lengthgrown] = extendStreamline( m, s, lengthToGrow, noncolliders 
             xxxx = 1;
         end
         alllengthgrown(end+1) = lengthgrown1;
-%         if ~extended && (remaininglength <= CLOSE)
-%             xxxx = 1;
-%         end
         lengthgrown = lengthgrown + lengthgrown1;
         if extended
             if numiters >= MAXITERS

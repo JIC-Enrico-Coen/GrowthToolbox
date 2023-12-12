@@ -70,14 +70,14 @@ function [sl,ok] = makeCellGrid( type, bbox, ndivs, nsubdivs, plane, hemisphere,
             [cellsPlane,vxsPlane,~] = makeVoronoiEllipse( numcellsPlane, 8, [-1 1 -1 1], true );
 %             [cellsPlane,vxsPlane,~] = makeVoronoiEllipse( numcellsPlane, 8, [meshbbox(1,2) meshbbox(2,2) meshbbox(1,3) meshbbox(2,3)], true );
             vxsPlane = [vxsPlane zeros(size(vxsPlane,1),1)];
-            sl1 = struct( 'pts', vxsPlane, 'cellvxs', cellToRaggedArray( cellsPlane, NaN, true ) );
+            sl1 = struct( 'pts', vxsPlane, 'cellvxs', cellToRaggedArray( cellsPlane', NaN, true ) );
             [cellsHemisphere,vxsHemisphere,~] = makeVoronoiEllipse( numcellsHemisphere, 8, [-1 1 -1 1], true );
             vxsHemisphere(:,2) = -vxsHemisphere(:,2);
             vxsHemisphere = mapCircleToHemisphere( vxsHemisphere, 1.618 );
-            sl2 = struct( 'pts', vxsHemisphere, 'cellvxs', cellToRaggedArray( cellsHemisphere, NaN, true ) );
+            sl2 = struct( 'pts', vxsHemisphere, 'cellvxs', cellToRaggedArray( cellsHemisphere', NaN, true ) );
             sl = joinCellLayers( sl1, sl2 );
             
-            centre = (bbox(1,:) + bbox(2,:))/2;
+            centre = [0 0 0]; % (bbox(1,:) + bbox(2,:))/2;
             scaling = bbox(2,:) - centre;
             sl.pts = centre + sl.pts .* scaling;
             scalingneeded = false;
@@ -86,7 +86,7 @@ function [sl,ok] = makeCellGrid( type, bbox, ndivs, nsubdivs, plane, hemisphere,
             fprintf( 1, 'About to make "%s" voronoi layer of %d cells.\n', type, numcells );
             [cells,vxs,~] = makeVoronoiEllipse( numcells, 8, [bbox(1,2) bbox(2,2) bbox(1,3) bbox(2,3)], true );
             vxs = [-0.015*ones(size(vxs,1),1) vxs];
-            sl = safemakestruct( mfilename(), { 'pts', vxs, 'cellvxs', cellToRaggedArray( cells, NaN ) } );
+            sl = safemakestruct( mfilename(), { 'pts', vxs, 'cellvxs', cellToRaggedArray( cells', NaN ) } );
             scalingneeded = false;
         case 'Block3DVoronoi'
             % Make five rectangular Voronoi meshes, for the top and four sides (excluding the bottom) of a block.
@@ -111,32 +111,32 @@ function [sl,ok] = makeCellGrid( type, bbox, ndivs, nsubdivs, plane, hemisphere,
             % Front. The XZ plane through the centre of the block.
             [cells1,vxs1,~] = makeVoronoiRectangle( cellsperface(1), 20, [xyzlo(1) xyzhi(1) xyzlo(3) xyzhi(3)], true );
             vxs1 = [ vxs1(:,1), xyzmid(2) + zeros(size(vxs1,1),1), vxs1(:,2) ];
-            sl1 = safemakestruct( mfilename(), { 'pts', vxs1, 'cellvxs', cellToRaggedArray( cells1, NaN ) } );
+            sl1 = safemakestruct( mfilename(), { 'pts', vxs1, 'cellvxs', cellToRaggedArray( cells1', NaN ) } );
             
             % +X side. This is in the YZ plane, from Y=0 to Y=maximum, and
             % X everywhere = maximum.
             [cells2,vxs2,~] = makeVoronoiRectangle( cellsperface(2), 20, [xyzmid(2) xyzhi(2) xyzlo(3) xyzhi(3)], true );
             vxs2 = [ xyzhi(1) + zeros(size(vxs2,1),1), vxs2 ];
-            sl2 = safemakestruct( mfilename(), { 'pts', vxs2, 'cellvxs', cellToRaggedArray( cells2, NaN ) } );
+            sl2 = safemakestruct( mfilename(), { 'pts', vxs2, 'cellvxs', cellToRaggedArray( cells2', NaN ) } );
             
             % Top.
             [cells3,vxs3,~] = makeVoronoiRectangle( cellsperface(3), 20, [xyzlo(1) xyzhi(1), xyzmid(2) xyzhi(2)], true );
             vxs3 = [ vxs3, xyzhi(3) + zeros(size(vxs3,1),1) ];
-            sl3 = safemakestruct( mfilename(), { 'pts', vxs3, 'cellvxs', cellToRaggedArray( cells3, NaN ) } );
+            sl3 = safemakestruct( mfilename(), { 'pts', vxs3, 'cellvxs', cellToRaggedArray( cells3', NaN ) } );
             
             % Back. The XZ plane on the back of the block. This is a
             % duplicate of the front, mirrored on the X axis (to give the
             % polygons the correct sense).
             cells4 = cells1;
             vxs4 = [ xyzlo(1) + xyzhi(1) - vxs1(:,1), xyzhi(2) + zeros(size(vxs1,1),1), vxs1(:,3) ];
-            sl4 = safemakestruct( mfilename(), { 'pts', vxs4, 'cellvxs', cellToRaggedArray( cells4, NaN ) } );
+            sl4 = safemakestruct( mfilename(), { 'pts', vxs4, 'cellvxs', cellToRaggedArray( cells4', NaN ) } );
             
             % -X side. This is a duplicate of the +X side, with X =
             % minimum, mirrored on the Y axis (to give the polygons the
             % correct sense).
             cells5 = cells2;
             vxs5 = [ xyzlo(1) + zeros(size(vxs2,1),1), xyzmid(2) + xyzhi(2) - vxs2(:,2), vxs2(:,3) ];
-            sl5 = safemakestruct( mfilename(), { 'pts', vxs5, 'cellvxs', cellToRaggedArray( cells5, NaN ) } );
+            sl5 = safemakestruct( mfilename(), { 'pts', vxs5, 'cellvxs', cellToRaggedArray( cells5', NaN ) } );
             
             sl = combineGrids( [ sl1, sl2, sl3, sl4, sl5 ] );
 %             m = leaf_refinebioedges( m, 'refinement', s.subdivisions );
@@ -166,15 +166,15 @@ function [sl,ok] = makeCellGrid( type, bbox, ndivs, nsubdivs, plane, hemisphere,
             
             [cells1,vxs1,~] = makeVoronoiRectangle( n1, 8, [xyzlo(1) xyzhi(1) xyzlo(3) xyzhi(3)], true );
             vxs1 = [ vxs1(:,1), zeros(size(vxs1,1),1), vxs1(:,2) ];
-            sl1 = safemakestruct( mfilename(), { 'pts', vxs1, 'cellvxs', cellToRaggedArray( cells1, NaN ) } );
+            sl1 = safemakestruct( mfilename(), { 'pts', vxs1, 'cellvxs', cellToRaggedArray( cells1', NaN ) } );
             radius = (xyzhi(1) - xyzlo(1))/2;
             [cells2,vxs2,~] = makeVoronoiRectangle( n2, 8, [0 pi*radius xyzlo(3) xyzhi(3)], true );
             vxs2 = wrapRectangleToCylinder( vxs2, [0 pi*radius xyzlo(3) xyzhi(3)], [0 pi xyzlo(3) xyzhi(3)], radius );
-            sl2 = safemakestruct( mfilename(), { 'pts', vxs2, 'cellvxs', cellToRaggedArray( cells2, 0 ) } );
+            sl2 = safemakestruct( mfilename(), { 'pts', vxs2, 'cellvxs', cellToRaggedArray( cells2', 0 ) } );
             [cells3,vxs3,~] = makeVoronoiSemiEllipse( n3, 8, [-radius radius 0 radius], true );
             vxs3(:,3) = xyzhi(3);
 %             vxs3 = vxs3(:,[2 1 3]);
-            sl3 = safemakestruct( mfilename(), { 'pts', vxs3, 'cellvxs', cellToRaggedArray( cells3, 0 ) } );
+            sl3 = safemakestruct( mfilename(), { 'pts', vxs3, 'cellvxs', cellToRaggedArray( cells3', 0 ) } );
             
             sl = combineGrids( [ sl1, sl2, sl3 ] );
             scalingneeded = false;

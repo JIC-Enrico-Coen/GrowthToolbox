@@ -1,63 +1,84 @@
-function params = getTubuleParamsModifiedByMorphogens( m, a, b )
-%params = getTubuleParamsModifiedByMorphogens( m, s )
+function paramValues = getTubuleParamsModifiedByMorphogens( m, varargin )
+%params = getTubuleParamsModifiedByMorphogens( m, s, selectedparams )
 %   Obtain the effective microtubule parameters at the head or the tail of
 %   the tubule s: the tail for parameters whose names contain 'minus', and
 %   the head for all others.
 %
-%params = getTubuleParamsModifiedByMorphogens( m, elements, bcs )
+%params = getTubuleParamsModifiedByMorphogens( m, elements, bcs, selectedparams )
 %   Get the microtubule parameters at the places represented by a set of
 %   elements and bary coords within each element.
 %
-%params = getTubuleParamsModifiedByMorphogens( m )
+%params = getTubuleParamsModifiedByMorphogens( m, selectedparams )
 %   Get per-vertex values of all microtubule parameters.
+%
+%   SELECTEDPARAMS defaults to all parameters.
 
-    getAllVxs = nargin==1;
-    getForTubule = nargin==2;
-    getPoints = nargin > 2;
+    args = varargin;
+    haveParams = iscell( args{end} ) || ischar( args{end} );
+    if haveParams
+        selectedparams = args{end};
+        args(end) = [];
+    else
+        selectedparams = fieldnames( m.tubules.tubuleparams );
+    end
+    if ischar( selectedparams )
+        selectedparams = { selectedparams };
+    end
+    
+    getAllVxs = isempty(args);
+    getForTubule = length(args)==1;
+    getPoints = length(args) > 1;
     
     if getForTubule
+        a = varargin{1};
         if isemptystreamline( a )
-            params = [];
+            paramValues = [];
             return;
         end
         s = a;
-    end
-    
-    if getPoints
+        numvertexes = 1;
+    elseif getPoints
+        a = varargin{1};
+        b = varargin{2};
         if isempty(a) || isempty(b)
-            params = [];
+            paramValues = [];
             return;
         end
         cis = a;
         bcs = b;
+        numvertexes = length(cis);
+    else
+        numvertexes = getNumberOfVertexes( m );
     end
     
-    params = m.tubules.tubuleparams;
+    paramValues = struct();
+    allParams = m.tubules.tubuleparams;
     
-    fns = fieldnames( params );
+    fns = selectedparams;
     for i=1:length(fns)
         fn = fns{i};
-        if isnumeric(params.(fn)) && (numel(params.(fn))==1)
+        if isnumeric(allParams.(fn)) && (size(allParams.(fn),1)==1)
+            paramValues.(fn) = repmat( allParams.(fn), numvertexes, 1 );
             continue;
         end
-        if ischar( params.(fn) )
+        if ischar( allParams.(fn) )
             mi = FindMorphogenIndex( m, m.tubules.tubuleparams.(fn) );
             if isempty(mi)
-                params.(fn) = 0;
+                paramValues.(fn) = 0;
                 continue;
             end
             pervertex = m.morphogens(:,mi);
-        elseif isempty(params.(fn))
-            pervertex = zeros( getNumberOfVertexes(m), 1 );
-        elseif length( params.(fn) )==getNumberOfVertexes(m)
-            pervertex = params.(fn);
+        elseif isempty(allParams.(fn))
+            pervertex = zeros( numvertexes, 1 );
+        elseif size( allParams.(fn), 1 )==numvertexes
+            pervertex = allParams.(fn);
         else
-            params.(fn) = 0;
+            paramValues.(fn) = 0;
             continue;
         end
         
         if getAllVxs
-            params.(fn) = pervertex;
+            paramValues.(fn) = pervertex;
         elseif getForTubule
             atstart = contains( fn, 'minus' );
             if atstart
@@ -70,9 +91,9 @@ function params = getTubuleParamsModifiedByMorphogens( m, a, b )
             if any(isinf(pervertex( m.tricellvxs( ci, : ) )))
                 xxxx = 1;
             end
-            params.(fn) = bc * pervertex( m.tricellvxs( ci, : ) );
+            paramValues.(fn) = bc * pervertex( m.tricellvxs( ci, : ) );
         else
-            params.(fn) = sum( reshape( pervertex( m.tricellvxs( cis, : ) ), [], 3 ) .* bcs, 2 );
+            paramValues.(fn) = sum( reshape( pervertex( m.tricellvxs( cis, : ) ), [], 3 ) .* bcs, 2 );
         end
     end
 end

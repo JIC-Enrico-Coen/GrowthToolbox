@@ -1,15 +1,19 @@
 function perPoly = perVertextoperPolygon( polygons, perVx, method, whichpolys )
 %perPoly = perVertextoperPolygon( polygons, perVx, whichpolys )
-%   Given a quantity that is defined for each vertex of a polygon mesh,
-%   calculate an equivalent quantity per polygon.  It is assumed that all
-%   polygons have the same number of vertexes (because that is the only
-%   case for which we need this operation in GFtbox).
+%   POLYGONS is an N*D array of indexes into PERVX, a V*K array defining K
+%   numbers for each of V vertexes.
 %
-%   method can be 'min', 'max', 'sum', 'mid', or 'ave' (the last two being
+%   Given a quantity that is defined for each vertex, calculate an
+%   equivalent quantity per polygon. 
+%
+%   It is assumed that all polygons have the same number D of vertexes
+%   (because that is the only case for which we need this operation in
+%   GFtbox).
+%
+%   METHOD can be 'min', 'max', 'sum', 'mid', or 'ave' (the last two being
 %   synonymous).
 %
-%   The per-vertex quantity can have any number of columns, and perPoly
-%   will have the same number of columns. 
+%   PERPOLY will have size N*K.
 
     valuesPerVertex = size(perVx,2);
     vxsPerPoly = size(polygons,2);

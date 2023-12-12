@@ -1,5 +1,5 @@
-function [projectfullpath,runname,meshesdir,filename] = findGFtboxProjectFile( varargin )
-%[projectfullpath,runname,meshesdir,filename] = findGFtboxProjectFile( option, value, ... )
+function results = findGFtboxProjectFile( varargin )
+%[projectfullpath,runcode,meshesdir,filename] = findGFtboxProjectFile( option, value, ... )
 %
 %   This is a general procedure to find files within a project: stage
 %   files, the interaction function, the initial mesh, and the static file.
@@ -22,19 +22,20 @@ function [projectfullpath,runname,meshesdir,filename] = findGFtboxProjectFile( v
 %
 %   Multiple values can be given for the 'run' and 'file' options.
 %
-%   The results are:
+%   The resultis a struct whose fields are:
 %
-%   PROJECTFULLPATH: The full pathname of the project. This will be empty if
-%   the project could not be found.
+%   PROJECTFULLPATH: The full pathname of the project. This will be empty
+%   if the project could not be found.
 %
-%   RUNNAME: The name of the run within the project. Empty for the project
-%   itself.
+%   RUNCODE: The code number of the run within the project, and the variant
+%   and repetition numbers. All zero for the project itself.
 %
 %   MESHESDIR: The full pathname of the directory containing the requested
 %   stage files. This will be the same as PROJECTFULLPATH if stage files
 %   directly within the project are being requested.
 %
-%   FILENAME: The base name of the file.
+%   FILEBASENAME: The base name of the file. Its full path name will be
+%   fullfile( MESHESDIR, FILEBASENAME );
 %
 %   If multiple values are given for the 'run' option, then RUNNAME is
 %   returned as a N*1 cell array of strings.
@@ -51,10 +52,11 @@ function [projectfullpath,runname,meshesdir,filename] = findGFtboxProjectFile( v
 %   project's initial file. They do include the interaction function (but
 %   with the .m extension replaced by .txt) and the static file.
 
-    projectfullpath = '';
-    runname = '';
-    meshesdir = '';
-    filename = '';
+    results = struct( ...
+        'projectfullpath', '', ...
+        'runcode', [], ...
+        'meshesdir', '', ...
+        'filebasename', '' );
 
     [s,ok] = safemakestruct( mfilename(), varargin );
     if ~ok, return; end
@@ -103,7 +105,8 @@ function [projectfullpath,runname,meshesdir,filename] = findGFtboxProjectFile( v
 
     runpath = cell( length(s.run), 1 );
     meshesdir = cell( length(s.run), 1 );
-    filename = cell( length(s.run), length(s.file) );
+    filebasename = cell( length(s.run), length(s.file) );
+    runcode = zeros( length( s.run ), 3 );
     for ri=1:length( s.run )
         run1 = s.run{ri};
         if isempty( run1 )
@@ -116,8 +119,18 @@ function [projectfullpath,runname,meshesdir,filename] = findGFtboxProjectFile( v
         else
             runfullpath = fullfile( runsdir, run1 );
             if exist( runfullpath, 'dir' ) ~= 7
-                timedFprintf( 1, 'Cannot find run %s in runs folder %s.\n', run1, runfullpath );
-                continue;
+                run1s = regexprep( run1, '\D+', ' ' );
+                rcpts = sscanf( run1s, '%d%d%d' );
+                runcode(ri,:) = rcpts(:)';
+                if numel( rcpts ) == 3
+                    runstring = sprintf( '%06d_V%03dR%03d', rcpts );
+                    run1 = [ projectbasename, '_e', runstring ];
+                    runfullpath = fullfile( runsdir, run1 );
+                    if exist( runfullpath, 'dir' ) ~= 7
+                        timedFprintf( 1, 'Cannot find run %s in runs folder %s.\n', run1, runsdir );
+                        continue;
+                    end
+                end
             end
         end
         runpath{ri} = runfullpath;
@@ -136,7 +149,7 @@ function [projectfullpath,runname,meshesdir,filename] = findGFtboxProjectFile( v
             if ischar(stagenames)
                 stagenames = {stagenames};
             end
-            filename(ri,:) = stagenames;
+            filebasename(ri,:) = stagenames;
         else
             for fi=1:length( s.file )
                 fn = s.file{fi};
@@ -176,26 +189,26 @@ function [projectfullpath,runname,meshesdir,filename] = findGFtboxProjectFile( v
                     otherwise
                         % Stage specification.
                         if isnumeric( fn )
-                            filename{ri,fi} = [ projectbasename, makestagesuffixf( fn ), '.mat' ];
+                            filebasename{ri,fi} = [ projectbasename, makestagesuffixf( fn ), '.mat' ];
                         elseif ischar( fn )
-                            filename{ri,fi} = fn;
+                            filebasename{ri,fi} = fn;
                         else
                             timedFprintf( 1, 'Unrecognised file specification of type ''%s''.\n', class( fn ) );
                             continue;
                         end
                 end
-                filename{ri,fi} = fn;
+                filebasename{ri,fi} = fn;
             end
         end
     end
 
     for ri=1:length(meshesdir)
-        for fi=1:size(filename,2)
-            if ~isempty( meshesdir{ri} ) && ~isempty( filename{ri,fi} )
-                fullfilename = fullfile( meshesdir{ri}, filename{ri,fi} );
+        for fi=1:size(filebasename,2)
+            if ~isempty( meshesdir{ri} ) && ~isempty( filebasename{ri,fi} )
+                fullfilename = fullfile( meshesdir{ri}, filebasename{ri,fi} );
                 if exist( fullfilename, 'file' ) ~= 2
                     timedFprintf( 1, 'Cannot find file %s.\n', fullfilename );
-                    filename{ri,fi} = [];
+                    filebasename{ri,fi} = [];
                 end
             end
         end
@@ -204,15 +217,26 @@ function [projectfullpath,runname,meshesdir,filename] = findGFtboxProjectFile( v
         end
     end
 
-    if numel( runname )==1
-        runname = runname{1};
-    end
-    
     if numel( meshesdir )==1
         meshesdir = meshesdir{1};
     end
     
-    if numel( filename )==1
-        filename = filename{1};
+    if numel( filebasename )==1
+        filebasename = filebasename{1};
     end
+    
+    filepathname = fullfile( meshesdir, filebasename );
+    try
+        mesh = load( filepathname );
+    catch e
+        mesh = [];
+    end
+    
+    results = struct( ...
+        'projectfullpath', projectfullpath, ...
+        'runcode', runcode, ...
+        'meshesdir', meshesdir, ...
+        'mesh', mesh, ...
+        'filebasename', filebasename, ...
+        'filepathname', filepathname );
 end

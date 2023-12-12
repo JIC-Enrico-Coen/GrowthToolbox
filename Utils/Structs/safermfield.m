@@ -1,7 +1,8 @@
 function x = safermfield( x, varargin )
 %x = safermfield( x, varargin )
 %   Like RMFIELD, but does not throw an exception if a field is not present
-%   or if no fields are given.
+%   or if no fields are given. The fields can be given as separate
+%   arguments or as a cell array of strings.
 
     if ~isstruct(x), return; end
     OLDMATLAB = false;
@@ -14,7 +15,7 @@ function x = safermfield( x, varargin )
         for i = 1:length(fields)
             z(i) = isfield( x, fields{i} );
         end
-        remove = { fields{z} };
+        remove = fields(z);
     elseif OLDMATLAB
         z = false(1,length(varargin));
         for i = 1:length(varargin)

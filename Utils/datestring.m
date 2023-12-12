@@ -1,4 +1,21 @@
 function s = datestring( c, timeonly )
+%s = datestring( c, timeonly )
+%   Return the date and time as a string in a standard format.
+%
+%   C defaults to the current time as accessed by clock().
+%
+%   If TIMEONLY is true (the default is false) the day will be omitted.
+%
+%   Examples:
+%
+%       datestring
+%           '2023/06/20 15:27:12'
+%
+%       datestring( false )
+%           '15:27:12'
+%
+%   See also: clock
+
     if nargin < 1
         c = clock;
         timeonly = false;

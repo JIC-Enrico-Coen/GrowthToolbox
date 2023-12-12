@@ -8,8 +8,9 @@ function r = randBins( binsizes, numpts, uniformise )
 %   guaranteed to have n members, where n is one of the two integers on
 %   either side of its expected number of members.
 %
-%   If the binsizes are all zero, they are taken to be all 1. Only their
-%   relative sizes matter,
+%   If the binsizes are all zero, they are taken to be all 1.
+%
+%   Only the relative sizes of the bins matter.
 
 %   There might be a more efficient way to do this, taking time proportional
 %   to the number of bins and independent of the number of points.

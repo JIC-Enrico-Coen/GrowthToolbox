@@ -1,8 +1,20 @@
-function printTubuleInteractionMethod( fid, m )
+function printTubuleInteractionMethod( file, m )
     if nargin==1
-        m = fid;
+        m = file;
         fid = 1;
     end
+    if ischar( m )
+        m = load( m );
+    end
+    if ischar( file )
+        fid = fopen( file, 'w' );
+        if fid==-1
+            timedFprintf( '%s: Cannot open file %s.\n', m.globalProps.modelname, file );
+            return;
+        end
+    end
+    m = setModelOptions( m, 'probs_zip', m.tubules.tubuleparams.probs_zip, 'probs_cat', m.tubules.tubuleparams.probs_cat );
+
     fprintf( fid, 'Head growth rate %.4f micron/second.\n', getModelOption( m, 'plus_growthrate' ) );
     fprintf( fid, 'Tail shrink rate %.4f micron/second.\n', getModelOption( m, 'minus_shrinkrate' ) );
     fprintf( fid, 'Head cat rate %.4f micron/second.\n', getModelOption( m, 'plus_shrinkrate' ) );
@@ -35,7 +47,7 @@ function printTubuleInteractionMethod( fid, m )
     fprintf( fid, '    Rescue angle mean %.4f deg, std dev %.4f deg.\n', ...
         getModelOption( m, 'rescue_angle_mean' )*(180/pi), ...
         getModelOption( m, 'rescue_angle_spread' )*(180/pi) );
-    fprintf( fid, 'Edge cat rate %.4f per event.\n', getModelOption( m, 'edge_plus_catastrophe_if' ) );
+%     fprintf( fid, 'Edge cat rate %.4f per event.\n', getModelOption( m, 'edge_plus_catastrophe_if' ) ); % OBSOLETE.
     
     fwrite( fid, newline() );
     
@@ -54,22 +66,23 @@ function printTubuleInteractionMethod( fid, m )
     
     fwrite( fid, newline() );
     
-    pbranch = m.tubules.tubuleparams.prob_collide_branch;
-    pcuteither = m.tubules.tubuleparams.prob_collide_cut;
+    pbranch = m.tubules.tubuleparams.prob_crossover_branch;
+    pcuteither = m.tubules.tubuleparams.prob_crossover_cut;
     pnothing = 1 - pbranch - pcuteither;
     fprintf( fid, 'After crossover:  branch %.4f  cut either %.4f  nothing %.4f  sum %.4f\n', ...
         pbranch, pcuteither, pnothing, pbranch+pcuteither+pnothing );
     
     fwrite( fid, newline() );
     
-    pcutself = m.tubules.tubuleparams.prob_collide_cut_collider;
+    pcutself = m.tubules.tubuleparams.prob_crossover_cut_collider;
     pcutother = 1 - pcutself;
     fprintf( fid, 'After crossover and cut:  cut self %.4f  cut other %.4f  sum %.4f\n', ...
         pcutself, pcutother, pcutself+pcutother );
     
     fwrite( fid, newline() );
     
-    fprintf( fid, 'After a severing:\n    new head cat %.4f\n    new tail cat %.4f\n', ...
-        m.tubules.tubuleparams.prob_collide_cut_headcat, ...
-        m.tubules.tubuleparams.prob_collide_cut_tailcat );
+    fprintf( fid, 'After a severing:\n    new front tail cat %.4f\n    new rear head cat %.4f\n    new rear head rescue %.4f\n', ...
+        m.tubules.tubuleparams.prob_crossover_cut_fronttailcat, ...
+        m.tubules.tubuleparams.prob_crossover_cut_rearheadcat, ...
+        m.tubules.tubuleparams.prob_crossover_cut_rearheadrescue );
 end

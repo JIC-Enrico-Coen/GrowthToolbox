@@ -13,15 +13,25 @@ function grantednum = attemptCreation( maxnum, usednum, requestednum )
 %
 %   Note that even if REQUESTEDNUM is no larger than maxnum - usednum, not
 %   all of the requests may be granted. The model is that you reach
-%   REQUESTEDNUM times into a box containing all the resources, and draw
-%   one at random. If that one is already in use, the resource is not
-%   granted. In either case, the resource is put back into the box before
-%   the next drawing.
+%   REQUESTEDNUM times into a box containing all the resources, both those
+%   in use and those still available, and draw one at random. If that one
+%   is already in use, it is returned to the box and the resource is not
+%   granted. If it is granted, the resource is removed from the box.
 
     initialnum = usednum;
     if isinf( requestednum )
         grantednum = max( 0, maxnum - usednum );
+    elseif isinf( maxnum )
+        grantednum = requestednum;
+    elseif usednum >= maxnum
+        grantednum = 0;
     else
+        % An alternative method which is about 500 to 1000 times slower
+        % than the method used.
+%         foo = rand(1,requestednum);
+%         foo = foo(foo < 1 - usednum/maxnum);
+%         grantednum = length(unique(floor(foo * maxnum)));
+
         for i=1:requestednum
             curProb = 1 - usednum/maxnum;
             if curProb <= 0

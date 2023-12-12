@@ -58,7 +58,7 @@ function m = completesecondlayer( m, olddata )
     if ~isfield( thesecondlayer,'side' ) || isempty( thesecondlayer.side )
         thesecondlayer.side = true(numbiocells,1);
     end
-    m.secondlayer = calcBioACellAreas( m.secondlayer );
+    thesecondlayer = calcBioACellAreas( thesecondlayer );
     thesecondlayer.areamultiple = ones(numbiocells,1);
     if numbiocells == 0
         thesecondlayer.celltargetarea = zeros(0,1);
@@ -70,19 +70,18 @@ function m = completesecondlayer( m, olddata )
             sum(thesecondlayer.celltargetarea)/length(thesecondlayer.celltargetarea);
     end
     
-    m = initialiseCellIDData( m );
-    
     numnewedges = size(thesecondlayer.edges,1) - olddata.numedges;
     thesecondlayer = extendCellIndexing( thesecondlayer, numnewcells, numnewedges, numnewvxs );
     
     thesecondlayer.visible.cells = logical( extendArray12( thesecondlayer.visible.cells, [numnewcells,1], true ) );
     
-    [ok,thesecondlayer] = checkclonesvalid( thesecondlayer );
+    m.secondlayer = thesecondlayer;
+    m = initialiseCellIDData( m );
+    
+    [ok,thesecondlayer] = checkclonesvalid( m.secondlayer );
     if ~ok
         % Delete the second layer?
-        fprintf( 1, 'Second layer creation failed.\n' );
+        fprintf( 1, 'Second layer creation may have failed.\n' );
       % mesh = rmfield( mesh, 'thesecondlayer' );
     end
-    
-    m.secondlayer = thesecondlayer;
 end

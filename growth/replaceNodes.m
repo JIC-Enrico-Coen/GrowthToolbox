@@ -227,6 +227,7 @@ function m = replaceNodes( m, newm, add )
     m = makeedgethreshsq( m );
     m = generateCellData( m );
     m = calculateOutputs( m );
+    m.visible = []; % The mesh has never been plotted, so clear out any out-of-date visibility info.
   % [ok,m] = validmesh(m);
 end
         

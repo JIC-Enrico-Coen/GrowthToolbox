@@ -25,7 +25,7 @@ function data = circulariseData( data, range, dim )
 %   the second, DATA1(...,1,...)==DATA(...,1,...), where the "..."
 %   represent the dimensions before and after DIM.
 
-
+    data( isnan(data) ) = 0;
     if length(range)==1
         if range >= 0
             range = [0 range];
@@ -56,9 +56,9 @@ function data = circulariseData( data, range, dim )
     toobig = delta >= period/2;
     delta(toobig) = delta(toobig) - period;
     if nargin < 3
-        data = data(1) + [ 0; cumsum(delta) ];
+        data = data(1) + [ 0; cumsum(delta,'omitnan') ];
     else
-        data = data(:,1,:) + [ zeros(len1,1,len2), cumsum(delta,cumdim) ];
+        data = data(:,1,:) + [ zeros(len1,1,len2), cumsum(delta,cumdim,'omitnan') ];
     end
     data = reshape( data, sz );
 end

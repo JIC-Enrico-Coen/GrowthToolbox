@@ -9,6 +9,13 @@ function bbox = meshbbox( m, includedecor, margin )
 %   unenlarged box. If all dimensions are zero, the value of MARGIN will be
 %   used directly.
 
+    if nargin < 3
+        includedecor = false;
+    end
+    if nargin < 2
+        margin = 0;
+    end
+
     isvol = isVolumetricMesh( m );
     if isvol
         bbox = aabbox( m.FEnodes );

@@ -81,7 +81,7 @@ function m = splitSecondLayerCells( m, splitall, splitmethod )
             return;
         end
     else
-        maxsplits = -1;
+        maxsplits = Inf;
     end
 
     if nargin < 2
@@ -240,7 +240,7 @@ function m = splitSecondLayerCells( m, splitall, splitmethod )
             divideperp = divideperp + 0.0*rand(size(divideperp));
             splitdirs(numsplits,:) = divideperp';
             splitcentres(numsplits,:) = dividepoint;
-            if (maxsplits > 0) && (numsplits >= maxsplits)
+            if numsplits >= maxsplits
                 break;
             end
         end
@@ -284,13 +284,12 @@ function m = splitSecondLayerCells( m, splitall, splitmethod )
             numactualsplits = numactualsplits+1;
             m.secondlayer.edgelineage( edgesplitdata.newei1 ) = edgesplitdata.sei1;
             m.secondlayer.edgelineage( edgesplitdata.newei2 ) = edgesplitdata.sei2;
-            
-            els = sqrt( edgelengthsqs(m, ...
+            els = celledgelengths(m, ...
                             [ edgesplitdata.sei1, ...
                               edgesplitdata.sei2, ...
                               edgesplitdata.newei1, ...
                               edgesplitdata.newei2, ...
-                              edgesplitdata.newei3 ] ) );
+                              edgesplitdata.newei3 ] );
             ol1 = els(1)+els(3);
             alpha1 = els(1)/ol1;
             beta1 = 1 - alpha1;

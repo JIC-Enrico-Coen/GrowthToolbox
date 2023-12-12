@@ -6,6 +6,7 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
 %   If its current point is already on an edge of the current FE, and its
 %   direction takes it over that edge, then nextci is the index of the FE
 %   that it moves into. Otherwise, nextci is the same as the current FE. In
+
 %   both cases, nextbc1 is the barycentric coordinates of the current
 %   endpoint in the element nextci.
 %
@@ -33,7 +34,7 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
         recursive = false;
     end
 
-    if s.id==7431
+    if s.id==678
         xxxx = 1;
     end
     if ~validStreamline( m, s )
@@ -78,11 +79,13 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
             xxxx = 1;
         end
     else
-        if isempty(s.directionglobal)
+        if true || isempty(s.directionglobal)
             s.directionglobal = streamlineGlobalDirection( m, s );
         end
         dirglobal = s.directionglobal;
     end
+    
+    olddirglobal = dirglobal;
     
     % If the microtubule is curved, modify the direction accordingly.
     MAXANGLEPERSTEP = 0.1;
@@ -142,8 +145,9 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
     end
     
     DIRBC_TOL = 1e-7;
-    s.directionbc( abs(s.directionbc) < DIRBC_TOL ) = 0;
-    dirbc = s.directionbc;
+%     s.directionbc( abs(s.directionbc) < DIRBC_TOL ) = 0;
+    dirbc = normaliseDirBaryCoords( s.directionbc, DIRBC_TOL );
+    s.directionbc = dirbc;
     
     
     pointsOut3 = ((bc <= 0) & (dirbc < 0)) | ((bc >= 1) & (dirbc > 0));
@@ -174,17 +178,15 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
         % Determine whether the mt should catastrophise, according to the
         % tubuleparams.edge_plus_catastrophe property. If this is a single
         % number, that is the probability. Otherwise it specifies a number
-        % (possibly NaN) per vertex. If the mt has run into a vertex, the
-        % value for that vertex is the probability of catastrophe. If it
-        % has run into an edge, the probability is the probabilities at the
-        % ends, weighted by the corresponding bcs. If the resulting
-        % probability is NaN, this is equivalent to zero.
+        % (possibly NaN) per vertex or a morphogen name. If the mt has run
+        % into a vertex, the value for that vertex is the probability of
+        % catastrophe. If it has run into an edge, the probability is the
+        % minimum probability of either end. If the resulting probability
+        % is NaN, this is equivalent to zero.
         
-        edge_plus_catastrophe = m.tubules.tubuleparams.edge_plus_catastrophe;
-        if ischar( edge_plus_catastrophe )
-            % The property is specified by a morphogen. Get the morphogen's
-            % values.
-            [~,edge_plus_catastrophe] = getMgenLevels( m, edge_plus_catastrophe );
+        edge_plus_catastrophe = getModelOptionModifiedByMorphogens( m, 'edge_plus_catastrophe' );
+        if all( edge_plus_catastrophe==edge_plus_catastrophe(1) )
+            edge_plus_catastrophe = edge_plus_catastrophe(1);
         end
         if numel( edge_plus_catastrophe )==1
             % A single value is the probability to use everywhere.
@@ -200,14 +202,13 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                 if any( isnan(prob_per_edgevx) )
                     prob_edge_catastrophe = 0;
                 else
-                    bc_per_edgevx = bc(civxs);
-                    prob_edge_catastrophe = sum( prob_per_edgevx(:) .* bc_per_edgevx(:) );
+                    prob_edge_catastrophe = min( prob_per_edgevx(:), [], 2, 'includenan' );
+%                     bc_per_edgevx = bc(civxs);
+%                     prob_edge_catastrophe = sum( prob_per_edgevx(:) .* bc_per_edgevx(:) );
                 end
             end
         end
-        if isnan(prob_edge_catastrophe)
-            prob_edge_catastrophe = 0;
-        end
+        prob_edge_catastrophe( isnan(prob_edge_catastrophe) ) = 0;
         does_edge_cat = rand(1) < prob_edge_catastrophe;
         
         if does_edge_cat
@@ -369,6 +370,9 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
         % check to see if it collides with a microtubule or bundle of
         % microtubules before then. If it hits an
         
+        if ~validStreamline( m, s )
+            xxxx = 1;
+        end
 
         k = -bc(dirbc<0)./dirbc(dirbc<0);
         k(isnan(k) | (k<0)) = Inf;
@@ -380,6 +384,7 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
         end
         s.segcellindex(end+1) = ci;
         s.vxcellindex(end+1) = ci;
+        s.iscrossovervx(end+1) = false;
         s.barycoords(end+1,:) = trimbc( bc + k1*dirbc );
         if ~checkZeroBcsInStreamline( s )
             xxxx = 1;
@@ -399,19 +404,25 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
             end
             lengthgrown = maxlength;
         end
-        TOL = 1e-6;
-        whichreledges = s.barycoords(end,:) <= TOL;
+        TOLERANCE = 1e-6;
+        whichreledges = s.barycoords(end,:) <= TOLERANCE;
         whichabsedges = m.celledges( ci, whichreledges );
-        if isfield( m.auxdata, 'edgecatprob' ) && ~isempty( m.auxdata.edgecatprob )
-            if numel( m.auxdata.edgecatprob )==1
-                edge_cat_prob = m.auxdata.edgecatprob;
-            else
-                edge_cat_prob = max( m.auxdata.edgecatprob( whichabsedges ) );
-            end
-        else
-            edge_cat_prob = 0;
-        end
-        doedgecat = any( whichreledges ) && (rand(1) < edge_cat_prob);
+%         if isfield( m.auxdata, 'edgecatprob' ) && ~isempty( m.auxdata.edgecatprob )
+%             if numel( m.auxdata.edgecatprob )==1
+%                 edge_cat_prob = m.auxdata.edgecatprob;
+%             else
+%                 edge_cat_prob = max( m.auxdata.edgecatprob( whichabsedges ) );
+%             end
+%         else
+%             edge_cat_prob = 0;
+%         end
+%         doedgecat = any( whichreledges ) && (rand(1) < edge_cat_prob);
+%         if doedgecat
+%             xxxx = 1;
+%         end
+        doedgecat = false; % Edge catastrophe is not handled here, but in
+            % the recursive call that attempts to cross an edge, starting
+            % at line 183.
         
         % Calculate whether there was a spontaneous stopping or
         % catastrophising before lengthgrown.
@@ -419,19 +430,28 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
             params = getTubuleParamsModifiedByMorphogens( m, s );
             timeused = lengthgrown/params.plus_growthrate;
             nextstop = sampleexp( params.prob_plus_stop );
-            nextcat = sampleexp( params.prob_plus_catastrophe );
+            
+            % Cat prob per unit length is assumed proportional to bending energy, which is proportional to square of curvature.
+            % The constant of proportionality is the 'plus_curvature_cat' tubule param.
+            tubuleCurvatureAtHead = directionalCurvature( m, s.vxcellindex(end), s.barycoords(end,:), s.directionglobal, 'min' );
+            curvature_cat_prob_per_time = params.plus_curvature_cat * tubuleCurvatureAtHead^m.tubules.tubuleparams.curvature_power * params.plus_growthrate;
+            effective_prob_plus_catastrophe_per_time = (params.prob_plus_catastrophe + curvature_cat_prob_per_time) * m.tubules.tubuleparams.plus_catastrophe_scaling;
+            nextcat = sampleexp( effective_prob_plus_catastrophe_per_time );
             if doedgecat
                 edgecat = timeused;
             else
                 edgecat = Inf;
             end
-            if (nextcat <= 0) || isnan(nextcat) || any(isinf(params.prob_plus_catastrophe)) || any(isnan(params.prob_plus_catastrophe))
+            if (nextcat <= 0) || isnan(nextcat) || any(isinf(effective_prob_plus_catastrophe_per_time)) || any(isnan(effective_prob_plus_catastrophe_per_time))
                 xxxx = 1;
             end
             [timetoevent,stoppingreason] = min( [edgecat, nextcat, nextstop, timeused] );
             stoppingreasons = 'ecsx';
             stoppingreason = stoppingreasons(stoppingreason);
             % stoppingreason is 'x' if no stop or cat, 's' if stop, 'c' if cat, 'e' if edge cat.
+            if stoppingreason=='c'
+                xxxx = 1;
+            end
             if timetoevent < timeused
                 % Adjust the final point of s.
                 frac = timetoevent/timeused;
@@ -439,6 +459,7 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                     % Undo the adding of the last vertex.
                     s.segcellindex(end) = [];
                     s.vxcellindex(end) = [];
+                    s.iscrossovervx(end) = [];
                     s.barycoords(end,:) = [];
                 else
                     s.barycoords(end,:) = trimbc( bc + frac*k1*dirbc );
@@ -465,15 +486,8 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
             collisiontype = [];
             collisionangle = [];
             iscrossing = [];
+            numevents = 0;
             [m,s,stopped] = stopStreamline( m, s, stoppingreason );
-%             switch stoppingreason
-%                 case 's'
-%                     s.status.head = 0;
-%                     m.tubules.statistics.spontaneousstop = m.tubules.statistics.spontaneousstop + 1;
-%                 case 'c'
-%                     s.status.head = -1;
-%                     % m.tubules.statistics.spontaneouscatastrophe = m.tubules.statistics.spontaneouscatastrophe + 1;
-%             end
             remaininglength = 0;
         else
             if lengthgrown <= MINLENGTHGROWN
@@ -490,6 +504,11 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
             if abs(lengthgrown1 - lengthgrown1) > 1e-9
                 xxxx = 1;
             end
+            
+            if ~validStreamline( m, s )
+                xxxx = 1;
+            end
+
             % Next we detect collisions. These are the possible results of a
             % collision:
             % 1. Catastrophe. The colliding microtubule stops at the collision
@@ -504,13 +523,74 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
             % mt.
             % The probabilities of these outcomes are determined by the
             % streamline parameters
-            % prob_collide_catastrophe_shallow, prob_collide_catastrophe_steep
-            % prob_collide_zipper_shallow, prob_collide_zipper_steep, and
-            % prob_collide_cut, prob_collide_cut_collider, together with
+            % prob_crossover_catastrophe_shallow, prob_crossover_catastrophe_steep
+            % prob_crossover_zipper_shallow, prob_crossover_zipper_steep, and
+            % prob_crossover_cut, prob_crossover_cut_collider, together with
             % morphogens designated to provide per-vertex modification.
 
-            [collidedwith,collidedseg,collidedsegbc,collidersegbc,collisiontype,collisionangle,iscrossing] = ...
-                determineStreamlineCollision( m, ci, [ vx1; s.globalcoords( length(s.vxcellindex), : ) ], m.tubules.tubuleparams.radius, noncolliders );
+            noncolliders1 = [];
+            [collidedwith,collidedseg,collidedsegbc,collidersegbc,collisiontype,collisionangle,iscrossing,collisionparallel] = ...
+                determineStreamlineCollision( m, ci, [ vx1; s.globalcoords( length(s.vxcellindex), : ) ], m.tubules.tubuleparams.radius, noncolliders1 );
+            if ~isempty( collidedwith )
+                xxxx = 1;
+            end
+            xcollidedwith = collidedwith;
+            xcollidedseg = collidedseg;
+            xcollidedsegbc = collidedsegbc;
+            xcollidersegbc = collidersegbc;
+            xcollisiontype = collisiontype;
+            xcollisionangle = collisionangle;
+            xiscrossing = iscrossing;
+            xcollisionparallel = collisionparallel;
+            
+            initialevents = collidersegbc(:,2)==0;
+            if any(initialevents)
+                collidedwith( initialevents ) = [];
+                collidedseg( initialevents ) = [];
+                collidedsegbc( initialevents, : ) = [];
+                collidersegbc( initialevents, : ) = [];
+                collisiontype( initialevents ) = [];
+                collisionangle( initialevents ) = [];
+                iscrossing( initialevents ) = [];
+                collisionparallel( initialevents ) = [];
+            end
+            
+            beforeThisElement = find( s.segcellindex ~= s.segcellindex(end), 1, 'last' );
+            if isempty(beforeThisElement)
+                beforeThisElement = 0;
+            end
+            excludeSelf = (collidedwith==noncolliders) & (collidedseg > beforeThisElement);
+            if any( excludeSelf )
+                collidedwith( excludeSelf ) = [];
+                collidedseg( excludeSelf ) = [];
+                collidedsegbc( excludeSelf, : ) = [];
+                collidersegbc( excludeSelf, : ) = [];
+                collisiontype( excludeSelf ) = [];
+                collisionangle( excludeSelf ) = [];
+                iscrossing( excludeSelf ) = [];
+                collisionparallel( excludeSelf ) = [];
+                remainingSelfCollisions = collidedwith==noncolliders;
+                if any( remainingSelfCollisions )
+                    collidedwith( remainingSelfCollisions ) = [];
+                    collidedseg( remainingSelfCollisions ) = [];
+                    collidedsegbc( remainingSelfCollisions, : ) = [];
+                    collidersegbc( remainingSelfCollisions, : ) = [];
+                    collisiontype( remainingSelfCollisions ) = [];
+                    collisionangle( remainingSelfCollisions ) = [];
+                    iscrossing( remainingSelfCollisions ) = [];
+                    collisionparallel( remainingSelfCollisions ) = [];
+                    timedFprintf( 'Self collision of tubule %d, %d times.\n', noncolliders, sum( remainingSelfCollisions ) );
+                    xxxx = 1;
+                end
+            end
+            
+            headtailcollision = (collidedseg==1) & (collidedsegbc(:,1) > 0.99) & collisionparallel & (abs(collisionangle) < pi/180);
+            if any( headtailcollision )
+%                 timedFprintf( 1, 'Head-tail collision:\n' );
+%                 fprintf( '    Tubule %4d tailbcs %.4f %.4f\n', [ collidedwith(headtailcollision), collidedsegbc(headtailcollision,:) ]' );
+                xxxx = 1;
+                % m.tubules.statistics.collideheadtailinfo(end+1,:) = [ 
+            end
             tubule_age_at_collisions = collidersegbc(:,2) * timetoevent + m.globalDynamicProps.currenttime - s.starttime;
             oldenough = tubule_age_at_collisions >= s.status.interactiontime;
             if ~isempty( tubule_age_at_collisions )
@@ -519,7 +599,7 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                 end
                 other_tubule_starttimes = reshape( [ m.tubules.tracks(collidedwith).starttime ], [], 1 );
                 other_tubule_status = [ m.tubules.tracks(collidedwith).status ];
-                other_tubule_interactiontimes = reshape( [ other_tubule_status.interactiontime ], [], 1 );;
+                other_tubule_interactiontimes = reshape( [ other_tubule_status.interactiontime ], [], 1 );
                 other_tubule_age_at_collisions = collidedsegbc(:,2) * timetoevent + m.globalDynamicProps.currenttime - other_tubule_starttimes;
                 oldenough = oldenough & (other_tubule_age_at_collisions >= other_tubule_interactiontimes);
             end
@@ -530,8 +610,8 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                 xxxx = 1;
             end
 
-            % Exclude almost parallel collisions.
-            nonparallel = abs(collisionangle) > 0.01;
+            % Exclude almost parallel collisions, except for head-tail parallel (i.e. not antiparallel) collisions.
+            nonparallel = (abs(collisionangle) > 0.01) | headtailcollision;
             if any(nonparallel)
                 xxxx = 1;
             end
@@ -541,7 +621,9 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
             collidersegbc = collidersegbc( nonparallel, : );
             collisiontype = collisiontype( nonparallel );
             collisionangle = collisionangle( nonparallel );
+            headtailcollision = headtailcollision( nonparallel );
             iscrossing = iscrossing( nonparallel );
+            numevents = sum( ~nonparallel );
         end
         
         if ~isempty( collidedwith )
@@ -602,54 +684,53 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                 collidedCell = collidedCell( okcollisions, : );
                 collidedCellBcs = collidedCellBcs( okcollisions, : );
                 collisionangle = collisionangle( okcollisions, : );
-                iscrossing = iscrossing( okcollisions );
-                iscontact = ~iscrossing;
-                numokcollisions = length( colliderCell );
+                headtailcollision = headtailcollision( okcollisions, : );
+                iscrossing = iscrossing( okcollisions ) & ~headtailcollision;
+                iscontact = ~iscrossing & ~headtailcollision;
+                numevents = length( colliderCell );
                 % { colliderCell, colliderCellBcs } should identify the same point as
                 % { collidedCell, collidedCellBcs }, at least for okcollisions.
                 
-                NEW_ZIP_CAT_CROSS_METHOD = true;
-                if NEW_ZIP_CAT_CROSS_METHOD
-                    angle_boundaries = getTubuleParamModifiedByMorphogens( m, 'collision_angles', colliderCell, colliderCellBcs );
-                    angle_boundaries = [ zeros( numokcollisions, 1 ), angle_boundaries, inf( numokcollisions, 1 ) ];
-                    probs_zip = getTubuleParamModifiedByMorphogens( m, 'probs_zip', colliderCell, colliderCellBcs );
-                    probs_cat = getTubuleParamModifiedByMorphogens( m, 'probs_cat', colliderCell, colliderCellBcs );
-                    outcomeprobs = zeros( numokcollisions, 3 );
-                    angleclass = zeros( numokcollisions, 1 );
-                    outcomes = zeros( numokcollisions, 1 );
-                    for okci=1:numokcollisions
+                angle_boundaries = getTubuleParamModifiedByMorphogens( m, 'collision_angles', colliderCell, colliderCellBcs );
+                angle_boundaries = [ zeros( numevents, 1 ), angle_boundaries, inf( numevents, 1 ) ];
+                probs_zip = getTubuleParamModifiedByMorphogens( m, 'probs_zip', colliderCell, colliderCellBcs );
+                probs_cat = getTubuleParamModifiedByMorphogens( m, 'probs_cat', colliderCell, colliderCellBcs );
+                probs_htcat = getTubuleParamModifiedByMorphogens( m, 'prob_htcollide_cat', colliderCell, colliderCellBcs );
+                outcomeprobs = zeros( numevents, 3 );
+                possibleoutcomes = 'zcxhi';
+                angleclass = zeros( numevents, 1 );
+                outcomes = repmat( 'i', numevents, 1 ); % z: zip, c: cat, x: cross, h: head-tail cat, i: ignore.
+                for okci=1:numevents
+                    if headtailcollision(okci)
+                        rand1 = rand( 1, 1 );
+                        havehtcat = rand1 < probs_htcat(okci);
+                        if havehtcat
+                            outcomes( okci ) = 'h';
+%                             timedFprintf( 1, 'Head-tail collision confirmed:\n' );
+%                             fprintf( '    Tubule %4d tailbcs %.4f %.4f\n', [ collidedwith(okci), collidedsegbc(okci,:) ]' );
+                            xxxx = 1;
+                        else
+                            outcomes( okci ) = 'i';
+                        end
+                        angleclass(okci) = 1;
+                    else
                         angleclass(okci) = binsearchlower( angle_boundaries(okci,:), abs(collisionangle(okci)) );
                         outcomeprobs( okci, : ) = [ 0, probs_zip(okci,angleclass(okci)), probs_cat(okci,angleclass(okci)) ];
                         rand1 = rand( 1, 1 );
-                        outcomes( okci ) = binsearchlower( outcomeprobs( okci, : ), rand1 );
+                        outcomes( okci ) = possibleoutcomes( binsearchlower( outcomeprobs( okci, : ), rand1 ) );
                     end
-                    zippers = iscontact & (outcomes == 1);
-                    cats = iscontact & (outcomes == 2);
-                    crosses = iscrossing & (outcomes == 3);
-%                     min_angle_crossover_branches = getTubuleParamModifiedByMorphogens( m, 'min_angle_crossover_branch', colliderCell, colliderCellBcs );
-%                     rand2 = rand( numokcollisions, 1 );
-%                     crossbranch = crosses & (rand2 < m.tubules.tubuleparams.prob_collide_branch(:)) ...
-%                                   & (abs(collisionangle) > min_angle_crossover_branches);
-                else
-                    p_zipcat = getTubuleParamModifiedByMorphogens( m, 'prob_collide_zipcat', colliderCell, colliderCellBcs );
-                    rand1 = rand( length(iscontact), 1 );
-                    zipcats = iscontact & (rand1 < p_zipcat);
-                    shallow = abs(collisionangle) < m.tubules.tubuleparams.min_collide_angle;
-                    steep = ~shallow;
-                    shallowcontacts = iscontact & shallow;
-                    steepcontacts = iscontact & steep;
-                    zippers = zipcats & shallowcontacts;
-                    cats = zipcats & steepcontacts;
-                    crosses = iscrossing & ~cats & ~zippers;
                 end
+                zippers = iscontact & (outcomes == 'z');
+                cats = (outcomes == 'h') | (iscontact & (outcomes == 'c'));
+                crosses = iscrossing & (outcomes == 'x');
 
                 % Any zipper or catastrophe rules out all later events.
                 firstzipcat = find(zippers|cats,1);
                 if ~isempty(firstzipcat)
                     colliderCell = colliderCell( 1:firstzipcat, : );
                     colliderCellBcs = colliderCellBcs( 1:firstzipcat, : );
-                    collidedCell = collidedCell( 1:firstzipcat, : );
-                    collidedCellBcs = collidedCellBcs( 1:firstzipcat, : );
+                    xcollidedCell = collidedCell( 1:firstzipcat, : );
+                    xcollidedCellBcs = collidedCellBcs( 1:firstzipcat, : );
                     collisionangle = collisionangle( 1:firstzipcat, : );
                     iscrossing = iscrossing( 1:firstzipcat );
                     iscontact = iscontact( 1:firstzipcat );
@@ -657,20 +738,21 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                     cats = cats( 1:firstzipcat );
                     crosses = crosses( 1:firstzipcat );
                     angleclass = angleclass( 1:firstzipcat );
+                    numevents = firstzipcat;
                 end
                 
                 colliderTubuleparams = getTubuleParamsModifiedByMorphogens( m, colliderCell, colliderCellBcs );
 %                 collidedTubuleparams = getTubuleParamsModifiedByMorphogens( m, collidedCell, collidedCellBcs );
                 
-                p_collision_branch = colliderTubuleparams.prob_collide_branch(:); % ./ (1 - p_zipcat);
-                p_collision_sever = colliderTubuleparams.prob_collide_cut(:); % ./ (1 - p_zipcat);
+                p_collision_branch = colliderTubuleparams.prob_crossover_branch(:); % ./ (1 - p_zipcat);
+                p_collision_sever = colliderTubuleparams.prob_crossover_cut(:); % ./ (1 - p_zipcat);
                 p_branch_plus_sever = p_collision_branch + p_collision_sever;
                 if p_branch_plus_sever > 1
                     xxxx = 1;
                     p_collision_branch = p_collision_branch / p_branch_plus_sever;
                     p_collision_sever = p_collision_sever / p_branch_plus_sever;
                 end
-
+                
                 rand2 = rand( length(iscontact), 1 );
                 crossbranch1 = crosses & (rand2 < p_collision_branch);
                 crossbranch = crossbranch1 & (abs(collisionangle) > colliderTubuleparams.min_angle_crossover_branch);
@@ -686,13 +768,9 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                 end
 
                 rand3 = rand( length(iscontact), 1 );
-                cutself = crosscut & (rand3 < colliderTubuleparams.prob_collide_cut_collider(:));
+                cutself = crosscut & (rand3 < colliderTubuleparams.prob_crossover_cut_collider(:));
                 cutother = crosscut & ~cutself;
 
-                if any( crosscut )
-                    xxxx = 1;
-                end
-                
                 % Any collision that does not zipper, catastrophe, or cross is
                 % ignored. This happens when there is a touch that does not
                 % zip or cat. These should be ignored.
@@ -703,6 +781,10 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                 if length(zippers) ~= length(crosses)
                     xxxx = 1;
                 end
+                colliderCell(ignoreCollisions) = [];
+                colliderCellBcs(ignoreCollisions,:) = [];
+                collidedCell(ignoreCollisions) = [];
+                collidedCellBcs(ignoreCollisions,:) = [];
                 zippers(ignoreCollisions) = [];
                 cats(ignoreCollisions) = [];
                 crossbranch(ignoreCollisions) = [];
@@ -717,6 +799,7 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                 collisionangle(ignoreCollisions) = [];
                 iscrossing(ignoreCollisions) = [];
                 angleclass(ignoreCollisions) = [];
+                numevents = sum( ~ignoreCollisions );
 
                 if ~isempty(collisionangle)
                     xxxx = 1;
@@ -726,6 +809,8 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                 [~,zcfirst] = find( zippers | cats, 1 );
                 if ~isempty(zcfirst)
                     % Remove all events from zcfirst+1 to the end.
+                    colliderCell( (zcfirst+1):end ) = [];
+                    colliderCellBcs( (zcfirst+1):end, : ) = [];
                     zippers( (zcfirst+1):end ) = [];
                     cats( (zcfirst+1):end ) = [];
                     crossbranch( (zcfirst+1):end ) = [];
@@ -740,23 +825,57 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                     collisionangle( (zcfirst+1):end ) = [];
                     iscrossing( (zcfirst+1):end ) = [];
                     angleclass( (zcfirst+1):end ) = [];
+                    numevents = zcfirst;
                 end
-
+                
                 doeszip = ~isempty(zippers) && zippers(end);
                 doescat = ~isempty(cats) && cats(end);
                 previousEvent = doeszip || doescat;
 
                 % m.tubules.statistics.crossovers = m.tubules.statistics.crossovers + sum( crosses );
-                m.tubules.statistics.crossoverinfo(end+1,:) = [ double(colliderCell(end)), colliderCellBcs(end,:), double(Steps(m)+1) ];
+                if any(crosses)
+                    numcrosses = sum( crosses );
+                    m.tubules.statistics.crossoverinfo((end+1):(end+numcrosses),1:5) = ...
+                        [ double(colliderCell(crosses)), colliderCellBcs(crosses,:), double(Steps(m)+1)+zeros(numcrosses,1) ];
+                end
                 
                 % At this point, we know exactly what events are to happen
                 % during the current step of the current microtubule.
                 % There will be a string of zero or more crossovers, each
                 % of which may cause a (delayed) branch or severing.
-                % This may be followed by a zipper or catastrophe.
+                % This may possibly be followed by a zipper or catastrophe.
 
                 if doeszip
-                    % Truncate the growth to the zippering point.
+                    numsegvxs = length(s.vxcellindex);
+                    if ~isempty(s.status.severance)
+                        % Delete all severances at the end of this segment.
+                        sevvxs = [s.status.severance.vertex];
+                        delsev = sevvxs >= numsegvxs;
+                        s.status.severance(delsev) = [];
+                    end
+                    if collidersegbc(zcfirst,2) <= TOLERANCE
+                        collidersegbc(zcfirst,:) = [1,0];
+                    end
+                    if collidersegbc(zcfirst,2) == 0
+                        % Delete the final vertex.
+                        s.vxcellindex(end) = [];
+                        s.segcellindex(end) = [];
+                        s.barycoords(end,:) = [];
+                        s.globalcoords(end,:) = [];
+                        s.segmentlengths(end) = [];
+                        s.iscrossovervx(end) = [];
+                    else
+                        % Move the final vertex of the tubule back to the
+                        % zippering point.
+                        newvxglobalcoords = collidersegbc(zcfirst,:) * s.globalcoords( [numsegvxs-1, numsegvxs], : );
+                        s.barycoords( numsegvxs, : ) = collidersegbc(zcfirst,:) * s.barycoords( [numsegvxs-1, numsegvxs], : );
+                        s.globalcoords( length(s.vxcellindex), : ) = newvxglobalcoords;
+                        s.segmentlengths(end) = collidersegbc(zcfirst,2) * s.segmentlengths(end);
+                        % Check consistency.
+                        % Not done yet.
+                    end
+                    lengthgrown = norm( s.globalcoords(end,:) - vx1 );
+                    
                     % Rotate the direction about the surface normal by the collision
                     % angle, in order to make it parallel or
                     % antiparallel to the collided-with tubule.
@@ -767,17 +886,16 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                         xxxx = 1;
                     end
 %                     m.tubules.statistics.zipperings = m.tubules.statistics.zipperings + 1;
-                    m.tubules.statistics.zipinfo(end+1,:) = [ double(colliderCell(end)), colliderCellBcs(end,:), double(Steps(m)+1) ];
+                    m.tubules.statistics.zipinfo(end+1,1:5) = [ double(colliderCell(end)), colliderCellBcs(end,:), double(Steps(m)+1) ];
                 elseif doescat
                     % Truncate the growth to the catastrophe point.
                     % To do this we need to refer the final segment to the current
                     % cell. It probably is already. Then adjust the final bc
                     % according to segbc.
 %                     m.tubules.statistics.collidecatastrophe = m.tubules.statistics.collidecatastrophe + 1;
-                    m.tubules.statistics.collidecatastropheinfo(end+1,:) = [ double(colliderCell(end)), colliderCellBcs(end,:), double(Steps(m)+1) ];
+                    m.tubules.statistics.collidecatastropheinfo(end+1,1:5) = [ double(colliderCell(end)), colliderCellBcs(end,:), double(Steps(m)+1) ];
 
-                
-                    segbc = collidersegbc(end,:);
+                    segbc = trimbc( collidersegbc(end,:), 1e-6 );
                     extended = segbc(2) > 0;
                     if extended
                         % Truncate the final segment.
@@ -792,11 +910,17 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                         if s.segmentlengths(end) > maxlength
                             xxxx = 1;
                         end
+            
+                        if ~validStreamline( m, s )
+                            xxxx = 1;
+                        end
+
                     else
                         % Delete the final segment.
                         s.barycoords(end,:) = [];
                         s.globalcoords(end,:) = [];
                         s.vxcellindex(end) = [];
+                        s.iscrossovervx(end) = [];
                         s.segcellindex(end) = [];
                         s.segmentlengths(end) = [];
                         lengthgrown = 0;
@@ -806,30 +930,94 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                     remaininglength = 0;
                 end
 
-%                 m.tubules.statistics.colliderbranch = m.tubules.statistics.colliderbranch + sum( crossbranch );
-%                 m.tubules.statistics.collidedcut = m.tubules.statistics.collidedcut + sum( cutother );
-%                 m.tubules.statistics.collidercut = m.tubules.statistics.collidercut + sum( cutself );
-%                 pendingevents.mt = collidedwith(cutothers);
-%                 pendingevents.segindex = collideseg(cutothers);
-%                 pendingevents.segbc = collidedsegbc(cutothers,:);
+                if any(crossbranch)
+                    if isMorphogen( m, m.tubules.tubuleparams.prob_branch_scaling )
+                        branchScalingPerVertex = max( 0, leaf_getTubuleParamsPerVertex( m, 'prob_branch_scaling' ) );
+                        if length(unique(branchScalingPerVertex))==1
+                            branchScalingPerVertex = branchScalingPerVertex(1);
+                        end
+                    else
+                        branchScalingPerVertex = 1;
+                    end
+                    doBranchScaling = (numel(branchScalingPerVertex) > 1) || (branchScalingPerVertex(1) ~= 1);
+                    if doBranchScaling
+                        crossbranchscaling = interpolateOverMesh( m, branchScalingPerVertex, colliderCell(crossbranch), colliderCellBcs(crossbranch,:), m.tubules.tubuleparams.branch_scaling_interp_mode );
+                        foo = find(crossbranch);
+                        foo( rand(length(foo),1) < crossbranchscaling ) = [];
+                        if any(foo)
+                            xxxx = 1;
+                        end
+                        crossbranch( foo ) = false;
+                    end
+                end
+                
+                branchother = crossbranch & (rand( length(crossbranch), 1 ) < m.tubules.tubuleparams.prob_crossover_branch_collided);
+                branchself = crossbranch & ~branchother;
                 
                 % We do not here have access to the index of the
                 % microtubule s. We use 0 to represent its index. The
                 % modified s will, after this function returns, be inserted
                 % back into m by leaf_iterateStreamlines.
                 selfindex = 0;
-                selfsegindex = length( s.segcellindex );
+                selfsegindex = length( s.vxcellindex ) - 1;
+                
+                numpendingevents = sum(crosses);
+                
+                pendingtypeother = repmat( 'c', 1, numpendingevents );
+                pendingtypeother( cutother(crosses) ) = 's';
+                pendingtypeother( branchother(crosses) ) = 'b';
+                
+                pendingtypeself = repmat( 'c', 1, numpendingevents );
+                pendingtypeself( cutself(crosses) ) = 's';
+                pendingtypeself( branchself(crosses) ) = 'b';
+                
+                pendingeventtypes = [ pendingtypeother, pendingtypeself ];
+                
+                
+%                 pendingeventtypes = repmat( 'c', 1, numpendingevents*2 );
+%                 pendingeventtypes( cutother | cutself ) = 's';
+%                 pendingeventtypes( crossbranch ) = 'b';
+                pendingevents2.mt = [ collidedwith(crosses); selfindex+zeros(numpendingevents,1) ];
+                pendingevents2.segindex = [ collidedseg(crosses); selfsegindex+zeros(numpendingevents,1) ];
+                pendingevents2.segbc = [ collidedsegbc(crosses,:); collidersegbc(crosses,:) ];
+                pendingevents2.type = pendingeventtypes;
+                pendingevents2.angleclass = repmat( angleclass(crosses), 2, 1 );
+                pendingevents2.angle = [ collisionangle(crosses); zeros(numpendingevents,1) ];
+                
+                
+                
                 pendingevents.mt = [ collidedwith(cutother); selfindex+zeros(sum(cutself),1) ];
                 pendingevents.segindex = [ collidedseg(cutother); selfsegindex+zeros(sum(cutself),1) ];
                 pendingevents.segbc = [ collidedsegbc(cutother,:); collidersegbc(cutself,:) ];
                 pendingevents.type = repmat( 's', length( pendingevents.mt ), 1 );
                 pendingevents.angleclass = [ angleclass(cutother); angleclass(cutself) ];
+                pendingevents.angle = [ collisionangle(cutother); zeros(sum(cutself),1) ];
                 
-                pendingevents.mt = [ pendingevents.mt; zeros(sum(crossbranch),1) ];
-                pendingevents.segindex = [ pendingevents.segindex; collidedseg(crossbranch) ];
-                pendingevents.segbc = [ pendingevents.segbc; collidersegbc(crossbranch,:) ];
-                pendingevents.type = [ pendingevents.type; repmat( 'b', sum(crossbranch), 1 ) ];
-                pendingevents.angleclass = [ pendingevents.angleclass; angleclass(crossbranch) ];
+                if numpendingevents > 0
+                    xxxx = 1;
+                end
+                
+                if any(crossbranch)
+                    pendingevents.mt =         [ pendingevents.mt;         collidedwith(branchother)+zeros(sum(branchother),1); zeros(sum(branchself),1) ];
+                    pendingevents.segindex =   [ pendingevents.segindex;   collidedseg(branchother);                            selfsegindex+zeros(sum(branchself),1) ];
+                    pendingevents.segbc =      [ pendingevents.segbc;      collidersegbc(branchother,:);                        collidersegbc(branchself,:) ];
+                    pendingevents.type =       [ pendingevents.type;       repmat( 'b', sum(crossbranch), 1 ) ];
+                    pendingevents.angleclass = [ pendingevents.angleclass; angleclass(crossbranch) ];
+                    pendingevents.angle =      [ pendingevents.angle;      collisionangle(branchother);                         zeros(sum(branchself),1) ];
+                    xxxx = 1;
+                end
+                
+%                 numcrosses = sum( crosses );
+%                 pendingevents1.mt =         [ pendingevents.mt; collidedwith(crosses)+zeros(numcrosses,1); zeros(sum(crosses),1) ];
+%                 pendingevents1.segindex =   [ pendingevents.segindex; collidedseg(crosses); selfsegindex+zeros(numcrosses,1) ];
+%                 pendingevents1.segbc =      [ pendingevents.segbc; collidedsegbc(crosses,:); collidersegbc(crosses,:) ];
+%                 pendingevents1.type =       [ pendingevents.type; repmat( 'c', numcrosses*2, 1 ) ];
+%                 pendingevents1.angleclass = [ pendingevents.angleclass; angleclass(crosses) ];
+%                 pendingevents1.angle =      [ pendingevents.angle; collisionangle(crosses); zeros(sum(branchself),1) ];
+%                 if numcrosses > 1
+%                     xxxx = 1;
+%                 end
+
                 
                 % Record stats for checking probabilities are fulfilled.
                 numangleclasses = length( m.tubules.tubuleparams.collision_angles ) + 1;
@@ -855,41 +1043,47 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                         end
                     end
                 end
-
-                if false && ~isempty( pendingevents.mt )
-                    pendingevents_mt = pendingevents.mt
-                    pendingevents_segindex = pendingevents.segindex
-                    pendingevents_segbc = pendingevents.segbc
-                    pendingevents_type = pendingevents.type
+                
+                pendingevents.globalcoords = zeros( length(pendingevents.mt), 3 );
+                for pei=1:length(pendingevents.mt)
+                    mti = pendingevents.mt(pei);
+                    if mti==0
+                        mt = s;
+                    else
+                        mt = m.tubules.tracks( mti );
+                    end
+                    segindex = pendingevents.segindex(pei);
+                    segvxs = mt.globalcoords( [segindex, segindex+1], : );
+                    segbcs = pendingevents.segbc( pei, : );
+                    pendingevents.globalcoords(pei,:) = segbcs * segvxs;
                 end
 
-                if ~isempty(pendingevents.mt)
-                    xxxx = 1;
+                NEW_PENDING_EVENTS = true;
+                if NEW_PENDING_EVENTS
+                    usependingevents = pendingevents2;
+                else
+                    usependingevents = pendingevents;
                 end
+                % Sort the pending events into descending order of segment index and segmentbc for each tubule.
+                if ~isempty( usependingevents.mt )
+%                     [pendingeventdata,perm] = sortrows( [ usependingevents.mt usependingevents.segindex usependingevents.segbc, double(usependingevents.type) ], 'descend' );
+                    [pendingeventdata,perm] = sortrows( [ usependingevents.mt usependingevents.segindex usependingevents.segbc ], 'descend' );
+                    usependingevents.mt = pendingeventdata(:,1);
+                    usependingevents.segindex = pendingeventdata(:,2);
+                    usependingevents.type = usependingevents.type( perm );
+                    usependingevents.angleclass = usependingevents.angleclass( perm );
+                    usependingevents.angle = usependingevents.angle( perm );
+%                     usependingevents.segbc = pendingeventdata(:,[3 4]);
+%                     usependingevents.type = char( pendingeventdata(:,5) );
 
-                % Sort the pending events into descending order of segment index.
-                if ~isempty( pendingevents.mt )
-                    pendingeventdata = sortrows( [ pendingevents.segindex pendingevents.mt pendingevents.segbc, double(pendingevents.type) ], 'descend' );
-                    pendingevents.segindex = pendingeventdata(:,1);
-                    pendingevents.mt = pendingeventdata(:,2);
-                    pendingevents.segbc = pendingeventdata(:,[3 4]);
-                    pendingevents.type = char( pendingeventdata(:,5) );
-%                     if any( pendingevents.type=='b' )
-%                         sindex = find( [m.tubules.tracks.id]==s.id, 1 );
-%                         timedFprintf( 'Tubule number %d, id %d has %d pending branchings.\n', sindex, s.id, sum( pendingevents.type=='b' ) );
-%                         xxxx = 1;
-%                     end
-                    for i=1:length( pendingevents.mt )
-                        mti = pendingevents.mt(i);
+                    for i=1:length( usependingevents.mt )
+                        mti = usependingevents.mt(i);
                         if mti==0
                             s1 = s;
                         else
                             s1 = m.tubules.tracks(mti);
                         end
-                        [s1,ok] = insertPendingEventInMT( m, s1, pendingevents.segindex(i), pendingevents.segbc(i,:), pendingevents.type(i) );
-%                         if pendingevents.type(i)=='b'
-%                             xxxx = 1;
-%                         end
+                        [s1,ok] = insertPendingEventInMT( m, s1, usependingevents.segindex(i), usependingevents.segbc(i,:), usependingevents.type(i), usependingevents.angle(i) );
                         if ok
                             if all( s1.directionglobal==0 )
                                 xxxx = 1;
@@ -918,6 +1112,14 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
     end
     
     validStreamline( m, s );
+    
+    newdirglobal = streamlineGlobalDirection( m, s );
+    dirchange = vecangle( olddirglobal, newdirglobal );
+    if dirchange > pi - 0.1
+        timedFprintf( 1, 'Reversal of streamline id %d: angle %g degrees.\n', s.id, dirchange );
+        s
+        xxxx = 1;
+    end
 end
 
 function [m,s,stopped] = stopStreamline( m, s, stoppingreason )
@@ -926,17 +1128,17 @@ function [m,s,stopped] = stopStreamline( m, s, stoppingreason )
             % Spontaneous stop.
             s.status.head = 0;
             % m.tubules.statistics.spontaneousstop = m.tubules.statistics.spontaneousstop + 1;
-            m.tubules.statistics.spontstopinfo(end+1,:) = [ double(s.vxcellindex(end)), s.barycoords(end,:), double(Steps(m)+1) ];
+            m.tubules.statistics.spontstopinfo(end+1,1:5) = [ double(s.vxcellindex(end)), s.barycoords(end,:), double(Steps(m)+1) ];
             stopped = true;
         case { 'c', 'e' }
             % Spontaneous catastrophe.
             s.status.head = -1;
             if stoppingreason=='e'
 %                 m.tubules.statistics.edgecatastrophe = m.tubules.statistics.edgecatastrophe + 1;
-                m.tubules.statistics.edgecatastropheinfo(end+1,:) = [ double(s.vxcellindex(end)), s.barycoords(end,:), double(Steps(m)+1) ];
+                m.tubules.statistics.edgecatastropheinfo(end+1,1:5) = [ double(s.vxcellindex(end)), s.barycoords(end,:), double(Steps(m)+1) ];
             else
                 % m.tubules.statistics.spontaneouscatastrophe = m.tubules.statistics.spontaneouscatastrophe + 1;
-                m.tubules.statistics.spontaneouscatastropheinfo(end+1,:) = [ double(s.vxcellindex(end)), s.barycoords(end,:), double(Steps(m)+1) ];
+                m.tubules.statistics.spontaneouscatastropheinfo(end+1,1:5) = [ double(s.vxcellindex(end)), s.barycoords(end,:), double(Steps(m)+1) ];
             end
             stopped = true;
         otherwise
@@ -945,7 +1147,7 @@ function [m,s,stopped] = stopStreamline( m, s, stoppingreason )
     end
 end
 
-function [splitmt,ok] = insertPendingEventInMT( m, splitmt, collideseg, segbc, eventType )
+function [splitmt,ok] = insertPendingEventInMT( m, splitmt, collideseg, segbc, eventType, angleoffset )
 % %     timedFprintf( 1, 'Inserting pending event point into mt %d at segment %d, bc [%f, %f].\n', ...
 %         collidedwith, collideseg, segbc );
     [splitmt,vx,ok] = insertVertexInMT( m, splitmt, collideseg, segbc );
@@ -959,7 +1161,7 @@ function [splitmt,ok] = insertPendingEventInMT( m, splitmt, collideseg, segbc, e
     if ~isempty( splitmt.status.severance )
         existingPendingEventVxs = [splitmt.status.severance.vertex];
         if any( vx == existingPendingEventVxs )
-            % There is already a pending severance at this vertex. Do not
+            % There is already a pending event at this vertex. Do not
             % add a new one.
             xxxx = 1;
             return;
@@ -971,7 +1173,11 @@ function [splitmt,ok] = insertPendingEventInMT( m, splitmt, collideseg, segbc, e
             delay = m.tubules.tubuleparams.delay_cut;
         case 'b'
             delay = m.tubules.tubuleparams.delay_branch;
+        case 'c'
+            delay = Inf;
         otherwise
+            % Should not happen.
+            timedFprintf( 1, 'Pending event inserted of unknown type ''%s''.\n',eventtype );
             delay = m.tubules.tubuleparams.delay_cut;
     end
     
@@ -980,8 +1186,9 @@ function [splitmt,ok] = insertPendingEventInMT( m, splitmt, collideseg, segbc, e
             'vertex', vx, ...
             'FE', splitmt.vxcellindex(vx), ...
             'bc', splitmt.barycoords(vx,:), ...
-            ... % 'globalpos', splitmt.globalcoords(vx,:), ...
-            'eventtype', eventType ...
+            'globalpos', splitmt.globalcoords(vx,:), ...
+            'eventtype', eventType, ...
+            'angleoffset', angleoffset ...
         );
     if isempty( splitmt.status.severance )
         splitmt.status.severance = pendingEvent;

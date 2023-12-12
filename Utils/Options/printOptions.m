@@ -29,6 +29,8 @@ function s = printOptions( fid, options )
                 s = sfprintf( s, fid, '    %s: ''%s''\n', fn, v );
             elseif islogical( v )
                 s = sfprintf( s, fid, '    %s: %s\n', fn, boolchar(v,'true','false') );
+            elseif iscell( v )
+                s = sfprintf( s, fid, '    %s: (cell)\n', fn );
             else
                 s = sfprintf( s, fid, '    %s:', fn );
                 s = sfprintf( s, fid, ' %g', v );

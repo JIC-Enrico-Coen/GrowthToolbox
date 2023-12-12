@@ -1,5 +1,5 @@
-function [collidedwith,collidedseg,collidedsegbc,collidersegbc,collisiontype,collisionangle,iscross] = determineStreamlineCollision( m, ci, p01, radius, noncolliders )
-%[collidedwith,collideseg,segbc,collisiontype,collisionangle] = determineStreamlineCollision( m, ci, p01, radius, noncolliders )
+function [collidedwith,collidedseg,collidedsegbc,collidersegbc,collisiontype,collisionangle,iscross,collisionparallel] = determineStreamlineCollision( m, ci, p01, radius, noncolliders )
+%[collidedwith,collidedseg,collidedsegbc,collidersegbc,collisiontype,collisionangle,iscross,collisionparallel] = determineStreamlineCollision( m, ci, p01, radius, noncolliders )
 %
 %   Arguments:
 %
@@ -52,6 +52,7 @@ function [collidedwith,collidedseg,collidedsegbc,collidersegbc,collisiontype,col
     collidersegbc = zeros(INITSIZE,2);
     collisiontype = cell(1,INITSIZE);
     collisionangle = zeros(1,INITSIZE);
+    collisionparallel = false(1,INITSIZE);
     iscross = false(1,INITSIZE);
 
     colliders = setdiff( 1:length( m.tubules.tracks ), noncolliders );
@@ -59,7 +60,7 @@ function [collidedwith,collidedseg,collidedsegbc,collidersegbc,collisiontype,col
     elementNormal = m.unitcellnormals(ci,:);
     
     numcollisions = 0;
-    % collidedwith,collideseg,segbc,collisiontype,collisionangle
+
     allsegcellindex = [m.tubules.tracks(colliders).segcellindex];
     allmtindex = zeros(size(allsegcellindex));
     allsegindex = zeros(size(allsegcellindex));
@@ -88,17 +89,27 @@ function [collidedwith,collidedseg,collidedsegbc,collidersegbc,collisiontype,col
         s = m.tubules.tracks(si);
         xxxx = 1;
         q01 = s.globalcoords([segi,segi+1],:);
-        cangle = vecangle( p01(2,:) - p01(1,:), q01(2,:) - q01(1,:), elementNormal ); % cangle is in the range -pi .. pi.
-        if cangle < -pi/2
-            cangle = cangle + pi;
-        elseif cangle > pi/2
-            cangle = cangle - pi;
+        rawangle = vecangle( p01(2,:) - p01(1,:), q01(2,:) - q01(1,:), elementNormal ); % cangle is in the range -pi .. pi.
+        if rawangle < -pi/2
+            ispar = false;
+            cangle = rawangle + pi;
+        elseif rawangle > pi/2
+            ispar = false;
+            cangle = rawangle - pi;
+        else
+            ispar = true;
+            cangle = rawangle;
         end
         % cangle is now in the range -pi/2 .. pi/2.
         % Rotating p2-p1 about n by collisionangle will make it
         % either parallel or antiparallel to q2-q1.
 %             cangle = pi/2 - abs(cangle-pi/2);  % a is in the range 0 .. pi/2.
-        [pbc1,qbc1,pbcx,qbcx,d,coll,ctype] = capsuleApproachToDistance2( p01, q01, radius+m.tubules.tubuleparams.radius );
+        [pbc1,qbc1,pbcx,qbcx,d,coll,ctype] = capsuleApproachToDistance2( p01, q01, radius+m.tubules.tubuleparams.headradius );
+        [x_pbc_touch,x_pbc_cross,x_qbc_touch,x_qbc_cross] = capsuleApproachToDistance3( p01, q01, radius+m.tubules.tubuleparams.headradius );
+        pbc1 = trimbc( pbc1 );
+        qbc1 = trimbc( qbc1 );
+        pbcx = trimbc( pbcx );
+        qbcx = trimbc( qbcx );
         if pbc1(2) > pbcx(2)
             xxxx = 1;
         end
@@ -110,6 +121,7 @@ function [collidedwith,collidedseg,collidedsegbc,collidersegbc,collisiontype,col
             collidersegbc(numcollisions,:) = pbc1;
             collisiontype{numcollisions} = ctype;
             collisionangle(numcollisions) = cangle;
+            collisionparallel(numcollisions) = ispar;
             iscross(numcollisions) = false;
         end
         if ~any(isnan(pbcx)) && ~any(isnan(qbcx))
@@ -120,6 +132,7 @@ function [collidedwith,collidedseg,collidedsegbc,collidersegbc,collisiontype,col
             collidersegbc(numcollisions,:) = pbcx;
             collisiontype{numcollisions} = ctype;
             collisionangle(numcollisions) = cangle;
+            collisionparallel(numcollisions) = ispar;
             iscross(numcollisions) = true;
         end
     end
@@ -130,6 +143,7 @@ function [collidedwith,collidedseg,collidedsegbc,collidersegbc,collisiontype,col
     collidersegbc( (numcollisions+1):end, : ) = [];
     collisiontype( (numcollisions+1):end ) = [];
     collisionangle( (numcollisions+1):end ) = [];
+    collisionparallel( (numcollisions+1):end ) = [];
     iscross( (numcollisions+1):end ) = [];
     
     if numcollisions > 1
@@ -140,6 +154,7 @@ function [collidedwith,collidedseg,collidedsegbc,collidersegbc,collisiontype,col
         collidersegbc = collidersegbc(collideperm,:);
         collisiontype = collisiontype(collideperm);
         collisionangle = collisionangle(collideperm);
+        collisionparallel = collisionparallel(collideperm);
         iscross = iscross(collideperm);
         xxxx = 1;
     end
@@ -149,10 +164,11 @@ function [collidedwith,collidedseg,collidedsegbc,collidersegbc,collisiontype,col
     end
     
     % Force the vectors to be column vectors because Matlab one-dimensional
-    % arrays are completely fucked.
+    % arrays are fucked.
     collidedwith = collidedwith(:);
     collidedseg = collidedseg(:);
     collisiontype = collisiontype(:);
     collisionangle = collisionangle(:);
+    collisionparallel = collisionparallel(:);
     iscross = iscross(:);
 end

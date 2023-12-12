@@ -1,22 +1,26 @@
-function [mttail,mthead] = splitMT( m, mt, vxindex, cattail, cathead )
-%[mt1,mt2] = splitMT( mt, segindex, bcs )
-%   Split the given microtubule at the given vertex.
+function [mtrear,mtfront] = splitMT( m, mt, vxindex, catrearhead, catfronttail )
+%[mtrear,mtfront] = splitMT( m, mt, vxindex, catrearhead, catfronttail )
+%   Split the given microtubule at the given vertex into a rear part and a
+%   front part.
 %
 %   mt will be a microtubule track such as is contained in
 %   m.tubules.tracks.
 %
 %   vxindex is a vertex to split it at.
 %
-%   cattail and cathead are booleans specifying whether the head of the
-%   tail end, and the tail of the head end, catastrophize.
+%   catrearhead is a boolean specifying whether the head of the rear tubule
+%   catastrophizes.
 %
-%   mttail will have the same id as mt. mthead will be given id zero,
+%   catfronttail is a boolean specifying whether the tail of the front
+%   tubule catastrophizes.
+%
+%   mtrear will have the same id as mt. mtfront will be given id zero,
 %   and must be given a new id by the code this is called from. That 
 %   code will also have to calculate directionbc and directionglobal for
-%   mttail, and add mthead to m.tubules.
+%   mtrear, and add mtfront to m.tubules.
 
-    mttail = mt;
-    mthead = [];
+    mtrear = mt;
+    mtfront = [];
     
     % Sanity check: if the split point is at or beyond either end of the
     % mt, do nothing.
@@ -24,57 +28,60 @@ function [mttail,mthead] = splitMT( m, mt, vxindex, cattail, cathead )
         return;
     end
 
-    mthead = mt;
-    mthead.id = 0; % The new mt has no id.
+    mtfront = mt;
+    mtfront.id = 0; % The new mt has no id.
     
-    if cattail
-        mttail.status.head = -1;
+    if catrearhead
+        mtrear.status.head = -1;
     else
-        mttail.status.head = 1;
+        mtrear.status.head = 1;
     end
-    mttail.status.shrinktail = 1;
-    mttail.status.shrinktime = 0;
+    mtrear.status.shrinktail = 1;
+    mtrear.status.shrinktime = 0;
     
-    mthead.status.catshrinktail = cathead;
+    mtfront.status.catshrinktail = catfronttail;
     
-    mttail = updateSeverancePointsForDeletion( mttail, [vxindex+1 length(mttail.vxcellindex)] );
-    mthead = updateSeverancePointsForDeletion( mthead, [1 vxindex-1] );
+    % Pending events are referenced to vertexes of the original tubule,
+    % indexed from the tail end forwards. Each event must be allocated to
+    % the rear or front section, and in the front section they must be
+    % reindexed.
+    mtrear = updateSeverancePointsForDeletion( mtrear, [vxindex+1 length(mtrear.vxcellindex)] );
+    mtfront = updateSeverancePointsForDeletion( mtfront, [1 vxindex-1] );
 
-    mthead.vxcellindex = mt.vxcellindex( vxindex:end );
-    mttail.vxcellindex = mt.vxcellindex( 1:vxindex );
+    % Divide the vertexes and everything else between the two tubules.
+    mtfront.vxcellindex = mt.vxcellindex( vxindex:end );
+    mtrear.vxcellindex = mt.vxcellindex( 1:vxindex );
     
-    mthead.segcellindex = mt.segcellindex( vxindex:end );
-    mttail.segcellindex = mt.segcellindex( 1:vxindex );
+    mtfront.iscrossovervx = mt.iscrossovervx( vxindex:end );
+    if ~isempty( mtfront.iscrossovervx )
+        mtfront.iscrossovervx( [1, end] ) = false;
+    end
+    mtrear.iscrossovervx = mt.iscrossovervx( 1:vxindex );
+    if ~isempty( mtrear.iscrossovervx )
+        mtrear.iscrossovervx( [1, end] ) = false;
+    end
     
-    mthead.barycoords = mt.barycoords( vxindex:end, : );
-    mttail.barycoords = mt.barycoords( 1:vxindex, : );
+    mtfront.segcellindex = mt.segcellindex( vxindex:end );
+    mtrear.segcellindex = mt.segcellindex( 1:vxindex );
     
-    mthead.globalcoords = mt.globalcoords( vxindex:end, : );
-    mttail.globalcoords = mt.globalcoords( 1:vxindex, : );
+    mtfront.barycoords = mt.barycoords( vxindex:end, : );
+    mtrear.barycoords = mt.barycoords( 1:vxindex, : );
     
-    mthead.segmentlengths = mt.segmentlengths( vxindex:end );
-    mttail.segmentlengths = mt.segmentlengths( 1:(vxindex-1) );
+    mtfront.globalcoords = mt.globalcoords( vxindex:end, : );
+    mtrear.globalcoords = mt.globalcoords( 1:vxindex, : );
     
-    [mttail.directionbc,mttail.directionglobal] = streamlineSegmentDirection( m, mt, vxindex-1 );
+    mtfront.segmentlengths = mt.segmentlengths( vxindex:end );
+    mtrear.segmentlengths = mt.segmentlengths( 1:(vxindex-1) );
     
-    if ~checkZeroBcsInStreamline( mttail )
+    % Calculate the direction of the rear tubule.
+    [mtrear.directionbc,mtrear.directionglobal] = streamlineSegmentDirection( m, mt, vxindex-1 );
+    
+    if ~checkZeroBcsInStreamline( mtrear )
         xxxx = 1;
     end
 
-    [oks,errfields] = validStreamline( m, [mthead mttail] );
+    [oks,errfields] = validStreamline( m, [mtfront mtrear] );
     if any( ~oks )
         xxxx = 1;
     end
-
-%                  id: 2
-%         vxcellindex: [1×42 int32]
-%        segcellindex: [1×42 int32]
-%          barycoords: [42×3 double]
-%        globalcoords: [42×3 double]
-%      segmentlengths: [1×41 double]
-%          downstream: 1
-%           morphogen: []
-%         directionbc: [1.5101 -1.5345 0.0244]
-%     directionglobal: [-0.0163 -0.0787 0.9968]
-%              status: [1×1 struct]
 end

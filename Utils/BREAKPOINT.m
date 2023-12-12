@@ -1,9 +1,10 @@
 function BREAKPOINT( varargin )
     if nargin==0
-        fprintf( 1, 'User invoked breakpoint.\n' );
+        timedFprintf( 1, 'User invoked breakpoint.\n' );
     else
-        fprintf( 1, varargin{:} );
+        timedFprintf( 1, varargin{:} );
     end
     dbstack
+    xxxx = 1;
 %     keyboard();
 end

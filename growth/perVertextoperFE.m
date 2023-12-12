@@ -21,13 +21,17 @@ function perFE = perVertextoperFE( m, perVx, method, fes )
         method = 'mid';
         wholemesh = false;
     else
-        wholemesh = true;
+        wholemesh = nargin < 4;
     end
     
     if wholemesh
         perFE = FEvertexToFE( m, perVx, method );
     else
-        perFE = perVertextoperPolygon( m.tricellvxs, perVx, method, fes );
+        if isVolumetricMesh(m)
+            perFE = perVertextoperPolygon( m.FEsets(1).fevxs, perVx, method, fes );
+        else
+            perFE = perVertextoperPolygon( m.tricellvxs, perVx, method, fes );
+        end
     end
 end
 

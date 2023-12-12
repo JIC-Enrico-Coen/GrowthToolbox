@@ -61,7 +61,7 @@ function [pbc1,qbc1,pbcx,qbcx,d,collision,collisiontype] = capsuleApproachToDist
 %   'FAR5'  No collision. The segments do not come within a distance
 %           d0 of each other.
 %
-%   'ALREADY1'  Collision. The start of p01 is within a distance d0 of an
+%   'ALREADY'  Collision. The start of p01 is within a distance d0 of an
 %           endpoint of q01, and getting closer.
 %
 %   'APPROACH'  No collision. p01 if prolonged will come within d0 of an
@@ -72,9 +72,6 @@ function [pbc1,qbc1,pbcx,qbcx,d,collision,collisiontype] = capsuleApproachToDist
 %
 %   'FAR6'  No collision. The segments do not come within a distance
 %           d0 of each other.
-%
-%   'ALREADY2'  Collision. The start of p01 is within a distance d0 of an
-%           endpoint of q01, and getting closer.
 %
 %   'PEND_QEND'  Collision.  The end of p01 comes within d0 of q01. (This
 %           is expected to be rare. Either a point before the end of

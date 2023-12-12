@@ -2,6 +2,7 @@ function s = evolveStreamline( m, s, t, noncolliders )
 %s = evolveStreamline( m, s, t, noncolliders )
 %   Evolve the streamline for the given time.
 % INCOMPLETE 2019 Jun 25
+% OBSOLETE 2023 Jul 20
 
     remainingtime = t;
     while remainingtime > 0

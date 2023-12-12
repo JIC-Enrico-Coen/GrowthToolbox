@@ -86,6 +86,7 @@ function m = leaf_createStreamlines( m, varargin )
         streamline(i).id = currentID+i;
         streamline(i).barycoords = ss(i).barycoords;
         streamline(i).vxcellindex = ss(i).elementindex;
+        streamline(i).iscrossovervx = false( size( streamline(i).vxcellindex ) );
         streamline(i).segcellindex = ss(i).elementindex;
         streamline(i).directionbc = ss(i).directionbc;
         streamline(i).directionglobal = ss(i).directionglobal;
@@ -101,6 +102,7 @@ function m = leaf_createStreamlines( m, varargin )
         streamline(i) = setStructTypes( streamline(i), ...
             'id', 'int32', ...
             'vxcellindex', 'int32', ...
+            'iscrossovervx', 'logical', ...
             'segcellindex', 'int32', ...
             'barycoords', 'double', ...
             'globalcoords', 'double', ...
@@ -119,9 +121,6 @@ function m = leaf_createStreamlines( m, varargin )
         m.tubules.tracks( (end+1):(end+numstreamlines) ) = streamline;
     end
     m.tubules.maxid = m.tubules.maxid + numstreamlines;
-    
-    % Update stats.
-%     m.tubules.statistics.created = m.tubules.statistics.created + numstreamlines;
     
     if ~isfield(  m.tubules.statistics, 'creationinfo' )
         m.tubules.statistics.creationinfo = zeros(0,5);

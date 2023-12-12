@@ -8,17 +8,19 @@ function [m,newbranchinfo,newmtindexes] = spawnBranches( m, branchingTubules, br
 %   BRANCHSEGBC gives the barycentric coordinates within each segment
 %   where the branch point is to be.
 %   BRANCHTIMES are the times at which the branches are created.
-%   BraNCHSIDES specifies which side of the parent each branch is to be.
+%   BRANCHSIDES specifies which side of the parent each branch is to be.
 %   BRANCHANGLES specifies the angles (value from 0 to 180) between the
 %   parents and the branches.
+%
+%   NEWBRANCHINFO is an N*6 array, with one row for each branching. The
+%   elements are:
+%       the finite element in which it happens
+%       the three bary coords of the point where it happens
+%       the model time
+%       the branching angle (as a signed angle in the range (-180...180].
 
     numNewTubules = length( branchingTubules );
-    if nargin < 6
-        branchSides = randSign(numNewTubules,1);
-        branchAngles = getMTBranchingAngles( m, numNewTubules ) .* branchSides;
-    end
-    
-    newbranchinfo = zeros( numNewTubules, 5 );
+    newbranchinfo = zeros( numNewTubules, 6 );
     newbranchinfo(:,5) = double(Steps(m)+1);
     branchElements = zeros( numNewTubules, 1, 'int32' );
     startBcs = zeros( numNewTubules, 3 );
@@ -47,7 +49,7 @@ function [m,newbranchinfo,newmtindexes] = spawnBranches( m, branchingTubules, br
             globalDirection = segGlobalEnd - segGlobalStart;
         end
         elementNormal = m.unitcellnormals( segelement, : );
-        transverse = makeframe( elementNormal, globalDirection ) * (m.tubules.tubuleparams.radius * 2.001); % The extra 0.001 is to provide initial clearance.
+        transverse = makeframe( elementNormal, globalDirection ) * ((m.tubules.tubuleparams.radius + m.tubules.tubuleparams.headradius) * 1.0005); % The extra 0.0005 is to provide initial clearance.
         transverse = transverse .* branchSides(ii);
         
         % Displace the creation point along the transverse vector by the
@@ -61,6 +63,7 @@ function [m,newbranchinfo,newmtindexes] = spawnBranches( m, branchingTubules, br
         elementVxs = m.nodes( m.tricellvxs( segelement, : ), : );
         [theStartBcs,bc_err] = baryCoords( elementVxs, elementNormal, globalStart, true );
         newbranchinfo(ii,1:4) = [ double(segelement), theStartBcs ];
+        newbranchinfo(ii,6) = branchAngle;
         newDirectionGlobal = rotateVecAboutVec( globalDirection, m.unitcellnormals( segelement, : ), branchAngle );
         [theDirBcs,dbc_err] = baryDirCoords( elementVxs, elementNormal, newDirectionGlobal );
 %         fprintf( 1, '%s: bcerr %g dbcerr %g\n', mfilename(), bc_err, dbc_err );

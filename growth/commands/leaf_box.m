@@ -215,7 +215,7 @@ function [m,ok] = leaf_box( m, varargin )
 %                -st st zz;
 %                zz zz zz ];
         r = pagemtimes( rt, rp );
-        curvatures(:,:,corners) = pagemtimes( pagemtimes( r, diag([0 1 1]) ), pagetranspose( r ) );
+        curvatures(:,:,corners) = pagemtimes( pagemtimes( r, diag([0 uniquecurvature uniquecurvature]) ), pagetranspose( r ) );
 %         curvatures(:,:,corners) = repmat( [1 0 0; 0 1 0; 0 0 0], 1, 1, sum(corners) );
     end
     

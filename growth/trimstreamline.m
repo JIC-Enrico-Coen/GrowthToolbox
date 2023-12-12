@@ -47,12 +47,15 @@ function m = trimstreamline( m, si, head, amount )
                     % Streamline has vanished.
                     s.barycoords = [];
                     s.vxcellindex = [];
+                    s.iscrossovervx = [];
                 elseif head
                     s.barycoords( (currentindex+1):end, : ) = [];
                     s.vxcellindex( (currentindex+1):end ) = [];
+                    s.iscrossovervx( (currentindex+1):end ) = [];
                 else
                     s.barycoords( currentindex-1, : ) = [];
                     s.vxcellindex( currentindex-1 ) = [];
+                    s.iscrossovervx( (currentindex+1):end ) = [];
                 end
             else
                 % currentpoint and previouspoint need to be referred to the
@@ -105,6 +108,7 @@ function m = trimstreamline( m, si, head, amount )
                 
                 s.barycoords( antepreviousindex:end, : ) = [];
                 s.vxcellindex( antepreviousindex:end ) = [];
+                s.iscrossovervx( antepreviousindex:end ) = [];
                 s.barycoords( previousindex, : ) = cuttingpointbc;
                 s.vxcellindex( previousindex ) = cuttingpointci;
                 if ~checkZeroBcsInStreamline( s )

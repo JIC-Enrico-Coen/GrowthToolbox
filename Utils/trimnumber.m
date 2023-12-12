@@ -5,8 +5,11 @@ function x = trimnumber( lo, x, hi, tol )
 %
 %   If x lies within tol of either endpoint, it is mapped to that endpoint.
 %   If hi and lo are within tol of each other, every value is mapped to lo.
+%   tol defaults to zero.
+%
+%   NaN values are mapped to NaN.
 
-    x = max( lo, min( hi, x ) );
+    x = max( lo, min( hi, x, 'includenan' ), 'includenan' );
     
     if nargin > 3
         x(x > hi-tol) = hi;

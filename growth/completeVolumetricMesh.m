@@ -9,6 +9,7 @@ function m = completeVolumetricMesh( m )
     
     setGlobals();
 
+    m.visible = []; % The mesh has never been plotted, so clear out any out-of-date visibility info.
     m = calcFEvolumes( m, [], true );
     m.globalProps.initialVolume = m.globalDynamicProps.currentVolume;
     m.globalDynamicProps.previousVolume = m.globalDynamicProps.currentVolume;

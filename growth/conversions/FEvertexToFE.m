@@ -21,21 +21,25 @@ function perFE = FEvertexToFE( m, perFEvertex, method )
     if nargin < 3
         method = 'mid';
     end
+    if nargin < 4
+        fes = 1:getNumberOfFEs( m );
+    end
     
-    numFEvertex = getNumberOfVertexes( m );
-    if (size(perFEvertex,1) ~= numFEvertex) || iscell(perFEvertex) || ischar(perFEvertex)
+    numFEvertexes = getNumberOfVertexes( m );
+    if (size(perFEvertex,1) ~= numFEvertexes) || iscell(perFEvertex) || ischar(perFEvertex)
         mgens = FindMorphogenIndex( m, perFEvertex );
         perFEvertex = m.morphogens(:,mgens);
     end
+    
     numFE = getNumberOfFEs( m );
     shapeFEvertex = size(perFEvertex);
     itemshape = shapeFEvertex(2:end);
-    perFEvertex = reshape( perFEvertex, numFEvertex, [] );
+    perFEvertex = reshape( perFEvertex, numFEvertexes, [] );
 
     if isVolumetricMesh( m )
-        perFE = perVertextoperPolygon( m.FEsets.fevxs, perFEvertex, method );
+        perFE = perVertextoperPolygon( m.FEsets.fevxs, perFEvertex, method, fes );
     else
-        perFE = perVertextoperPolygon( m.tricellvxs, perFEvertex, method );
+        perFE = perVertextoperPolygon( m.tricellvxs, perFEvertex, method, fes );
     end
 
     perFE = reshape( perFE, [numFE,itemshape] );

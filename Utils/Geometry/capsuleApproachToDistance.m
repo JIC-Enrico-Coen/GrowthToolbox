@@ -1,6 +1,6 @@
-function [pbc,d,collision,collisiontype] = capsuleApproachToDistance( p01, q01, d0, minangle )
-%[pbc,d,collision,collisiontype] = capsuleApproachToDistance( p01, q01, d0, minangle )
-%   p00 and q01 are 2xD matrices whose rows are points in D-dimensional
+function [pbc,d,collision,collisiontype] = capsuleApproachToDistance( p01, q01, d0 )
+%[pbc,d,collision,collisiontype] = capsuleApproachToDistance( p01, q01, d0 )
+%   p01 and q01 are 2xD matrices whose rows are points in D-dimensional
 %   space. Each thus defines a line segment.
 %
 %   This procedure answers the question, if we proceed from p0 to p1, which
@@ -27,7 +27,7 @@ function [pbc,d,collision,collisiontype] = capsuleApproachToDistance( p01, q01, 
 %           anything.
 %
 %   'P<Q'   No collision. The maximum of some p01 coordinate was less
-%           than the minimum of the correesponding q01 coordinate by
+%           than the minimum of the corresponding q01 coordinate by
 %           d0 or more.  This is a quick screening test.
 %
 %   'P>Q'   No collision. Similarly to 'P<Q' with p01 and q01 interchanged.
@@ -53,7 +53,7 @@ function [pbc,d,collision,collisiontype] = capsuleApproachToDistance( p01, q01, 
 %   'FAR5'  No collision. The segments do not come within a distance
 %           d0 of each other.
 %
-%   'ALREADY1'  Collision. The start of p01 is within a distance d0 of an
+%   'ALREADY'  Collision. The start of p01 is within a distance d0 of an
 %           endpoint of q01, and getting closer.
 %
 %   'APPROACH'  No collision. p01 if prolonged will come within d0 of an
@@ -65,15 +65,10 @@ function [pbc,d,collision,collisiontype] = capsuleApproachToDistance( p01, q01, 
 %   'FAR6'  No collision. The segments do not come within a distance
 %           d0 of each other.
 %
-%   'ALREADY2'  Collision. The start of p01 is within a distance d0 of an
-%           endpoint of q01, and getting closer.
-%
-%   'PEND_QEND'  Collision.  The end of p01 comes within d0 of q01. (This
-%           is expected to be very rare. Either a point before the end of
-%           p01 will do this, or a point beyond the end.)
+%   'PEND_QEND'  Collision.  The end of p01 comes within d0 of q01.
 %
 %   'PSTART_QEND'  Collision. The start of p01 is a distance d0 from an
-%           endpoint of q01. Also expected to be rare.
+%           endpoint of q01.
 %
 %   'PMID_QEND2'  Collision. A point within p01 comes within a distance d0
 %           of an endpoint of q01.
@@ -86,7 +81,9 @@ function [pbc,d,collision,collisiontype] = capsuleApproachToDistance( p01, q01, 
         d = Inf;
         collision = false;
         collisiontype = 'ZERO';
-        if VERBOSE, fprintf( 1, 'Collision %d, %s\n', collision, collisiontype ); end
+        if VERBOSE
+            timedFprintf( 1, 'Collision %d, %s\n', collision, collisiontype );
+        end
         return;
     end
     
@@ -95,7 +92,7 @@ function [pbc,d,collision,collisiontype] = capsuleApproachToDistance( p01, q01, 
         d = Inf;
         collision = false;
         collisiontype = 'ONEPOINT';
-        if VERBOSE, fprintf( 1, 'Collision %d, %s\n', collision, collisiontype ); end
+        if VERBOSE, timedFprintf( 1, 'Collision %d, %s\n', collision, collisiontype ); end
         return;
     end
     
@@ -114,14 +111,14 @@ function [pbc,d,collision,collisiontype] = capsuleApproachToDistance( p01, q01, 
         % No collision.
         collision = false;
         collisiontype = 'P<Q';
-        if VERBOSE, fprintf( 1, 'Collision %d, %s\n', collision, collisiontype ); end
+        if VERBOSE, timedFprintf( 1, 'Collision %d, %s\n', collision, collisiontype ); end
         return;
     end
     if any( min(p01,[],1) - max(q01,[],1) >= d0 )
         % No collision.
         collision = false;
         collisiontype = 'P>Q';
-        if VERBOSE, fprintf( 1, 'Collision %d, %s\n', collision, collisiontype ); end
+        if VERBOSE, timedFprintf( 1, 'Collision %d, %s\n', collision, collisiontype ); end
         return;
     end
     
@@ -133,7 +130,7 @@ function [pbc,d,collision,collisiontype] = capsuleApproachToDistance( p01, q01, 
     if dpq >= d0
         collision = false;
         collisiontype = 'FAR_INF';
-        if VERBOSE, fprintf( 1, 'Collision %d, %s\n', collision, collisiontype ); end
+        if VERBOSE, timedFprintf( 1, 'Collision %d, %s\n', collision, collisiontype ); end
         return;
     end
     
@@ -153,7 +150,7 @@ function [pbc,d,collision,collisiontype] = capsuleApproachToDistance( p01, q01, 
         d = Inf;
         collision = false;
         collisiontype = 'EQPOINT';
-        if VERBOSE, fprintf( 1, 'Collision %d, %s\n', collision, collisiontype ); end
+        if VERBOSE, timedFprintf( 1, 'Collision %d, %s\n', collision, collisiontype ); end
         return;
     end
     q01length = norm(dq);
@@ -187,7 +184,7 @@ function [pbc,d,collision,collisiontype] = capsuleApproachToDistance( p01, q01, 
                 || ((qbc1(2) <= 0) && (qbc2(2) <= 0))
             % The collision segment lies outside either the segment p01 or the segment q01.
             % No collision for the cylinder volume.
-    %         fprintf( 1, '%s: No intersection with cylinder.\n', mfilename() );
+    %         timedFprintf( 1, '%s: No intersection with cylinder.\n', mfilename() );
             xxxx = 1;
         else
             % Trim the segment (pbc1,pbc2) to lie within the segment p01, and
@@ -255,7 +252,7 @@ function [pbc,d,collision,collisiontype] = capsuleApproachToDistance( p01, q01, 
         pbc = [0 1];
         collision = false;
         collisiontype = 'FAR_SEGMENTS';
-        if VERBOSE, fprintf( 1, 'Collision %d, %s\n', collision, collisiontype ); end
+        if VERBOSE, timedFprintf( 1, 'Collision %d, %s\n', collision, collisiontype ); end
         return;
     end
     
@@ -271,7 +268,7 @@ function [pbc,d,collision,collisiontype] = capsuleApproachToDistance( p01, q01, 
         pbc = [0 1];
         collision = false;
         collisiontype = 'APPROACHING';
-        if VERBOSE, fprintf( 1, 'Collision %d, %s\n', collision, collisiontype ); end
+        if VERBOSE, timedFprintf( 1, 'Collision %d, %s\n', collision, collisiontype ); end
         return;
     end
     
@@ -282,7 +279,7 @@ function [pbc,d,collision,collisiontype] = capsuleApproachToDistance( p01, q01, 
         pbc = [0 1];
         collision = false;
         collisiontype = 'DEPARTED';
-        if VERBOSE, fprintf( 1, 'Collision %d, %s\n', collision, collisiontype ); end
+        if VERBOSE, timedFprintf( 1, 'Collision %d, %s\n', collision, collisiontype ); end
         return;
     end
     
@@ -298,7 +295,7 @@ function [pbc,d,collision,collisiontype] = capsuleApproachToDistance( p01, q01, 
         if all(pbc ~= 0) && any(pbc < 1e-6)
             xxxx = 1;
         end
-        if VERBOSE, fprintf( 1, 'Collision %d, %s\n', collision, collisiontype ); end
+        if VERBOSE, timedFprintf( 1, 'Collision %d, %s\n', collision, collisiontype ); end
         return;
     end
     
@@ -312,7 +309,7 @@ function [pbc,d,collision,collisiontype] = capsuleApproachToDistance( p01, q01, 
         pbc = [0 1];
         collision = false;
         collisiontype = 'DEPARTING';
-        if VERBOSE, fprintf( 1, 'Collision %d, %s\n', collision, collisiontype ); end
+        if VERBOSE, timedFprintf( 1, 'Collision %d, %s\n', collision, collisiontype ); end
         return;
     end
     
@@ -320,5 +317,5 @@ function [pbc,d,collision,collisiontype] = capsuleApproachToDistance( p01, q01, 
     collision = true;
     collisiontype = 'ALREADY';
 
-    if VERBOSE, fprintf( 1, 'Collision %d, %s\n', collision, collisiontype ); end
+    if VERBOSE, timedFprintf( 1, 'Collision %d, %s\n', collision, collisiontype ); end
 end

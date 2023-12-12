@@ -319,7 +319,7 @@ function compatible = compareStructs1( fid, s1, s2, reportCompatible, tolerance,
             end
         else
             if ~silent
-                fprintf( fid, 'At %s, classes of type %s differ.\n%s%s', ...
+                fprintf( fid, 'At %s, objects of class %s differ.\n%s%s', ...
                     path, c1, st1, st2 );
             end
         end

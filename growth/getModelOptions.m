@@ -1,11 +1,11 @@
 function [s,alloptions] = getModelOptions( m, optionnames )
-%s = getModelOptions( m )
-%s = getModelOptions( m, optionnames )
+%[s,alloptions] = getModelOptions( m )
+%[s,alloptions] = getModelOptions( m, optionnames )
 %   Get the current model options and return them in a struct.
 %   The second result is a struct specifying for each option the set of its
 %   allowed values, or [] if all values are allowed.
 %
-%   If optionnames is specified, it should be a cell array of strings, and
+%   If optionnames is given, it should be a cell array of strings, and
 %   only options with those names will be returned. Elements of optionnames
 %   that are not names of options are ignored.
 

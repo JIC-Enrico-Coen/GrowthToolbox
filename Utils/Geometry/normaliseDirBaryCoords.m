@@ -17,4 +17,5 @@ function dbc = normaliseDirBaryCoords( dbc, tol )
     dbc( abs(dbc) < tol*max(abs(dbc),[],2) ) = 0;
     dbc = dbc - mean( dbc, 2 );
     dbc = dbc ./ sqrt(sum(dbc.^2,2));
+    dbc(isnan(dbc)) = 0;
 end

@@ -1,4 +1,12 @@
-function s = shrinkStreamline( m, s, amount, fromhead )
+function s = shrinkStreamlineBy( m, s, amount, fromhead )
+%s = shrinkStreamline( m, s, amount, fromhead )
+%   Cut off a length AMOUNT from the tubule S, from the head if FROMHEAD is
+%   true, otherwise from the tail.
+%
+%   If the amount is at least the total length of the tubule (to within a
+%   certain tolerance) the whole streamline is zeroed. (It will be removed
+%   from M later.)
+
     if amount <= 0
         return;
     end
@@ -24,6 +32,21 @@ function s = shrinkStreamline( m, s, amount, fromhead )
         s = zerostreamline( s );
         return;
     end
+    if fromhead
+        cumlengths = cumsum( s.segmentlengths(end:-1:1) );
+    else
+        cumlengths = cumsum( s.segmentlengths );
+    end
+    segindex = find( cumlengths > amount, 1 );
+    delta = cumlengths(segindex) - amount;
+    if fromhead
+        segindex = length(s.segmentlengths) + 1 - segindex;
+    end
+    fractionToKeep = delta/s.segmentlengths(segindex);
+    ss = shrinkStreamlineTo( m, s, segindex, fractionToKeep, fromhead );
+    
+    
+    
     oldlength = sum( s.segmentlengths );
     totlen = 0;
     if fromhead
@@ -49,19 +72,16 @@ function s = shrinkStreamline( m, s, amount, fromhead )
     if abs(excess) < TOLERANCE
         excess = 0;
     end
+    vxstart = segi;
+    vxend = segi+1;
+    fractionToKeep = trimnumber( 0, excess/s.segmentlengths(segi), 1, TOLERANCE );
     if fromhead
-        vxstart = segi;
-        vxend = segi+1;
-        fractionToKeep = trimnumber( 0, excess/s.segmentlengths(segi), 1, TOLERANCE );
-        if ~validStreamline( m, s )
-            BREAKPOINT( 'Invalid streamline %d.\n', s.id );
-        end
         if fractionToKeep==1
             vxstart = segi+1;
             vxend = segi+2;
             fractionToKeep = 0;
             if vxend > length(s.vxcellindex)
-                vxend = length(s.vxcellindex)
+                vxend = length(s.vxcellindex);
                 xxxx = 1;
             end
         end
@@ -97,40 +117,20 @@ function s = shrinkStreamline( m, s, amount, fromhead )
             else
                 dropped = sevvxs >= discardvx-1;
             end
-%             if fractionToKeep > 0
-%                 sevbcs = [s.status.severance.bc];
-%                 finalvxs = sevvxs == vxstart;
-%                 adjusted = finalvxs & (sevbcs < fractionToKeep);
-%                 dropped( finalvxs & ~adjusted ) = true;
-%                 for ii = find(adjusted)
-%                     s.status.severance(ii).bc = s.status.severance(ii).bc / fractionToKeep;
-%                 end
-%             end
             s.status.severance( dropped ) = [];
         end
-        
-        
-        
 %         s = updateSeverancePointsForDeletion( s, [discardvx length(s.vxcellindex)] );
         [s.directionbc,s.directionglobal] = streamlineSegmentDirection( m, s, segi );
         s.barycoords( discardvx:end, : ) = [];
         s.globalcoords( discardvx:end, : ) = [];
         s.vxcellindex( discardvx:end ) = [];
+        s.iscrossovervx( discardvx:end ) = [];
         s.segcellindex( discardvx:end ) = [];
         s.segmentlengths( (discardvx-1):end ) = [];
         if ~checkZeroBcsInStreamline( s )
             xxxx = 1;
         end
-%         if ~validStreamline( m, s )
-%             BREAKPOINT( 'Invalid streamline.\n' );
-%         end
     else
-        vxstart = segi;
-        vxend = segi+1;
-        fractionToKeep = trimnumber( 0, excess/s.segmentlengths(segi), 1, TOLERANCE );
-%         if ~validStreamline( m, s )
-%             BREAKPOINT( 'Invalid streamline.\n' );
-%         end
         if fractionToKeep == 0
             vxstart = vxstart+1;
             vxend = vxend+1;
@@ -186,6 +186,7 @@ function s = shrinkStreamline( m, s, amount, fromhead )
         s.barycoords( 1:discardvx, : ) = [];
         s.globalcoords( 1:discardvx, : ) = [];
         s.vxcellindex( 1:discardvx ) = [];
+        s.iscrossovervx( 1:discardvx ) = [];
         s.segcellindex( 1:discardvx ) = [];
         s.segmentlengths( 1:discardvx ) = [];
         if discardvx > 0
@@ -208,5 +209,8 @@ function s = shrinkStreamline( m, s, amount, fromhead )
 %     if ~validStreamline( m, s )
 %         BREAKPOINT( 'Invalid streamline.\n' );
 %     end
+    if ~compareStructs(s,ss)
+        xxxx = 1;
+    end
 end
 

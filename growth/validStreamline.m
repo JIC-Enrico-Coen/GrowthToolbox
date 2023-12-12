@@ -1,5 +1,6 @@
 function [oks,errfields] = validStreamline( m, ss, verbose )
-    if nargin < 3
+    errfields = {};
+    if true || (nargin < 3)
         verbose = true;
     end
     if (nargin < 2) || isempty(ss)
@@ -13,7 +14,7 @@ function [oks,errfields] = validStreamline( m, ss, verbose )
         numvxs = length(s.vxcellindex);
         [ok1,errfields] = checklengthInternal( si, s, 'vxcellindex', numvxs, verbose, errfields );  ok = ok && ok1;
         [ok2,errfields] = checklengthInternal( si, s, 'segcellindex', numvxs, verbose, errfields );  ok = ok && ok2;
-        if ok1 && ok2
+        if ok1 && ok2 && ok2
             if any( s.vxcellindex ~= s.segcellindex )
                 if verbose
                     fprintf( 1, '%s, streamline id %d: vxcellindex and segcellindex differ at %d places:\n', ...
@@ -37,8 +38,12 @@ function [oks,errfields] = validStreamline( m, ss, verbose )
         [ok4,errfields] = checksizeInternal( si, s, 'directionbc', [1,3], verbose, errfields );
         [ok5,errfields] = checksizeInternal( si, s, 'directionglobal', [1,3], verbose, errfields );
         [ok6,errfields] = checksizeInternal( si, s, 'status', [1,1], verbose, errfields );
+        [ok7,errfields] = checklengthInternal( si, s, 'iscrossovervx', numvxs, verbose, errfields );
+        if ~ok7
+            xxxx = 1;
+        end
         
-        ok = ok && ok2 && ok3 && ok4 && ok5 && ok6;
+        ok = ok && ok1 && ok2 && ok3 && ok4 && ok5 && ok6 && ok7;
        
         [okbcs,maxbcerr,dbcerr] = checkZeroBcsInStreamline( s );
         ok = ok && okbcs;
@@ -96,12 +101,15 @@ function [oks,errfields] = validStreamline( m, ss, verbose )
             ok = false;
         end
         
-        duplicate = all( abs( s.barycoords(1:(end-1),:) - s.barycoords(2:end,:) ) < TOLERANCE, 2 ) ...
+        TOLbcdiffs = 1e-7;
+        bcdiffs = s.barycoords(1:(end-1),:) - s.barycoords(2:end,:);
+        duplicate = all( abs( bcdiffs ) < TOLbcdiffs, 2 ) ...
                     & ( s.vxcellindex(1:(end-1)) == s.vxcellindex(2:end) )';
-        if false && any(duplicate)
+        if any(duplicate)
             if verbose
                 fprintf( 1, '%s, streamline id %d: %d duplicate vertexes found.\n', ...
                     mfilename(), s.id, sum(duplicate) );
+                bcdiffs( duplicate, : )
             end
             xxxx = 1;
             if false
@@ -158,6 +166,16 @@ function [oks,errfields] = validStreamline( m, ss, verbose )
                         mfilename(), s.id, numdupvxs );
                 end
                 xxxx = 1;
+            end
+            for svi=1:length(sevs)
+                if isempty( sevs(svi).vertex ) || isempty( sevs(svi).bc )
+                    if verbose
+                        fprintf( 1, '%s, streamline %s id %d: invalid severance %d: vertex of bc is empty.\n', ...
+                            mfilename(), s.id, svi );
+                        thesev = sevs(svi);
+                    end
+                    xxxx = 1;
+                end
             end
         end
         

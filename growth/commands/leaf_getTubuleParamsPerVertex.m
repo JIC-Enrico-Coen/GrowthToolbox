@@ -1,5 +1,5 @@
-function tubuleParamsPerVertex = leaf_getTubuleParamsPerVertex( m, varargin )
-%tubuleParamsPerVertex = leaf_getTubuleParamPerVertex( m, paramname1, paramname2, ... )
+function [ tubuleParamsPerVertex, interpMode ] = leaf_getTubuleParamsPerVertex( m, varargin )
+%tubuleParamsPerVertex = leaf_getTubuleParamsPerVertex( m, paramname1, paramname2, ... )
 %
 %   For each of the specified microtubule parameters, find their current
 %   value at every vertex. The result is an N*K array, where the mesh has N
@@ -12,16 +12,19 @@ function tubuleParamsPerVertex = leaf_getTubuleParamsPerVertex( m, varargin )
 %   tubuleParamsPerVertex will be zero.
 
     tubuleParamsPerVertex = zeros( getNumberOfVertexes(m), length(varargin) );
+    interpMode = cell( 1, length(varargin) );
     for i=1:length(varargin)
         fn = varargin{i};
         if isfield( m.tubules.tubuleparams, fn )
             v = m.tubules.tubuleparams.(fn);
             if isnumeric(v)
                 tubuleParamsPerVertex(:,i) = v;
+                interpMode{i} = 'mid';
             elseif ischar( v )
                 mi = FindMorphogenIndex( m, v );
                 if ~isempty(mi)
                     tubuleParamsPerVertex(:,i) = m.morphogens(:,mi);
+                    interpMode{i} = m.mgen_interpType{mi};
                 end
             end
         end

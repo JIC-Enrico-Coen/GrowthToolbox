@@ -34,40 +34,51 @@ function slhandles = drawStreamlines( theaxes, m, s )
     allmiddle_ci = nan( numpoints-numlines*2, 1 );
     allmiddle_bc = nan( numpoints-numlines*2, 3 );
     issevvx = false( size( allmiddle_ci ) );
+    xovervxs = false( xnumpoints, 1 );
+    length1tracks = false( xnumpoints, 1 );
     a = 1;
     c = 1;
     headstatus = ones(1,length(s));
     tailstatus = ones(1,length(s));
     for i=1:length(s)
-%         if length( s(i).vxcellindex ) > 1
-            b = a + max(length( s(i).vxcellindex ) - 1,0);
-            allcellindex( a:b ) = s(i).vxcellindex;
-            allbc( a:b, : ) = s(i).barycoords;
-            a = b+2;
+        b = a + max(length( s(i).vxcellindex ) - 1,0);
+        allcellindex( a:b ) = s(i).vxcellindex;
+        allbc( a:b, : ) = s(i).barycoords;
+        if length( s(i).iscrossovervx ) == b-a+1
+            xovervxs( a:b ) = s(i).iscrossovervx;
+        else
+            xxxx = 1;
+        end
+        length1tracks(1) = a==b;
 
-            allbegin_ci(i) = s(i).vxcellindex(1);
-            allbegin_bc(i,:) = s(i).barycoords(1,:);
-            allend_ci(i) = s(i).vxcellindex(end);
-            allend_bc(i,:) = s(i).barycoords(end,:);
+        allbegin_ci(i) = s(i).vxcellindex(1);
+        allbegin_bc(i,:) = s(i).barycoords(1,:);
+        allend_ci(i) = s(i).vxcellindex(end);
+        allend_bc(i,:) = s(i).barycoords(end,:);
 
-            d = c + max( length( s(i).vxcellindex ) - 3, -1 );
-            if d<0
-                xxxx = 1;
-            end
-            allmiddle_ci(c:d) = s(i).vxcellindex(2:(end-1));
-            allmiddle_bc(c:d,:) = s(i).barycoords(2:(end-1),:);
-            
-            if ~isempty( s(i).status.severance )
-                sevvxs = [s(i).status.severance.vertex];
-                sevvxs = sort( sevvxs( (sevvxs > 1) & (sevvxs < length(s(i).vxcellindex) ) ) );
-                issevvx(c - 2 + sevvxs) = true;
-            end
-            
-            c = d+1;
+        d = c + max( length( s(i).vxcellindex ) - 3, -1 );
+        if d<0
+            xxxx = 1;
+        end
+        allmiddle_ci(c:d) = s(i).vxcellindex(2:(end-1));
+        allmiddle_bc(c:d,:) = s(i).barycoords(2:(end-1),:);
 
-            headstatus(i) = s(i).status.head;
+        if ~isempty( s(i).status.severance )
+            sevvxs = [s(i).status.severance.vertex];
+            sevvxs = sort( sevvxs( (sevvxs > 1) & (sevvxs < length(s(i).vxcellindex) ) ) );
+            issevvx(c - 2 + sevvxs) = true;
+        end
+
+        c = d+1;
+
+        headstatus(i) = s(i).status.head;
+        if a >= b
+            tailstatus(i) = -1;
+        else
             tailstatus(i) = s(i).status.catshrinktail;
-%         end
+        end
+        
+        a = b+2;
     end
     allvxs = baryToEuc( m, allcellindex, allbc, m.plotdefaults.streamlineoffset );
     allbegin = baryToEuc( m, allbegin_ci, allbegin_bc, m.plotdefaults.streamlineoffset );
@@ -75,10 +86,40 @@ function slhandles = drawStreamlines( theaxes, m, s )
     allmiddle = baryToEuc( m, allmiddle_ci, allmiddle_bc, m.plotdefaults.streamlineoffset );
     
     
+    if isfield( m.tubules.tracks(1), 'linecolorindex' ) && isfield( m.tubules.tubuleparams, 'linecolormap' )
+        vxsPerTubule = zeros( 1, length(s) );
+        for si=1:length(s)
+            vxsPerTubule(si) = length( s(si).vxcellindex );
+        end
+        linecolorindexes = [ s.linecolorindex ];
+        [linecolorindexes1,perm] = sort( linecolorindexes );
+        [starts,ends] = runends( linecolorindexes1 );
+        for ci=1:length(starts)
+            linecolorindex1 = linecolorindexes1(starts(ci));
+            whichTubules = perm(starts(ci):ends(ci));
+            allcellindex1 = [ s(whichTubules).vxcellindex ];
+            allbc1 = vertcat( s(whichTubules).barycoords );
+            allvxs1 = baryToEuc( m, allcellindex1, allbc1, m.plotdefaults.streamlineoffset );
+            vxsPerTubule1 = vxsPerTubule( whichTubules );
+            cvxsPerTubule1 = cumsum( vxsPerTubule1 );
+            tubuleStarts = [1 cvxsPerTubule1(1:(end-1))+1];
+            lineIndex = zeros( 1, length( allcellindex1 ) );
+            lineIndex( tubuleStarts ) = 1;
+            lineIndex = cumsum(lineIndex) - 1;
+            foo2 = lineIndex + (1:length(lineIndex));
+            allvxs2 = nan( length(foo2), 3 );
+            allvxs2( foo2, : ) = allvxs1;
+            slhandles.h_streamlines(ci) = plotpts( theaxes, allvxs2, '-', ...
+                'Color', m.tubules.tubuleparams.linecolormap( linecolorindex1, : ), ...
+                'LineWidth', m.plotdefaults.streamlinethick );
+        end
+    end
     
-    slhandles.h_streamlines = plotpts( theaxes, allvxs, '-', ...
-        'Color', m.plotdefaults.streamlinecolor, ...
-        'LineWidth', m.plotdefaults.streamlinethick );
+    
+    
+%     slhandles.h_streamlines = plotpts( theaxes, allvxs, '-', ...
+%         'Color', m.plotdefaults.streamlinecolor, ...
+%         'LineWidth', m.plotdefaults.streamlinethick );
     dottype = 'o';
     
     if (size(allvxs,1) > 1) && (m.plotdefaults.streamlineenddotsize > 0)
@@ -125,7 +166,7 @@ function slhandles = drawStreamlines( theaxes, m, s )
                 'MarkerFaceColor', endcolor );
         end
         if any(shrinkingheads)
-            endcolor = 'r';
+            endcolor = 'm';
             slhandles.end(shrinkingheads) = plotpts( theaxes, allend(shrinkingheads,:), dottype, ...
                 'Color', endcolor, ...
                 'MarkerSize', m.plotdefaults.streamlineenddotsize, ...
@@ -151,6 +192,42 @@ function slhandles = drawStreamlines( theaxes, m, s )
                 'Color', middlecolor, ...
                 'MarkerSize', m.plotdefaults.streamlinemiddotsize, ...
                 'MarkerFaceColor', middlecolor );
+        end
+    end
+    
+    if isfield( m.plotdefaults, 'streamlinexoversymbol' ) && ~isempty( m.plotdefaults.streamlinexoversymbol ) && (m.plotdefaults.streamlinemiddotsize > 0)
+        if any( xovervxs )
+            slhandles.xovervxs = plotpts( theaxes, allvxs( xovervxs, : ), m.plotdefaults.streamlinexoversymbol, ...
+                'Color', middlecolor, ...
+                'MarkerSize', m.plotdefaults.streamlinemiddotsize, ...
+                'MarkerFaceColor', middlecolor );
+        end
+    end
+    
+    if false && isfield( m.plotdefaults, 'drawstreamlinebranchpoints' ) && m.plotdefaults.drawstreamlinebranchpoints && (m.plotdefaults.streamlineenddotsize > 0)
+        if isfield( m.tubules.statistics, 'spontbranchinfo' ) && ~isempty( m.tubules.statistics.spontbranchinfo )
+            branchinfo = m.tubules.statistics.spontbranchinfo;
+            branchelements = branchinfo(:,1);
+            branchbcs = branchinfo(:,2:4);
+            branchgcs = meshBaryToGlobalCoords( m, branchelements, branchbcs );
+            branchPointColor = [1 0 1];
+            slhandles.spontbranch = plotpts( theaxes, branchgcs, 'o', ...
+                'Color', branchPointColor, ...
+                'MarkerSize', m.plotdefaults.streamlineenddotsize * 2, ...
+                'MarkerFaceColor', branchPointColor );
+        end
+
+        if isfield( m.tubules.statistics, 'xoverbranchinfo' ) && ~isempty( m.tubules.statistics.xoverbranchinfo ) && (m.plotdefaults.streamlineenddotsize > 0)
+            branchinfo = m.tubules.statistics.xoverbranchinfo;
+            branchelements = branchinfo(:,1);
+            branchbcs = branchinfo(:,2:4);
+            branchgcs = meshBaryToGlobalCoords( m, branchelements, branchbcs );
+            branchPointColor = [0 0 1];
+            slhandles.xoverbranch = plotpts( theaxes, branchgcs, 'o', ...
+                'Color', branchPointColor, ...
+                'MarkerSize', m.plotdefaults.streamlineenddotsize * 2, ...
+                'MarkerFaceColor', [1 0 0], ...
+                'LineWidth', 2 );
         end
     end
     

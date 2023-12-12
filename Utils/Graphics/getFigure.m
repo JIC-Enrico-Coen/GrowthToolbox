@@ -28,7 +28,7 @@ function [result,ax] = getFigure( varargin )
 %   figure current without bringing it to the front.
 %
 %   After calling this, the figure that is returned will be the same as
-%   what gcf() returns, and is the AX output was requested, it will be the
+%   what gcf() returns, and if the AX output was requested, it will be the
 %   same as what gca() returns.
 
     if nargin==0
@@ -83,6 +83,7 @@ function [result,ax] = getFigure( varargin )
             % axes of that figure.
             ax = fig.CurrentAxes;
             if isempty(ax)
+                % There are no axes objects in the figure, so make one.
                 ax = axes( fig );
             end
         end

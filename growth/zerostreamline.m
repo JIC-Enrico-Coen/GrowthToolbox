@@ -2,6 +2,7 @@ function s = zerostreamline( s )
 % Delete all vertexes from the streamline, but preserve all other data.
 
     s.vxcellindex = zeros( 1, 0, 'int32' );
+    s.iscrossovervx = false( 1, 0 );
     s.segcellindex = zeros( 1, 0, 'int32' );
     s.barycoords = zeros( 0, 3, 'double' );
     s.globalcoords = zeros( 0, 3, 'double' );

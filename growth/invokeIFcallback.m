@@ -11,15 +11,44 @@ function [m,results] = invokeIFcallback( m, varargin )
         varargin = [ m, varargin ];
         m = getGFtboxMesh();
     end
-    if ~isempty(m) && ~isempty( varargin )
-        if isa(m.globalProps.mgen_interaction,'function_handle')
-            ifname = func2str(m.globalProps.mgen_interaction);
-            fn = ['GFtbox_', varargin{1}, '_Callback' ];
-            if isempty( which(ifname) )
-                timedFprintf( 'Interaction function %s not found for callback %s.\n', ifname, fn );
-            else
+    if isempty(m) || isempty( varargin )
+        return;
+    end
+    
+    ifhandle = m.globalProps.mgen_interaction;
+    if isempty( ifhandle )
+        return;
+    end
+    
+    ifname = func2str( ifhandle );
+    fn = ['GFtbox_', varargin{1}, '_Callback' ];
+    if ~isa( ifhandle, 'function_handle' )
+        timedFprintf( 'Interaction function %s not found for callback %s.\n', ifname, fn );
+        return;
+    end
+    
+%     gotif = false;
+%     
+%     if isempty( which(ifname) )
+%         % Try to find the directory of the project and make a
+%         % handle to the interaction function there.
+%         modelpathname = fullfile( m.globalProps.projectdir, m.globalProps.modelname );
+%         if exist( fullfile( modelpathname, [ ifname, '.m' ] ), 'file' )
+%             olddir = cd( modelpathname );
+%             try
+%                 ifhandle = eval( [ '@', ifname ] );
+%                 iffunctions = functions( ifhandle );
+%                 if ~isempty( iffunctions ) && ~isempty( iffunctions.file )
+%                     gotif = true;
+%                 end
+%             catch e
+%             end
+%             cd( olddir );
+%         end
+%         timedFprintf( 'Interaction function %s not found for callback %s.\n', ifname, fn );
+%     else
 %                 try
-                    [m,results] = m.globalProps.mgen_interaction( m, fn, varargin{2:end} );
+            [m,results] = m.globalProps.mgen_interaction( m, fn, varargin{2:end} );
 %                 catch e
 %                     if strcmp( e.identifier, 'MATLAB:UndefinedFunction' )
 %                         timedFprintf( 'Interaction function %s not found for callback %s:\n%s\n', ifname, fn, e.message );
@@ -29,9 +58,5 @@ function [m,results] = invokeIFcallback( m, varargin )
 %                     end
 %                     results = [];
 %                 end
-            end
-        else
-            results = [];
-        end
-    end
+%     end
 end

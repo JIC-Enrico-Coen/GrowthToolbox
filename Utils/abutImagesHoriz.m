@@ -12,7 +12,7 @@ function img = abutImagesHoriz( varargin )
 %   array.
 %
 %   If the images contain different numbers of channels, they will be
-%   converted to the maximum nuber of channels for any of them. Thus
+%   converted to the maximum number of channels for any of them. Thus
 %   grayscale images may be converted to RGB, alpha channels may be added,
 %   etc.
 

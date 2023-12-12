@@ -28,6 +28,9 @@ function theaxes = makeCanvasPicture( msg, varargin )
 %               figure that should be set.
 %   'uicontrols'   If true, sliderbars and text items will be created,
 %               otherwise not.
+%   'Visible'   If 'on' or true, the figure will be made vsible, if any
+%               other value then invisible, if not given then no change is
+%               made to visibility
 %
 %   The UserData of the figure will be set to a structure containing
 %   handles to all of the created components, and the Position attribute of
@@ -69,6 +72,7 @@ function theaxes = makeCanvasPicture( msg, varargin )
     end
 
     s = calcPositions( s );
+
     % The required figure window now exists, and s.figure is a handle to it.
     % s.fpos is its position and size, and s.ppos is the position and size
     % of the bounding rectangle of the picture elements.
@@ -572,6 +576,10 @@ function s = calcPositions( s )
     else
         % Ignore.
     end
+    
+    if isfield( s, 'Visible' )
+        s.figure.Visible = s.Visible;
+    end
 end
 
 function ok = checkvalidpos( pos )
@@ -596,7 +604,13 @@ function fillAxes( a, color )
 end
 
 function resizePicWindow( fig, varargin )
+    if ~ishghandle( fig )
+        return;
+    end
     fpos = get( fig, 'Position' );
+    if ~isempty( fpos )
+        return;
+    end
     h = guidata( fig );
     ppos = get( h.picturepanel, 'Position' );
     ppos([2 3 4]) = 0;
