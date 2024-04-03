@@ -123,13 +123,16 @@ function [m,ok] = leaf_iterate( m, varargin )
         end
         startTime = cputime;
         starttic = tic;
-        timedFprintf( 1, 'Starting iteration %d, sim time %.3g - %.3g.\n', ...
+        timedFprintf( 1, 'Starting iter %d, sim time %.3g - %.3g.\n', ...
         	m.globalDynamicProps.currentIter+1, m.globalDynamicProps.currenttime, m.globalDynamicProps.currenttime + m.globalProps.timestep );
-        timedFprintf( 2, 'Starting iteration %d, sim time %.3g - %.3g.\n', ...
+        timedFprintf( 2, 'Starting iter %d, sim time %.3g - %.3g.\n', ...
         	m.globalDynamicProps.currentIter+1, m.globalDynamicProps.currenttime, m.globalDynamicProps.currenttime + m.globalProps.timestep );
         if teststopbutton(m)
             ok = false;
             break;
+        end
+        if m.globalProps.newcallbacks
+            [m,~] = invokeIFcallback( m, 'Preiterate' );
         end
         m = calcPolGrad( m );
         m = makeCellFrames( m );
@@ -300,7 +303,7 @@ function [m,ok] = leaf_iterate( m, varargin )
                     m = recordframe( m );
                 end
             end
-            if ~isempty(handles) && (wasMakingMovie && ~movieInProgress(m))
+            if ~isempty(handles) && isfield( handles, 'movieButton' ) && (wasMakingMovie && ~movieInProgress(m))
                 % Movie was closed for some reason.  Reset the label on
                 % the movieButton.
                 set( handles.movieButton, 'String', 'Record movie...' );
@@ -353,14 +356,14 @@ function [m,ok] = leaf_iterate( m, varargin )
         end
         
         fwrite( 1, [simStatusString(m), newline()] );
-        timedFprintf( 2, 'Completed iteration %d, sim time %g.\n', ...
-        	m.globalDynamicProps.currentIter, m.globalDynamicProps.currenttime );
-        timedFprintf( 1, 'Completed iteration %d, sim time %g.\n', ...
-        	m.globalDynamicProps.currentIter, m.globalDynamicProps.currenttime );
+        timedFprintf( 2, 'Finished iter %d, sim time %g - %g.\n', ...
+        	m.globalDynamicProps.currentIter, m.globalDynamicProps.currenttime - m.globalProps.timestep, m.globalDynamicProps.currenttime );
+        timedFprintf( 1, 'Finished iter %d, sim time %g - %g.\n', ...
+        	m.globalDynamicProps.currentIter, m.globalDynamicProps.currenttime - m.globalProps.timestep, m.globalDynamicProps.currenttime );
         m.timeForIter = cputime() - startTime;
         m.ticForIter = toc( starttic );
     end
-    
+
     % Iterations have ended.
     
 %     if m.globalProps.maxIters ~= m.globalDynamicProps.currentIter

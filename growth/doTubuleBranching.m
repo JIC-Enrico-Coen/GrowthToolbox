@@ -31,30 +31,33 @@ function m = doTubuleBranching( m, dt )
         return;
     end
     
-    if ~getModelOption( m, 'branch_by_length' )
-        % When branch_by_length is true, I use a new, different, and
-        % simpler method of generating the new tubules, which is the one
-        % implemented by doTubuleBranching().
-        % When it is false, I use the old method, which is implemented by
-        % doTubuleBranchingOLD().
+    obsoleteBranchingFlag = getModelOption( m, 'branch_by_length' );
+    if ~isempty(obsoleteBranchingFlag) && ~getModelOption( m, 'branch_by_length' )
+        % When branch_by_length is present and false, I use an old,
+        % obsolete method of doing tubule branching. I can never delete
+        % this, because there may be old projects that will never be run
+        % again, but in principle might be.
+        %
+        % I neither know nor care if the code in doTubuleBranchingOLD still
+        % works.
         m = doTubuleBranchingOLD( m, dt );
         return;
     end
     
-    if isMorphogen( m, m.tubules.tubuleparams.prob_branch_scaling )
-        branchScalingPerVertex = max( 0, leaf_getTubuleParamsPerVertex( m, 'prob_branch_scaling' ) );
-        if length(unique(branchScalingPerVertex))==1
-            branchScalingPerVertex = branchScalingPerVertex(1);
+    if isMorphogen( m, m.tubules.tubuleparams.prob_free_branch_scaling )
+        freeBranchScalingPerVertex = max( 0, leaf_getTubuleParamsPerVertex( m, 'prob_free_branch_scaling' ) );
+        if length(unique(freeBranchScalingPerVertex))==1
+            freeBranchScalingPerVertex = freeBranchScalingPerVertex(1);
         end
     else
-        branchScalingPerVertex = 1;
+        freeBranchScalingPerVertex = 1;
     end
-    branchScalingPerVertex = branchScalingPerVertex * m.tubules.tubuleparams.density_branch_scaling;
+    freeBranchScalingPerVertex = freeBranchScalingPerVertex * m.tubules.tubuleparams.density_branch_scaling;
     xxxx = 1;
-    doBranchScaling = (numel(branchScalingPerVertex) > 1) || (branchScalingPerVertex(1) ~= 1);
+    doBranchScaling = (numel(freeBranchScalingPerVertex) > 1) || (freeBranchScalingPerVertex(1) ~= 1);
     
-    branchPerVertex = max( 0, leaf_getTubuleParamsPerVertex( m, 'prob_branch_length_time' ) ) .* branchScalingPerVertex;
-    branchPerCurvature = leaf_getTubuleParamsPerVertex( m, 'prob_branch_length_curvature_time' ) .* branchScalingPerVertex;
+    branchPerVertex = max( 0, leaf_getTubuleParamsPerVertex( m, 'prob_branch_length_time' ) ) .* freeBranchScalingPerVertex;
+    branchPerCurvature = leaf_getTubuleParamsPerVertex( m, 'prob_branch_length_curvature_time' ) .* freeBranchScalingPerVertex;
     
     if all( branchPerVertex == 0 ) && all( branchPerCurvature == 0 )
         numfreebranches = 0;
@@ -131,33 +134,61 @@ function m = doTubuleBranching( m, dt )
     end
     
     if numel( m.tubules.tubuleparams.prob_tail_branch_time )==1
-        tailbranchprobtime = m.tubules.tubuleparams.prob_tail_branch_time;
+        tailbranchprobtimePerPertex = m.tubules.tubuleparams.prob_tail_branch_time;
     else
-        tailBranchPerVertex = leaf_getTubuleParamsPerVertex( m, 'prob_tail_branch_time' );
-        tailbranchprobtime = zeros( numtubules, 1 );
+        tailbranchprobtimePerPertex = leaf_getTubuleParamsPerVertex( m, 'prob_tail_branch_time' );
+    end
+%     
+%     if numel( freeBranchScalingPerVertex )==1
+%         tailScalingPerVertex = freeBranchScalingPerVertex;
+%     else
+%         tailScalingPerVertex = interpolateOverMesh( m, freeBranchScalingPerVertex, tailFEs, tailBcs, m.tubules.tubuleparams.branch_scaling_interp_mode );
+%     end
+    
+    
+    tailbranchprobPerVertex = tailbranchprobtimePerPertex .* freeBranchScalingPerVertex;  % Either a single value, or per vertex over the whole mesh.
+    
+    if numel(tailbranchprobPerVertex) == 1
+        tailbranchprobPerTail = tailbranchprobPerVertex;
+    else
         tailFEs = zeros( numtubules, 1 );
         tailBcs = zeros( numtubules, 3 );
         for ii=1:numtubules
             track = m.tubules.tracks(ii);
-            vxci = track.vxcellindex;
-            vxbcs = track.barycoords;
-
-            tailbranchprobtime(ii) = sum( reshape( tailBranchPerVertex( m.tricellvxs( vxci(1), : ) ), [], 3 ) .* vxbcs(1,:), 2 );
-            tailFEs(ii) = vxci(1);
-            tailBcs(ii,:) = vxbcs(1,:);
+            tailFEs(ii) = track.vxcellindex(1);
+            tailBcs(ii,:) = track.barycoords(1,:);
         end
-        if doBranchScaling
-            tailScaling = interpolateOverMesh( m, branchScalingPerVertex, tailFEs, tailBcs, m.tubules.tubuleparams.branch_scaling_interp_mode );
-            tailbranchprobtime = tailbranchprobtime .* tailScaling;
-        end
+        tailbranchprobPerTail = interpolateOverMesh( m, tailbranchprobPerVertex, tailFEs, tailBcs, m.tubules.tubuleparams.branch_scaling_interp_mode );
     end
     
-    if all(tailbranchprobtime==0)
+    
+%     if doBranchScaling
+%         if (numel(freeBranchScalingPerVertex)==1) 
+%             tailScaling = freeBranchScalingPerVertex;
+%         else
+%             tailFEs = zeros( numtubules, 1 );
+%             tailBcs = zeros( numtubules, 3 );
+%             for ii=1:numtubules
+%                 track = m.tubules.tracks(ii);
+%                 vxci = track.vxcellindex(1);
+%                 vxbcs = track.barycoords(1,:);
+% 
+%                 tailbranchprobtime(ii) = sum( reshape( tailBranchPerVertex( m.tricellvxs( vxci, : ) ), [], 3 ) .* vxbcs, 2 );
+%                 tailFEs(ii) = vxci;
+%                 tailBcs(ii,:) = vxbcs;
+%             end
+%             tailbranchprobtime = interpolateOverMesh( m, tailBranchPerVertex, tailFEs, tailBcs, 'min' );
+%             tailScaling = interpolateOverMesh( m, freeBranchScalingPerVertex, tailFEs, tailBcs, m.tubules.tubuleparams.branch_scaling_interp_mode );
+%         end
+%         tailbranchprobtime = tailbranchprobtime .* tailScaling;
+%     end
+    
+    if all(tailbranchprobPerTail==0)
         numtailbranches = 0;
         tailBranchTubules = zeros(0,1);
     else
-        tailbranchprobstep = 1 - exp( -dt * tailbranchprobtime );  % Should use [numevents,times] = poissevents( tailbranchprobtime, dt )
-        tailbranches = rand(numtubules,1) < tailbranchprobstep;
+        tailbranchprobstepPerTail = 1 - exp( -dt * tailbranchprobPerTail );  % Should use [numevents,times] = poissevents( tailbranchprobtime, dt )
+        tailbranches = rand(numtubules,1) < tailbranchprobstepPerTail;
         tailBranchTubules = find( tailbranches );
         numtailbranches = length( tailBranchTubules );
         if numtailbranches > 0

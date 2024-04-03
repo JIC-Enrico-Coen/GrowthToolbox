@@ -6,12 +6,16 @@ function f = trimframe( f, sz, bgcolor )
 %   If it's too small, pad it out with bgcolor.
 %   Maintain the centering of the frame.
 
-    if nargin < 3
+    if (nargin < 3) || isempty( bgcolor )
         bgcolor = [1 1 1];
     end
     ibgcolor = uint8color( bgcolor );
     szf = size(f);
     dsz = sz - szf([1 2]);
+    if all(dsz==0)
+        return;
+    end
+    
     hdsz = floor( abs(dsz)/2 );
     hdsz1 = abs(dsz) - hdsz;
     if dsz(1) > 0

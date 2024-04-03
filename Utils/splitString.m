@@ -10,6 +10,7 @@ function [toks,seps] = splitString( pat, str )
 
     if isempty(str)
         toks = {};
+        seps = [];
         return;
     end
     [ si, ei ] = regexp( str, pat, 'start', 'end' );
@@ -23,9 +24,4 @@ function [toks,seps] = splitString( pat, str )
     for i=1:length(si)
         toks{i} = str( ei(i):si(i) );
     end
-%     for i=1:length(si)-1
-%         seps{i} = str( (ei(i)+1):(si(i+1)-1) );
-%     end
-%     si
-%     ei
 end

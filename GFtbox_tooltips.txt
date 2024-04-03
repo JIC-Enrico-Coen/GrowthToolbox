@@ -1194,7 +1194,22 @@ Force the mesh to be redrawn. It should never be necessary to use this.
 
 #setLegendItem Set Legend... (menu item)
 Specify a string to append to the end of the information included in the
-legend (the large text at the top of the picture).
+legend (the large text at the top of the picture). Dynamic information can be specified:
+
+%t time (number only)
+
+%T time (with unit name, or if none, preceded by "time")
+
+%q name of the quantity being plotted; "MULTIPLE" if more than one.
+
+%m If no mutants are in use, nothing. Otherwise either "WILDTYPE" if no mutations active, or "MUTANT" followed by a list of the mutations.
+
+\n newline character
+
+\t tab character
+
+\\ backslash character
+
 
 #canvasColorsItem Set Canvas Colors... (menu item)
 Specify the colour of the canvas and the colour of the finite element

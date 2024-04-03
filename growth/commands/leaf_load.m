@@ -1,4 +1,4 @@
-function m = leaf_load( m, varargin )
+function [m,ok] = leaf_load( m, varargin )
 %m = leaf_load( m, filename, ... )
 %m = leaf_load( filename, ... )
 %m = leaf_load( m )
@@ -85,5 +85,5 @@ function m = leaf_load( m, varargin )
     end
     
     fullname = fullfile( filepath, filename );
-    m = loadmesh_anyfile( m, fullname, s.staticdata, [], s.checkvalidity );
+    [m,ok] = loadmesh_anyfile( m, fullname, s.staticdata, [], s.checkvalidity );
 end

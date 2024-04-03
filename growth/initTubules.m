@@ -6,7 +6,8 @@ function t = initTubules()
     end
     tubuleparams.linecolormap = [ 0 0 1 ];
     tubuleparams.plus_catastrophe_scaling = 1;
-    tubuleparams.prob_branch_scaling = 1;
+    tubuleparams.prob_free_branch_scaling = 1;
+    tubuleparams.prob_xover_branch_scaling = 1;
     tubuleparams.density_branch_scaling = 1;
     
     emptytrack = newemptystreamline();

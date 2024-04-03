@@ -18,6 +18,7 @@ function setMyLegend( m )
     end
     legend_s = assembleLegend( m );
     nonemptyLegend = ~isempty(legend_s);
+    timedFprintf( 1, 'Legend is ''%s''\n', legend_s );
     set( legends, 'String', legend_s, 'Visible', boolchar(nonemptyLegend && m.plotdefaults.drawlegend, 'on', 'off') );
     for i=1:length(legends)
         extent = get( legends(i), 'Extent' );

@@ -10,7 +10,7 @@ function m = makeCellFrames( m )
     full3d = usesNewFEs( m );
     if full3d
         numcells = size(m.FEsets(1).fevxs,1);
-    else
+      else
         numcells = size(m.tricellvxs,1);
     end
     

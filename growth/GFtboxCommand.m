@@ -3,9 +3,7 @@ function bareExptID = GFtboxCommand( varargin )
     %
     %   IGNORE ALL OF THESE COMMENTS. THEY ARE HOPELESSLY OUT OF DATE.
     %
-    %For running growth models in batch modpasswe. Results are filed in a
-    %subdirectory
-    %ProjectName:Movies:experimentname:meshes   stores full mesh .mat files
+    %For running growth models in batch mode.
     %
     %At the end of each stage/step the mesh is stored in a separate file.
     %In addition, the command line used to invoke GFtboxCommand
@@ -113,6 +111,9 @@ function bareExptID = GFtboxCommand( varargin )
     setFixedClusterDetails();
     continueRun = '';
     repetitions = 1;
+    plotoptions = {};
+    movieparams = [];
+    movieformat = '';
     parallelOptions = true;
     stages=[];
     sendToCluster = ~oncluster();
@@ -146,6 +147,19 @@ function bareExptID = GFtboxCommand( varargin )
             case 'REPETITIONS'
                 % The number runs to be performed with each set of parameters.
                 repetitions = argvalue;
+            case 'PLOTOPTIONS'
+                plotoptions = argvalue;
+                % argStruct = rmfield( argStruct, argname );
+            case 'MOVIEFORMAT'
+                movieformat = argvalue;
+            case 'MOVIE'
+                % If supplied and nonempty, parameters for making a movie.
+                % These parameters must have the form of a list of numbers
+                % [ start, step, stop ] specifying the simulation time at
+                % which the first frame should be recorded, the time stepm
+                % and the simulation time at which the last frame should be
+                % recorded.
+                movieparams = argvalue;
             case 'COMBINEOPTIONS'
                 switch argvalue
                     case 'together'
@@ -179,6 +193,27 @@ function bareExptID = GFtboxCommand( varargin )
 %         if isGFtboxCommandOption
 %             argStruct = rmfield( argStruct, argname );
 %         end
+    end
+    
+    if iscell( plotoptions )
+        if mod( length(plotoptions), 2 ) ~= 0
+            timedFprintf( 'Invalid PLOTOPTIONS value: contains an odd number of elements.\n' );
+            disp( plotoptions );
+            return;
+        end
+
+        for i=1:2:length(plotoptions)
+            if ~ischar( plotoptions{i} )
+                timedFprintf( 'Invalid PLOTOPTIONS value: expected character string for argument %d, found %s.\n', ...
+                    i, class( plotoptions{i} ) );
+                disp( plotoptions );
+                return;
+            end
+        end
+    elseif ~isstruct( plotoptions )
+        timedFprintf( 'Invalid PLOTOPTIONS value: must be a cell array or struct.\n' );
+        disp( plotoptions );
+        return;
     end
     
     if isempty( ProjectName )
@@ -234,6 +269,15 @@ function bareExptID = GFtboxCommand( varargin )
         experimentID = sprintf('%06d',experimentIndex);
     else
         experimentIndex = sscanf( experimentID, '%d' );
+    end
+    
+    if isempty( movieparams )
+        movieframetimes = [];
+    else
+        if length(movieparams)==2
+            movieparams = [ movieparams(1), 1, movieparams(2) ];
+        end
+        movieframetimes = movieparams(1) : movieparams(2) : movieparams(3);
     end
     
     % Even if we are not going to run the model here, but submit it to the
@@ -459,7 +503,17 @@ function bareExptID = GFtboxCommand( varargin )
                 end
                 timedFprintf( 'All model options:\n' );
                 printModelOptions( 1, m );
-                doOneRun( m, stages, runname );
+                if ~isempty( plotoptions )
+                    if isfield( plotoptions, 'legend' )
+                        m = leaf_setproperty( m, 'legendTemplate', plotoptions.legend );
+                        plotoptions = rmfield( plotoptions, 'legend' );
+                    end
+                    timedFprintf( 'Setting plotting options.\n' );
+                    disp( plotoptions );
+                    m = leaf_plotoptions( m, plotoptions{:} );
+                end
+    
+                doOneRun( m, stages, runname, movieframetimes, movieformat );
             end
         end
     end
@@ -486,7 +540,7 @@ function ok = copyProjectFile( filename )
 end
 
 
-function doOneRun( m, stages, runname )
+function doOneRun( m, stages, runname, movieframetimes, movieformat )
 % This is the procedure that actually runs the simulation. It may be
 % running on either the desktop machine or the cluster.
 
@@ -515,10 +569,13 @@ function doOneRun( m, stages, runname )
     m = leaf_setproperty( m, 'recordAllStages', false );
     m = leaf_deletestages( m, 'stages', true, 'times', true );
     
-    m = savemesh( m, ProjectName, localExperimentUniqueFullPath );
+    m = savemesh( m, ProjectName, localExperimentUniqueFullPath, m.globalProps.saveDeletesOlderStages );
+    [m,mov] = startmovie( m, localExperimentUniqueFullPath, movieformat );
     m = savepng( m, localExperimentUniqueFullPath );
     
     m.stagetimes = stages;
+    nextMovieFrame = 1;
+    bgcolor = [ 1 1 1 ];
 
     timedFprintf( 1, '%d stages to compute:', length(stages) );
     fprintf( 1, ' %f', stages );
@@ -530,9 +587,15 @@ function doOneRun( m, stages, runname )
             m = leaf_iterate( m, 1, 'plot', 0 );
             timedFprintf( 1, 'Completed iteration %d of %d at sim time %f of %f.\n', ...
                 Steps(m)+1, stages(end)/m.globalProps.timestep, m.globalDynamicProps.currenttime, stages(end) );
+            [m,mov,nextMovieFrame] = savemovieframe( m, mov, nextMovieFrame, movieframetimes, bgcolor );
         end
-        m=savemesh( m, ProjectName, localExperimentUniqueFullPath );
-        m=savepng( m, localExperimentUniqueFullPath );
+        m = savemesh( m, ProjectName, localExperimentUniqueFullPath, m.globalProps.saveDeletesOlderStages );
+        m = savepng( m, localExperimentUniqueFullPath );
+    end
+%     m = closemovie( m );
+    if ~isempty(mov)
+        timedFprintf( 1, 'Closing movie %s.\n', fullfile( mov.Path, mov.Filename ) );
+        close( mov );
     end
     timedFprintf( 1, '\n\nAll %d stages computed.\n', length(stages) );
 end
@@ -564,7 +627,7 @@ function [errors,local_sh_basefilename] = sendClusterJobScript( argsstruct, jobn
     % The next few lines write shell comments to the file. This file will
     % not be directly executed, but provided as input to sbatch on
     % the cluster.
-    fprintf( h, '#SBATCH -p compute-24-96\n');
+    fprintf( h, '#SBATCH -p compute-24-96,compute-64-512\n');
     outputDirBase = clusterfullfile( RemoteProjectFullPath, 'runs', jobname );
     fprintf( h, '#SBATCH --job-name %s\n',jobname);  % Specifies the name of the job.
     fprintf( h, '#SBATCH -t 64:00:00\n');  % cpu time limit HH:MM:SS.
@@ -573,7 +636,7 @@ function [errors,local_sh_basefilename] = sendClusterJobScript( argsstruct, jobn
     fprintf( h, '. /etc/profile\n');
     fprintf( h, 'echo "%s starting at `date` in directory `pwd`"\n', mfilename());
     fprintf( h, 'module add %s\n', MatlabModule);
-    fprintf( h, 'matlab -nosplash -nodesktop -nodisplay -nojvm -singleCompThread -r "RunSilent(%s); exit(0)"\n', ...
+    fprintf( h, 'matlab -nosplash -nodesktop -nodisplay -jvm -singleCompThread -r "RunSilent(%s); exit(0)"\n', ...
                 structToString( argsstruct ) );
     fprintf( h, 'echo "%s ending at `date`"\n', mfilename());
     fclose( h );
@@ -595,7 +658,7 @@ function ok = sendShellScript( localfullname, remotefullname, execute )
     end
 end
 
-function m = savemesh(m,ProjectName,localExperimentUniqueFullPath)
+function m = savemesh(m,ProjectName,localExperimentUniqueFullPath,deleteOlderStages)
     saveasbase = (m.globalProps.allowsave && (m.globalDynamicProps.currentIter==0));
     if saveasbase
         return;
@@ -605,16 +668,48 @@ function m = savemesh(m,ProjectName,localExperimentUniqueFullPath)
     [~,~,~] = mkdir( savedir );
     savefilebasename = [ProjectName stagesuffix];
     savefilename = fullfile( savedir, savefilebasename );
+    if m.globalProps.saveDeletesOlderStages
+        % Delete all other files in the meshes directory.
+    end
     ok = savemodelfile( m, savefilename, false, false, false );
     if ok
         timedFprintf( 1, 'savemesh: Saved stage for time %f to %s\n', m.globalDynamicProps.currenttime, savefilename );
+        
+        if deleteOlderStages
+            % Delete older stage files, except for the first.
+            savedfiles = dir( savedir );
+            savedfilenames = { savedfiles.name };
+            % Remove savefilename
+            for sfni=1:length(savedfilenames)
+                sfn = savedfilenames{sfni};
+
+                % Preserve *s000000.mat.
+                if endsWith( sfn, '_s000000.mat' )
+                    continue;
+                end
+                
+                % Preserve savefilename.
+                if strcmp( sfn, [ savefilebasename, '.mat' ] )
+                    continue;
+                end
+                
+                % Preserve dot files (because '.' and '..' will show up).
+                if sfn(1)=='.'
+                    continue;
+                end
+                
+                % Delete everything else.
+                delete( fullfile( savedir, sfn ) );
+                timedFprintf( 'Deleted old stage file %s from run directory %s\n', sfn, savedir );
+            end
+        end
     else
         timedFprintf( 1, 'savemesh: Could not save stage for time %f to %s\n', m.globalDynamicProps.currenttime, savefilename );
     end
 end
 
 function m = savepng(m,localExperimentUniqueFullPath)
-    
+    timedFprintf( 1, 'oncluster = %d\n', oncluster );
     if ~oncluster()
         stagesuffix = makestagesuffixf( m.globalDynamicProps.currenttime );
         imagesDir = fullfile( localExperimentUniqueFullPath, 'images' );
@@ -625,14 +720,18 @@ function m = savepng(m,localExperimentUniqueFullPath)
         set(gcf,'PaperPositionMode',newPPM);
         fprintf( 1, 'PaperPositionMode: old %s, new %s\n', oldPPM, newPPM );
         fprintf( 1, 'Saving image to %s\n',printfilename);
+        timedFprintf( 1, 'savepng about to plot the mesh.\n' );
         if ispc()
-            m=leaf_plot(m,'invisibleplot',true,'uicontrols', false);
+            m = leaf_plot(m,'invisibleplot',true,'uicontrols', true);
             print(gcf,'-dpng',printfilename);
         else
-            m=leaf_plot(m,'invisibleplot',true,'uicontrols', false);
+            m = leaf_plot(m,'invisibleplot',true,'uicontrols', true);
             print(gcf,'-dpng','-noui',printfilename);
         end
         timedFprintf('Saved image to %s\n',printfilename);
+        img = imread( printfilename );
+        timedFprintf( 1, 'savepng about to add the saved image to the movie.\n' );
+        m = recordframe( m, img );
     end
 end
 
@@ -750,3 +849,83 @@ function selectedOptions = selectOptions( optionnames, optionIndexes, optionStru
     end
 end
 
+function [m,mov] = startmovie( m, localExperimentUniqueFullPath, movieformat )
+    [~,moviebasename] = fileparts( localExperimentUniqueFullPath );
+    fullmoviepath = fullfile( localExperimentUniqueFullPath, [ moviebasename, '_', regexprep( movieformat, ' ', '_' ) ] );
+    
+%       'Archival'         - Motion JPEG 2000 file with lossless compression
+%       'Motion JPEG AVI'  - Compressed AVI file using Motion JPEG codec.
+%                            (default)
+%       'Motion JPEG 2000' - Compressed Motion JPEG 2000 file
+%       'MPEG-4'           - Compressed MPEG-4 file with H.264 encoding 
+%                            (Windows 7 and Mac OS X 10.7 only)
+%                            NOT AVAILABLE ON CLUSTER.
+%       'Uncompressed AVI' - Uncompressed AVI file with RGB24 video.
+%       'Indexed AVI'      - Uncompressed AVI file with Indexed video.
+%       'Grayscale AVI'    - Uncompressed AVI file with Grayscale video.
+
+    try
+        mov = VideoWriter( fullmoviepath, movieformat );
+    catch e
+        timedFprintf( 'Could not create VideoWriter in format %s.\n', movieformat );
+        mov = [];
+        return;
+    end
+    mov.FrameRate = 10;
+    if isfield( mov, 'Quality' )
+        mov.Quality = 75;
+    end
+    try
+        mov.open();
+        timedFprintf( 1, 'Opened movie: %s\n', fullfile( mov.Path, mov.Filename ) );
+    catch e
+        s = sprintf( 'Could not make movie in file %s.\n    Error id %s, message %s\n', ...
+            fullfile( mov.Path, mov.Filename ), e.identifier, e.message );
+        timedFprintf( 1, '%s', s );
+        timedFprintf( 2, '%s', s );
+        e.stack
+        delete( mov );
+        mov = [];
+    end
+end
+
+function [m,mov,nextMovieFrame] = savemovieframe( m, mov, nextMovieFrame, movieframetimes, bgcolor )
+    timedFprintf( 'savemovieframe called.\n' );
+    if isempty( mov )
+        timedFprintf( 'savemovieframe: could not make movie, so not saving frame.\n' );
+        return;
+    end
+    if nextMovieFrame > length( movieframetimes )
+        return;
+    end
+    
+    tempimgname = fullfile( mov.Path, 'tempimg.png' );
+    
+    nextFrameTime = movieframetimes( nextMovieFrame );
+    if meshAtOrAfterTime( m, nextFrameTime )
+        timedFprintf( 1, 'savemovieframe about to plot the mesh.\n' );
+        m = leaf_plot(m,'invisibleplot',true,'uicontrols', true);
+        drawnow;
+        timedFprintf( 1, 'savemovieframe about to record a frame.\n' );
+        print( gcf, '-dpng', '-noui', '-r100', tempimgname );
+        img = imread( tempimgname );
+%         m = recordframe( m, img );
+        mov = addmovieframe( mov, img, bgcolor );
+        timedFprintf( 1, 'Saved frame %d of movie.\n', nextMovieFrame );
+        nextMovieFrame = nextMovieFrame+1;
+    end
+    
+    if ~isempty(mov) && (nextMovieFrame > length(movieframetimes))
+        % End movie.
+        timedFprintf( 1, 'Wrote %s movie frames.\n', length(movieframetimes) );
+        timedFprintf( 1, 'Closing movie %s.\n', mov.Filename );
+        close( mov );
+    end
+end
+
+% function m = closemovie( m )
+%     if movieInProgress( m )
+%         timedFprintf( 1, 'Closing movie %s.\n', m.globalProps.mov.Filename );
+%         close( mov );
+%     end
+% end

@@ -31,6 +31,10 @@ function [m,ok] = leaf_savestage( m, savedir )
         stagesuffix = makestagesuffixf( m.globalDynamicProps.currenttime );
         m.stagetimes = addStages( m.stagetimes, m.globalDynamicProps.currenttime );
         m.globalDynamicProps.laststagesuffix = stagesuffix;
+        if ok && m.globalProps.saveDeletesOlderStages
+            % Delete all stages older than the current stage.
+            m = leaf_deletestages( m, 'stages', true, 'after', m.globalProps.starttime, 'before', m.globalDynamicProps.currenttime );
+        end
     end
     
     % Save a snapshot.
@@ -48,4 +52,5 @@ function [m,ok] = leaf_savestage( m, savedir )
             remakeStageMenu( hh, m.globalDynamicProps.laststagesuffix );
         end
     end
+    
 end

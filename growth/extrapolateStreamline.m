@@ -97,18 +97,67 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
         % model options nor to m.userdata. But I was in a hurry and there
         % was not the time to do this right.
         edge_alignment = getModelOption( m, 'edge_alignment' );
+        edge_alignment_power = getModelOption( m, 'edge_alignment_power' );
+        if isempty(edge_alignment_power)
+            edge_alignment_power = 3; % Value chosen from physical principles when attempting
+                                      % to minimise the bending energy of the growing head.
+        end
         if isempty(edge_alignment) || (edge_alignment==0) || ~isfield( m.userdata, 'edgedirection' )
             curvature = 0;
         else
             edgedir = unique( m.userdata.edgedirection( m.tricellvxs(ci,:) ) );
             if (length(edgedir) > 1) || (edgedir(1)==0)
+                % This will be true on the flat part of the faces and at
+                % the corners. In both cases the curvature in the direction
+                % of growth of the tubule is independent of that direction,
+                % and so the resulting sideways curvature of the tubule
+                % must be zero.
                 curvature = 0;
             else
+                surfaceNormal = m.cellFrames( :, 3, s.vxcellindex(end) )';
                 edgevec = [0 0 0];
                 edgevec( edgedir ) = 1;
-                [incidenceAngle,lateralCurveAxis,rotmat] = vecangle( edgevec, s.directionglobal ); % Did have args other way round, but seemed to give wrong sense.
+                % UNUSED CODE for defining the direction to turn towards by
+                % a morphogen fgradient.
+%                 curvedir = cross( surfaceNormal, edgevec );
+%                 flowdir = m.auxdata.flow( s.vxcellindex(end), : );
+%                 USE_FLOW = false;
+%                 if USE_FLOW
+%                     flowperp = cross( flowdir, surfaceNormal );
+%                 else
+%                     flowperp = cross( curvedir, surfaceNormal );
+%                 end
+%                 if any( abs( curvedir - flowdir ) > 0.1 )
+%                     xxxx = 1;
+%                 end
+%                 
+%                 if all( flowperp==0 )
+%                     xxxx = 1;
+%                 end
+                [incidenceAngle,lateralCurveAxis,rotmat] = vecangle( edgevec, s.directionglobal, surfaceNormal );
+                % incidenceAngle is in the range -pi..pi.
+                
                 localCurvature = 1/m.meshparams.edgeradius( edgedir );
-                curvature = edge_alignment * localCurvature * sin(incidenceAngle)^3 * cos(incidenceAngle);
+                sinIE = sin(incidenceAngle);
+                cosIE = cos(incidenceAngle);
+                incidenceEffect = sign(incidenceAngle) * (abs(sinIE)^edge_alignment_power) * cosIE;
+                cc = 1/sqrt(edge_alignment_power+1); % cos of the angle at which incidenceEffect reaches its maximum.
+                ss = sqrt(1-cc^2); % sin of the angle.
+                if ss > 0
+                    max_incidenceEffect = (ss^edge_alignment_power) * cc; % Maximum possible value of incidenceEffect.
+                    % Normalise incidenceEffect to have maximum value 1.
+                    incidenceEffect = incidenceEffect / max_incidenceEffect;
+                end
+                curvature = -edge_alignment * localCurvature * incidenceEffect;
+                bifurcationAngle = getModelOption( m, 'alignment_bifurcation_angle' );
+                if ~isempty( bifurcationAngle ) && ~isnan( bifurcationAngle )
+%                     sign1 = sign(cos( 2*incidenceAngle ));
+                    sign2 = 2 * (abs( abs(incidenceAngle) - pi/2 ) > bifurcationAngle) - 1;
+%                     if (sign1 ~= sign2)
+%                         xxxx = 1;
+%                     end
+                    curvature = curvature * -sign2;
+                end
                 xxxx = 1;
             end
         end
@@ -429,13 +478,23 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
         if lengthgrown > 0
             params = getTubuleParamsModifiedByMorphogens( m, s );
             timeused = lengthgrown/params.plus_growthrate;
-            nextstop = sampleexp( params.prob_plus_stop );
+            tubuleCurvatureAtHead = directionalCurvature( m, s.vxcellindex(end), s.barycoords(end,:), s.directionglobal, 'min' );
+            if m.tubules.tubuleparams.curvature_power==0
+                curvature_effect = double( tubuleCurvatureAtHead ~= 0 );
+            else
+                curvature_effect = tubuleCurvatureAtHead^m.tubules.tubuleparams.curvature_power;
+            end
+            curvature_cat_prob_per_time = params.plus_curvature_cat * curvature_effect * params.plus_growthrate;
+            curve_stop_per_time = params.curve_stop_per_dist * curvature_effect * params.plus_growthrate;
+            nextstop = sampleexp( params.prob_plus_stop + curve_stop_per_time );
             
             % Cat prob per unit length is assumed proportional to bending energy, which is proportional to square of curvature.
             % The constant of proportionality is the 'plus_curvature_cat' tubule param.
-            tubuleCurvatureAtHead = directionalCurvature( m, s.vxcellindex(end), s.barycoords(end,:), s.directionglobal, 'min' );
-            curvature_cat_prob_per_time = params.plus_curvature_cat * tubuleCurvatureAtHead^m.tubules.tubuleparams.curvature_power * params.plus_growthrate;
-            effective_prob_plus_catastrophe_per_time = (params.prob_plus_catastrophe + curvature_cat_prob_per_time) * m.tubules.tubuleparams.plus_catastrophe_scaling;
+            if tubuleCurvatureAtHead > 0
+                xxxx = 1;
+            end
+%             effective_prob_plus_catastrophe_per_time = (params.prob_plus_catastrophe + curvature_cat_prob_per_time) * m.tubules.tubuleparams.plus_catastrophe_scaling;
+            effective_prob_plus_catastrophe_per_time = params.prob_plus_catastrophe * m.tubules.tubuleparams.plus_catastrophe_scaling + curvature_cat_prob_per_time;
             nextcat = sampleexp( effective_prob_plus_catastrophe_per_time );
             if doedgecat
                 edgecat = timeused;
@@ -445,11 +504,20 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
             if (nextcat <= 0) || isnan(nextcat) || any(isinf(effective_prob_plus_catastrophe_per_time)) || any(isnan(effective_prob_plus_catastrophe_per_time))
                 xxxx = 1;
             end
+            if nextstop < Inf
+                xxxx = 1;
+            end
+            
+            
+            
+            
+            
+            
             [timetoevent,stoppingreason] = min( [edgecat, nextcat, nextstop, timeused] );
             stoppingreasons = 'ecsx';
             stoppingreason = stoppingreasons(stoppingreason);
             % stoppingreason is 'x' if no stop or cat, 's' if stop, 'c' if cat, 'e' if edge cat.
-            if stoppingreason=='c'
+            if stoppingreason=='s'
                 xxxx = 1;
             end
             if timetoevent < timeused
@@ -555,6 +623,10 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                 collisionparallel( initialevents ) = [];
             end
             
+            if ~isempty( collidedwith )
+                xxxx = 1;
+            end
+            
             beforeThisElement = find( s.segcellindex ~= s.segcellindex(end), 1, 'last' );
             if isempty(beforeThisElement)
                 beforeThisElement = 0;
@@ -569,6 +641,10 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                 collisionangle( excludeSelf ) = [];
                 iscrossing( excludeSelf ) = [];
                 collisionparallel( excludeSelf ) = [];
+                if ~isempty( collidedwith )
+                    xxxx = 1;
+                end
+            
                 remainingSelfCollisions = collidedwith==noncolliders;
                 if any( remainingSelfCollisions )
                     collidedwith( remainingSelfCollisions ) = [];
@@ -581,17 +657,13 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                     collisionparallel( remainingSelfCollisions ) = [];
                     timedFprintf( 'Self collision of tubule %d, %d times.\n', noncolliders, sum( remainingSelfCollisions ) );
                     xxxx = 1;
+                    if ~isempty( collidedwith )
+                        xxxx = 1;
+                    end
                 end
             end
             
-            headtailcollision = (collidedseg==1) & (collidedsegbc(:,1) > 0.99) & collisionparallel & (abs(collisionangle) < pi/180);
-            if any( headtailcollision )
-%                 timedFprintf( 1, 'Head-tail collision:\n' );
-%                 fprintf( '    Tubule %4d tailbcs %.4f %.4f\n', [ collidedwith(headtailcollision), collidedsegbc(headtailcollision,:) ]' );
-                xxxx = 1;
-                % m.tubules.statistics.collideheadtailinfo(end+1,:) = [ 
-            end
-            tubule_age_at_collisions = collidersegbc(:,2) * timetoevent + m.globalDynamicProps.currenttime - s.starttime;
+            tubule_age_at_collisions = collidersegbc(:,2) * timetoevent + max(m.globalDynamicProps.currenttime,s.starttime) - s.starttime;
             oldenough = tubule_age_at_collisions >= s.status.interactiontime;
             if ~isempty( tubule_age_at_collisions )
                 if length(tubule_age_at_collisions) >= 2
@@ -609,7 +681,29 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
             if (s.status.interactiontime > 0) && any(oldenough)
                 xxxx = 1;
             end
+            
+            % Exclude collisions where either tubule is not old enough.
+            if any(~oldenough)
+                tooyoung = ~oldenough;
+                collidedwith( tooyoung ) = [];
+                collidedseg( tooyoung ) = [];
+                collidedsegbc( tooyoung, : ) = [];
+                collidersegbc( tooyoung, : ) = [];
+                collisiontype( tooyoung ) = [];
+                collisionangle( tooyoung ) = [];
+                iscrossing( tooyoung ) = [];
+                collisionparallel( tooyoung ) = [];
+            end
 
+
+            headtailcollision = (collidedseg==1) & (collidedsegbc(:,1) > 0.99) & collisionparallel & (abs(collisionangle) < pi/180);
+            if any( headtailcollision )
+%                 timedFprintf( 1, 'Head-tail collision:\n' );
+%                 fprintf( '    Tubule %4d tailbcs %.4f %.4f\n', [ collidedwith(headtailcollision), collidedsegbc(headtailcollision,:) ]' );
+                xxxx = 1;
+                % m.tubules.statistics.collideheadtailinfo(end+1,:) = [ 
+            end
+            
             % Exclude almost parallel collisions, except for head-tail parallel (i.e. not antiparallel) collisions.
             nonparallel = (abs(collisionangle) > 0.01) | headtailcollision;
             if any(nonparallel)
@@ -700,6 +794,9 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                 possibleoutcomes = 'zcxhi';
                 angleclass = zeros( numevents, 1 );
                 outcomes = repmat( 'i', numevents, 1 ); % z: zip, c: cat, x: cross, h: head-tail cat, i: ignore.
+                if (s.id==1) && (collidedwith(1)==185)
+                    xxxx = 1;
+                end
                 for okci=1:numevents
                     if headtailcollision(okci)
                         rand1 = rand( 1, 1 );
@@ -776,6 +873,9 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                 % zip or cat. These should be ignored.
                 ignoreCollisions = ~( iscrossing | cats | zippers );
                 if any( ignoreCollisions )
+                    xxxx = 1;
+                end
+                if any( iscrossing )
                     xxxx = 1;
                 end
                 if length(zippers) ~= length(crosses)
@@ -931,19 +1031,27 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                 end
 
                 if any(crossbranch)
-                    if isMorphogen( m, m.tubules.tubuleparams.prob_branch_scaling )
-                        branchScalingPerVertex = max( 0, leaf_getTubuleParamsPerVertex( m, 'prob_branch_scaling' ) );
-                        if length(unique(branchScalingPerVertex))==1
-                            branchScalingPerVertex = branchScalingPerVertex(1);
+%                     if isMorphogen( m, m.tubules.tubuleparams.prob_free_branch_scaling )
+%                         freeBranchScalingPerVertex = max( 0, leaf_getTubuleParamsPerVertex( m, 'prob_free_branch_scaling' ) );
+%                         if length(unique(freeBranchScalingPerVertex))==1
+%                             freeBranchScalingPerVertex = freeBranchScalingPerVertex(1);
+%                         end
+%                     else
+%                         freeBranchScalingPerVertex = 1;
+%                     end
+                    if isMorphogen( m, m.tubules.tubuleparams.prob_xover_branch_scaling )
+                        xoverBranchScalingPerVertex = max( 0, leaf_getTubuleParamsPerVertex( m, 'prob_xover_branch_scaling' ) );
+                        if length(unique(xoverBranchScalingPerVertex))==1
+                            xoverBranchScalingPerVertex = xoverBranchScalingPerVertex(1);
                         end
                     else
-                        branchScalingPerVertex = 1;
+                        xoverBranchScalingPerVertex = 1;
                     end
-                    doBranchScaling = (numel(branchScalingPerVertex) > 1) || (branchScalingPerVertex(1) ~= 1);
-                    if doBranchScaling
-                        crossbranchscaling = interpolateOverMesh( m, branchScalingPerVertex, colliderCell(crossbranch), colliderCellBcs(crossbranch,:), m.tubules.tubuleparams.branch_scaling_interp_mode );
+                    doXoverBranchScaling = (numel(xoverBranchScalingPerVertex) > 1) || (xoverBranchScalingPerVertex(1) ~= 1);
+                    if doXoverBranchScaling
+                        xoverbranchscaling = interpolateOverMesh( m, xoverBranchScalingPerVertex, colliderCell(crossbranch), colliderCellBcs(crossbranch,:), m.tubules.tubuleparams.branch_scaling_interp_mode );
                         foo = find(crossbranch);
-                        foo( rand(length(foo),1) < crossbranchscaling ) = [];
+                        foo( rand(length(foo),1) < xoverbranchscaling ) = [];
                         if any(foo)
                             xxxx = 1;
                         end

@@ -34,6 +34,9 @@ function [m,ok] = loadmesh_anyfile( m, filenamefullpath, staticdata, interactive
     if (nargin < 5) || isempty( checkValidity )
         checkValidity = true;
     end
+    if oncluster()
+        interactive = false;
+    end
     objext = '.obj';
     matext = '.mat';
     mfileext = '.m';

@@ -12,6 +12,10 @@ function paramValues = getTubuleParamsModifiedByMorphogens( m, varargin )
 %   Get per-vertex values of all microtubule parameters.
 %
 %   SELECTEDPARAMS defaults to all parameters.
+%
+%   When a parameter is found to take the same value at all the places it
+%   is requested, the result will contain just that single value, not an
+%   array of values per vertex, or per tubule vertex, or per tubule.
 
     args = varargin;
     haveParams = iscell( args{end} ) || ischar( args{end} );
@@ -57,10 +61,17 @@ function paramValues = getTubuleParamsModifiedByMorphogens( m, varargin )
     fns = selectedparams;
     for i=1:length(fns)
         fn = fns{i};
-        if isnumeric(allParams.(fn)) && (size(allParams.(fn),1)==1)
-            paramValues.(fn) = repmat( allParams.(fn), numvertexes, 1 );
-            continue;
+        
+        if getForTubule && isfield( s, 'overrideparams' ) && isfield( s.overrideparams, fn )
+            overridevalue = s.overrideparams.(fn);
+            allParams.(fn) = overridevalue;
+            xxxx = 1;
         end
+        
+%         if isnumeric(allParams.(fn)) && (size(allParams.(fn),1)==1)
+%             paramValues.(fn) = repmat( allParams.(fn), numvertexes, 1 );
+%             continue;
+%         end
         if ischar( allParams.(fn) )
             mi = FindMorphogenIndex( m, m.tubules.tubuleparams.(fn) );
             if isempty(mi)
@@ -69,15 +80,20 @@ function paramValues = getTubuleParamsModifiedByMorphogens( m, varargin )
             end
             pervertex = m.morphogens(:,mi);
         elseif isempty(allParams.(fn))
-            pervertex = zeros( numvertexes, 1 );
+            pervertex = 0; % zeros( numvertexes, 1 );
         elseif size( allParams.(fn), 1 )==numvertexes
             pervertex = allParams.(fn);
+        elseif size( allParams.(fn), 1 ) ~= 1
+            pervertex = zeros( 1, size( allParams.(fn), 2 ) );
+%             paramValues.(fn) = 0;
+%             continue;
         else
-            paramValues.(fn) = 0;
-            continue;
+            pervertex = allParams.(fn);
         end
         
-        if getAllVxs
+        if all( all( pervertex==pervertex(1,:) ) )
+            paramValues.(fn) = pervertex(1,:);
+        elseif getAllVxs
             paramValues.(fn) = pervertex;
         elseif getForTubule
             atstart = contains( fn, 'minus' );
@@ -88,12 +104,21 @@ function paramValues = getTubuleParamsModifiedByMorphogens( m, varargin )
                 bc = s.barycoords(end,:);
                 ci = s.vxcellindex(end);
             end
-            if any(isinf(pervertex( m.tricellvxs( ci, : ) )))
-                xxxx = 1;
+            if size(pervertex,1)==1
+                paramValues.(fn) = pervertex;
+            else
+                paramValues.(fn) = bc * pervertex( m.tricellvxs( ci, : ) );
             end
-            paramValues.(fn) = bc * pervertex( m.tricellvxs( ci, : ) );
         else
-            paramValues.(fn) = sum( reshape( pervertex( m.tricellvxs( cis, : ) ), [], 3 ) .* bcs, 2 );
+            if size(pervertex,1)==1
+                paramValues.(fn) = repmat( pervertex, length(cis), 1 );
+            else
+                paramValues.(fn) = sum( reshape( pervertex( m.tricellvxs( cis, : ) ), [], 3 ) .* bcs, 2 );
+            end
         end
+        
+%         if ~isempty( paramValues.(fn) ) && all( paramValues.(fn)==paramValues.(fn)(1) )
+%             paramValues.(fn) = paramValues.(fn)(1);
+%         end
     end
 end

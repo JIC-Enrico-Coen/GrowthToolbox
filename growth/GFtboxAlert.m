@@ -4,6 +4,7 @@ function GFtboxAlert( m, format, varargin )
     else
         interactive = m;
     end
+    interactive = interactive && ~oncluster();
     if interactive
         queryDialog( 1, 'GFtbox', format, varargin{:} );
     end

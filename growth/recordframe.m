@@ -5,6 +5,9 @@ function m = recordframe( m, frame )
     if nargin < 2
         [m,ok,frame] = leaf_snapshot( m, '-', 'hires', m.plotdefaults.hiresmovies );
     end
+    timedFprintf( 1, 'Frame size [' );
+    fprintf( 1, ' %d', size(frame) );
+    fprintf( 1, ' ], ok = %d\n', ok );
     if ~ok || isempty( frame )
         return;
     end
@@ -26,7 +29,7 @@ function m = recordframe( m, frame )
             datestring(), m.globalDynamicProps.currenttime, m.globalDynamicProps.currentIter );
         m.globalDynamicProps.framesinmovie = m.globalDynamicProps.framesinmovie + 1;
     catch e
-        GFtboxAlert( 1, 'Could not add frame to movie.\n%s', ...
+        GFtboxAlert( [], 'Could not add frame to movie.\n%s', ...
             e.message );
         try
             m.globalProps.mov = close( m.globalProps.mov );

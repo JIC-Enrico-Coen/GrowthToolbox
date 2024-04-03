@@ -202,8 +202,8 @@ function m = renumberMesh( m, rnodes, redges, rfaces, ...
     tpnames = fieldnames( m.tubules.tubuleparams );
     for i=1:length(tpnames)
         fn = tpnames{i};
-        if numel( m.tubules.tubuleparams.(fn) ) > 1
-            m.tubules.tubuleparams.(fn) = m.tubules.tubuleparams.(fn)( rnodesmap );
+        if size( m.tubules.tubuleparams.(fn), 1 ) == length(rnodesmap)
+            m.tubules.tubuleparams.(fn) = m.tubules.tubuleparams.(fn)( rnodesmap, : );
         end
     end
 end

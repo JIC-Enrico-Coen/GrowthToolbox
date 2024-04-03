@@ -112,6 +112,7 @@ function m = leaf_createStreamlines( m, varargin )
             'directionbc', 'double', ...
             'directionglobal', 'double', ...
             'status', 'struct' );
+        streamline(i).status.interactiontime = m.tubules.tubuleparams.branch_interaction_delay;
         newtubuleinfo(i,1:4) = [ streamline(i).segcellindex, streamline(i).barycoords ];
     end
     

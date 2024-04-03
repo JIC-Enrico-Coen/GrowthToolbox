@@ -70,6 +70,9 @@ function theaxes = makeCanvasPicture( msg, varargin )
     if ~checkvalidpos( s.ppos )
         return;
     end
+    
+    timedFprintf( 1, 'Argument struct:\n' );
+    s
 
     s = calcPositions( s );
 

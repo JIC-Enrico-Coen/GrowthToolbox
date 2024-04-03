@@ -79,6 +79,8 @@ function [m,ok] = leaf_loadmodel( m, modelname, projectdir, varargin )
         'rewrite', 'copyname', 'copydir', 'interactive', 'soleaccess' );
     if ~ok, return; end
 
+    s.interactive = s.interactive && ~oncluster();
+
     % Insert defaults for arguments.
     if nargin < 2
         modelname = '';

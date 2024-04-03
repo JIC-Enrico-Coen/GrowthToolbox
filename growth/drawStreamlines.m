@@ -150,6 +150,15 @@ function slhandles = drawStreamlines( theaxes, m, s )
         growingheads = headstatus==1;
         stoppedheads = headstatus==0;
         shrinkingheads = headstatus==-1;
+        taggedheads = false( 1, length(s) );
+        
+        for si=1:length(s)
+            taggedheads(si) = isfield( s(si), 'overrideparams' ) ...
+                              && isstruct(s(si).overrideparams) ...
+                              && ~isempty(fieldnames(s(si).overrideparams));
+        end
+        taggedheads = taggedheads & growingheads;
+        growingheads = growingheads & ~taggedheads;
         
         if any(growingheads)
             endcolor = 'g';
@@ -171,6 +180,13 @@ function slhandles = drawStreamlines( theaxes, m, s )
                 'Color', endcolor, ...
                 'MarkerSize', m.plotdefaults.streamlineenddotsize, ...
                 'MarkerFaceColor', endcolor );
+        end
+        if any(taggedheads)
+            endcolor = 'r';
+            slhandles.end(shrinkingheads) = plotpts( theaxes, allend(taggedheads,:), dottype, ...
+                'Color', endcolor, ...
+                'MarkerSize', m.plotdefaults.streamlineenddotsize, ...
+                'MarkerFaceColor', 'y' );
         end
     end
     

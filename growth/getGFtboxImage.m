@@ -36,7 +36,7 @@ function frame = getGFtboxImage( m, picture, withColorbar, hires, magnification,
         frame = frame.cdata;
         if withColorbar
             h = guidata( picture );
-            if isfield( h, 'colorbar' )
+            if isfield( h, 'colorbar' ) && ishghandle( h.colorbar )
                 frame2 = mygetframe( h.colorbar );
                 if ~isempty(frame2)
                     frame = abutImagesHoriz( frame, frame2.cdata, get( picture, 'Color' ) );

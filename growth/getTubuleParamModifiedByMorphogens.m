@@ -10,6 +10,9 @@ function param = getTubuleParamModifiedByMorphogens( m, fn, a, b )
 %
 %param = getTubuleParamModifiedByMorphogens( m, fn )
 %   Get per-vertex values of all microtubule parameters.
+%
+%   This is for foliate meshes only, because tubules are not implemented
+%   for volumetric meshes.
 
     param = [];
     
@@ -63,13 +66,17 @@ function param = getTubuleParamModifiedByMorphogens( m, fn, a, b )
         % param is assumed to specify one value per vertex.
         pervertex = param;
     end
+    numParams = size(param,2);
     
-    % At this point, pervertex is the value of the param at every
-    % vertex.
+    % At this point, pervertex is the value of the params at every
+    % vertex of the mesh.
 
     if getAllVxs
+        % Done.
         param = pervertex;
     elseif getForTubule
+        % We need the params at either the head of the tail of the tubule.
+        % (Do we ever use this?)
         atstart = contains( fn, 'minus' );
         if atstart
             bc = s.barycoords(1,:);
@@ -81,21 +88,46 @@ function param = getTubuleParamModifiedByMorphogens( m, fn, a, b )
         if any(isinf(pervertex( m.tricellvxs( ci, : ) )))
             xxxx = 1;
         end
-        paramlength = size(param,2);
-        param = zeros( 1, paramlength );
-        for pi = 1:paramlength
+        param = zeros( 1, numParams );
+        for pi = 1:numParams
             param(1,pi) = bc * pervertex( m.tricellvxs( ci, : ), pi );
         end
         paramx = bc * pervertex( m.tricellvxs( ci, : ) );
         xxxx = 1;
     else
-        paramlength = size(param,2);
-        param = zeros( length(cis), paramlength );
-        for pi = 1:paramlength
-            pervertex1 = pervertex( pi );
-            param(:,pi) = sum( reshape( pervertex1( m.tricellvxs( cis, : ) ), [], 3 ) .* bcs, 2 );
+        % We want the params for a set of points specified by elements and
+        % barycentric coordinates.
+        numElements = length(cis);
+        vxsPerElement = size( m.tricellvxs, 2 );
+        paramx = zeros( numElements, numParams );
+        for pi = 1:numParams
+            pervertex1 = pervertex( :, pi );
+            paramx(:,pi) = sum( reshape( pervertex1( m.tricellvxs( cis, : ) ), [], vxsPerElement ) .* bcs, 2 );
         end
-        paramx = sum( reshape( pervertex( m.tricellvxs( cis, : ) ), [], 3 ) .* bcs, 2 );
+        if numElements==1
+            % The calculation is much simpler for this case.
+            foo1 = pervertex( m.tricellvxs( cis, : ), : ); % vxsPerElement x numParams
+            param = sum( foo1 .* bcs', 1 ); % 1 x numParams
+        else
+            foo1 = pervertex( m.tricellvxs( cis, : )', : ); % (vxsPerElement * numElements) x numParams
+            foo2 = reshape( foo1, vxsPerElement, numElements, numParams ); % vxsPerElement x numElements x numParams
+            foo3 = permute( foo2, [2 1 3] ); % numElements x vxsPerElement x numParams
+            foo4 = sum( foo3 .* bcs, 2 ); % numElements x 1 x numParams
+            param = reshape( foo4, numElements, numParams ); % numElements x numParams
+        end
+        
+        if numParams==1
+            if (length(size(paramx)) ~= length(size(param))) || any( size(paramx) ~= size(param) ) || any( paramx(:) ~= param(:) )
+                xxxx = 1;
+                error( 'getTPMBM old version inconsistent with new (1)' );
+            end
+        end
+        if size( unique( pervertex, 'rows' ), 1 ) == 1
+            if (size( unique( paramx, 'rows' ), 1 ) ~= 1) || (size( unique( param, 'rows' ), 1 ) ~= 1)
+                xxxx = 1;
+                error( 'getTPMBM old version inconsistent with new (2)' );
+            end
+        end
         xxxx = 1;
     end
 end

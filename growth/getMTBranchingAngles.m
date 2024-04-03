@@ -11,25 +11,43 @@ function a = getMTBranchingAngles( m, n, branchtype )
     
     % The result is a value in the range 0..pi.
     
+    % WARNING! This code will fail if the branching parameters vary
+    % according to position or tubule identity. The code assumes that all
+    % of the branching parameters are uniform across the mesh and across
+    % all tubules. Currently (2024-02-08) the interaction function for the
+    % tubules project in principle allows for branch_forwards_mean to take
+    % a different value on the edge-regions and the faces. Actually setting
+    % different values for these will result in errors. Fixing this problem
+    % will require restructuring how we select locations to branch at.
+    
+    neededParams = { 'prob_branch_forwards', ...
+              'prob_branch_parallel', ...
+              'prob_branch_antiparallel', ...
+              'branch_forwards_mean', ...
+              'branch_forwards_spread', ...
+              'branch_backwards_spread', ...
+              'branch_backwards_mean' };
+    paramValues = getTubuleParamsModifiedByMorphogens( m, neededParams );
+    
     a = zeros(n,1);
     switch branchtype
         case 'free'
-            forwards = rand(n,1) < m.tubules.tubuleparams.prob_branch_forwards;
+            forwards = rand(n,1) < paramValues.prob_branch_forwards;
             numFwd = sum(forwards);
             exact = false(n,1);
-            exact(forwards) = rand(numFwd,1) < m.tubules.tubuleparams.prob_branch_parallel;
-            exact(~forwards) = rand(n-numFwd,1) < m.tubules.tubuleparams.prob_branch_antiparallel;
+            exact(forwards) = rand(numFwd,1) < paramValues.prob_branch_parallel;
+            exact(~forwards) = rand(n-numFwd,1) < paramValues.prob_branch_antiparallel;
 
             a = zeros(n,1);
             a(forwards & exact) = 0;
             a(~forwards & exact) = pi;
 
             fwdSpread = forwards & ~exact;
-            a(fwdSpread) = randn(sum(fwdSpread),1) * m.tubules.tubuleparams.branch_forwards_spread + 40*(pi/180); % m.tubules.tubuleparams.branch_forwards_mean_faces; %%%%
+            a(fwdSpread) = randn(sum(fwdSpread),1) * paramValues.branch_forwards_spread + paramValues.branch_forwards_mean; % paramValues.branch_forwards_mean_faces; %%%%
             a(fwdSpread) = modreflective( a(fwdSpread), pi );
 
             backSpread = ~forwards & ~exact;
-            a(backSpread) = randn(sum(backSpread),1) * m.tubules.tubuleparams.branch_backwards_spread + m.tubules.tubuleparams.branch_backwards_mean;
+            a(backSpread) = randn(sum(backSpread),1) * paramValues.branch_backwards_spread + m.tubules.tubuleparams.branch_backwards_mean;
             a(backSpread) = modreflective( a(backSpread), pi );
             a(backSpread) = pi - a(backSpread);
             

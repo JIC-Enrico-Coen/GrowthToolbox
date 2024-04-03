@@ -31,11 +31,11 @@ function [a,a_each,eigs_each] = anisoMirabet( dirs, wts )
 %
 %   * A vector of numerical weights.
 %
-%   * 'unit', to specify that all the directions should be norlaised to
+%   * 'unit', to specify that all the directions should be normalised to
 %   unit length and combined with equal weight.
 %
 %   * 'length', to specify that the directions should be weighted according
-%   to their lengths..
+%   to their lengths.
 %
 %   In each case the weights will be normalised to sum to 1. The default is
 %   'unit'.

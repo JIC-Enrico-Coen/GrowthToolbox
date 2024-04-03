@@ -21,6 +21,7 @@ function [options,ok] = setOptions( options, varargin )
     else
         s = safemakestruct( 'setModelOptions', varargin );
     end
+    
     fns = fieldnames(s);
     for i=1:length(fns)
         fn = fns{i};

@@ -507,8 +507,9 @@ function setGlobals()
         'plus_shrinkrate', ... % length/time
         'minus_shrinkrate', ... % length/time  Normal shrink rate, somewhat smaller than plus_growthrate.
         'minus_catshrinkrate', ... % length/time  Catastrophizing shrink rate, likely the same as plus_shrinkrate.
-        'prob_branch_scaling', ... % dimensionless scaling of all branching rates.
-        'branch_scaling_interp_mode', ..., % An interpolation mode to use with prob_branch_scaling.
+        'prob_free_branch_scaling', ... % dimensionless scaling of all branching rates.
+        'prob_xover_branch_scaling', ... % dimensionless scaling of all branching rates.
+        'branch_scaling_interp_mode', ..., % An interpolation mode to use with prob_free_branch_scaling and prob_xover_branch_scaling.
         'density_branch_scaling', ... % Dimensionless scale factor.
         'prob_branch_time', ... % probability/time
         'prob_branch_tubule_time', ... % probability/(number of tubules)
@@ -532,6 +533,7 @@ function setGlobals()
         'plus_curvature_cat', ... % There is a probability of catastrophe per unit length equal to this value times the square of the tubule curvature at the growing head.
         'plus_catastrophe_scaling', ... % dimensionless
         ... % 'edge_plus_catastrophe', ... % probability/time  OBSOLETE, handled in i.f., although this means that GFtbox is accessing specific model options.
+        'curve_stop_per_dist', ... % prob per dist per curvature^2.
         'prob_plus_stop', ... % probability/time
         'prob_plus_rescue', ... % probability/time
         'prob_crossover_rescue', ... % probability/event

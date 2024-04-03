@@ -807,6 +807,7 @@ function m = upgradeTubules( m )
     end
     
     m.tubules.tubuleparams = renameFields( m.tubules.tubuleparams, 'max_mt_per_area', 'max_growing_mt_per_area' );
+    m.tubules.tubuleparams = renameFields( m.tubules.tubuleparams, 'prob_branch_scaling', 'prob_free_branch_scaling' );
     
     newfields = setdiff( fieldnames( emptyTubules.tracks ), fieldnames( m.tubules.tracks ) );
     for nfi=1:length(newfields)
