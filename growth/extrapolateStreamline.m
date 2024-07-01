@@ -53,7 +53,7 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
     bc = normaliseBaryCoords( s.barycoords(end,:) );
     dirbc = s.directionbc;
     if any(isnan(dirbc))
-        warning( 'NaN found in s.directionbc [%f %f %f]', dirbc );
+        warning( 'NaN found in s.directionbc [%f %f %f]', dirbc(1), dirbc(2), dirbc(3) );
         timedFprintf( 2, '%s', formattedDisplayText( s ) );
         dbstack
         xxxx = 1;
@@ -90,20 +90,22 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
     % If the microtubule is curved, modify the direction accordingly.
     MAXANGLEPERSTEP = 0.1;
     
+    curvatureFromEdge = 0;
     if m.tubules.tubuleparams.curvature ~= 0
-        curvature = m.tubules.tubuleparams.curvature;
+        curvatureFromEdge = m.tubules.tubuleparams.curvature;
     else
         % This code is not good. GFtbox code should never refer to the
         % model options nor to m.userdata. But I was in a hurry and there
         % was not the time to do this right.
         edge_alignment = getModelOption( m, 'edge_alignment' );
+        field_alignment = getModelOption( m, 'field_alignment' );
         edge_alignment_power = getModelOption( m, 'edge_alignment_power' );
         if isempty(edge_alignment_power)
             edge_alignment_power = 3; % Value chosen from physical principles when attempting
                                       % to minimise the bending energy of the growing head.
         end
         if isempty(edge_alignment) || (edge_alignment==0) || ~isfield( m.userdata, 'edgedirection' )
-            curvature = 0;
+            curvatureFromEdge = 0;
         else
             edgedir = unique( m.userdata.edgedirection( m.tricellvxs(ci,:) ) );
             if (length(edgedir) > 1) || (edgedir(1)==0)
@@ -112,28 +114,10 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                 % of growth of the tubule is independent of that direction,
                 % and so the resulting sideways curvature of the tubule
                 % must be zero.
-                curvature = 0;
             else
                 surfaceNormal = m.cellFrames( :, 3, s.vxcellindex(end) )';
                 edgevec = [0 0 0];
                 edgevec( edgedir ) = 1;
-                % UNUSED CODE for defining the direction to turn towards by
-                % a morphogen fgradient.
-%                 curvedir = cross( surfaceNormal, edgevec );
-%                 flowdir = m.auxdata.flow( s.vxcellindex(end), : );
-%                 USE_FLOW = false;
-%                 if USE_FLOW
-%                     flowperp = cross( flowdir, surfaceNormal );
-%                 else
-%                     flowperp = cross( curvedir, surfaceNormal );
-%                 end
-%                 if any( abs( curvedir - flowdir ) > 0.1 )
-%                     xxxx = 1;
-%                 end
-%                 
-%                 if all( flowperp==0 )
-%                     xxxx = 1;
-%                 end
                 [incidenceAngle,lateralCurveAxis,rotmat] = vecangle( edgevec, s.directionglobal, surfaceNormal );
                 % incidenceAngle is in the range -pi..pi.
                 
@@ -148,7 +132,7 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                     % Normalise incidenceEffect to have maximum value 1.
                     incidenceEffect = incidenceEffect / max_incidenceEffect;
                 end
-                curvature = -edge_alignment * localCurvature * incidenceEffect;
+                curvatureFromEdge = -edge_alignment * localCurvature * incidenceEffect;
                 bifurcationAngle = getModelOption( m, 'alignment_bifurcation_angle' );
                 if ~isempty( bifurcationAngle ) && ~isnan( bifurcationAngle )
 %                     sign1 = sign(cos( 2*incidenceAngle ));
@@ -156,12 +140,49 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
 %                     if (sign1 ~= sign2)
 %                         xxxx = 1;
 %                     end
-                    curvature = curvature * -sign2;
+                    curvatureFromEdge = curvatureFromEdge * -sign2;
                 end
+                
                 xxxx = 1;
             end
         end
     end
+    
+    curvatureFromField = 0;
+    if ~isempty( field_alignment ) && isfield( m.auxdata, 'flow' ) && ~isempty( m.auxdata.flow )
+        % Code for defining the direction to turn towards by
+        % a morphogen gradient.
+        surfaceNormal = m.cellFrames( :, 3, s.vxcellindex(end) )';
+        flowdir = m.auxdata.flow( s.vxcellindex(end), : );
+        flowperp = cross( flowdir, surfaceNormal );
+        flowdir2 = m.auxdata.flow2( s.vxcellindex(end), : );
+        flowperp2 = cross( flowdir2, surfaceNormal );
+
+        if all( flowperp==0 )
+            flowdir = m.auxdata.flow2( s.vxcellindex(end), : );
+            flowperp = cross( flowdir, surfaceNormal );
+            field_alignment = getModelOption( m, 'field_alignment2' );
+            xxxx = 1;
+        end
+
+        if ~all( flowperp==0 )
+            [incidenceAngle,lateralCurveAxis,rotmat] = vecangle( flowdir, s.directionglobal, surfaceNormal );
+            sinIE = sin(incidenceAngle);
+            cosIE = cos(incidenceAngle);
+            incidenceEffect = sign(incidenceAngle) * (abs(sinIE)^edge_alignment_power) * cosIE;
+            cc = 1/sqrt(edge_alignment_power+1); % cos of the angle at which incidenceEffect reaches its maximum.
+            ss = sqrt(1-cc^2); % sin of the angle.
+            if ss > 0
+                max_incidenceEffect = (ss^edge_alignment_power) * cc; % Maximum possible value of incidenceEffect.
+                % Normalise incidenceEffect to have maximum value 1.
+                incidenceEffect = incidenceEffect / max_incidenceEffect;
+            end
+            curvatureFromField = field_alignment * incidenceEffect;
+            xxxx = 1;
+        end
+    end
+    
+    curvature = curvatureFromEdge + curvatureFromField;
     curvelengthbound = MAXANGLEPERSTEP/abs(curvature);
     maxlength = min( maxlength, curvelengthbound );
     if (curvature ~= 0) && ~isempty( s.segmentlengths )
@@ -484,17 +505,47 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
             else
                 curvature_effect = tubuleCurvatureAtHead^m.tubules.tubuleparams.curvature_power;
             end
+            % params.plus_curvature_cat is the probability of catastrophe
+            % per unit distance of growth at a curvature of 1.
+            %
+            % curvature_effect is the curvature of the tubule at its tip,
+            % raised to the power m.tubules.tubuleparams.curvature_power.
+            % By default this is 2, as the event is assumed proportional to
+            % the energy of bending, which is proportional to the square of
+            % curvature.
+            %
+            % params.plus_curvature_cat * curvature_effect is therefore the
+            % probability per unit distance of growth of the current tubule
+            % catastrophising.
+            %
+            % After multiplying this by the growth rate,
+            % params.plus_growthrate, we have the probability per unit time
+            % of catastrophizing.
+            %
+            % A similar calculation gives the probability per unit time of
+            % growth stopping.
+            if isinf( params.plus_curvature_cat )
+                xxxx = 1;
+            end
             curvature_cat_prob_per_time = params.plus_curvature_cat * curvature_effect * params.plus_growthrate;
             curve_stop_per_time = params.curve_stop_per_dist * curvature_effect * params.plus_growthrate;
             nextstop = sampleexp( params.prob_plus_stop + curve_stop_per_time );
             
-            % Cat prob per unit length is assumed proportional to bending energy, which is proportional to square of curvature.
-            % The constant of proportionality is the 'plus_curvature_cat' tubule param.
             if tubuleCurvatureAtHead > 0
+                if abs(s.globalcoords(end,3)) < 3
+                    xxxx = 1;
+                end
                 xxxx = 1;
             end
 %             effective_prob_plus_catastrophe_per_time = (params.prob_plus_catastrophe + curvature_cat_prob_per_time) * m.tubules.tubuleparams.plus_catastrophe_scaling;
+            
+
+            % There is also a probability of spontaneous catastrophe per
+            % unit time. This is added to the probability of
+            % curvature-induced catastrophe per unit time.
             effective_prob_plus_catastrophe_per_time = params.prob_plus_catastrophe * m.tubules.tubuleparams.plus_catastrophe_scaling + curvature_cat_prob_per_time;
+            % Now we sample from this exponential distribution to find the
+            % time until the next catastrophe.
             nextcat = sampleexp( effective_prob_plus_catastrophe_per_time );
             if doedgecat
                 edgecat = timeused;
@@ -513,7 +564,7 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
             
             
             
-            [timetoevent,stoppingreason] = min( [edgecat, nextcat, nextstop, timeused] );
+            [timetoevent,stoppingreason] = min( [edgecat, nextcat, nextstop, timeused], [], 'omitnan' );
             stoppingreasons = 'ecsx';
             stoppingreason = stoppingreasons(stoppingreason);
             % stoppingreason is 'x' if no stop or cat, 's' if stop, 'c' if cat, 'e' if edge cat.

@@ -71,8 +71,8 @@ function theaxes = makeCanvasPicture( msg, varargin )
         return;
     end
     
-    timedFprintf( 1, 'Argument struct:\n' );
-    s
+%     timedFprintf( 1, 'Argument struct:\n' );
+%     s
 
     s = calcPositions( s );
 

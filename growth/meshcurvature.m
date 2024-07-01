@@ -1,4 +1,4 @@
-function vxdeficit = meshcurvature( m )
+function [curvatures,vxdeficit] = meshcurvature( m )
 %vxdeficit = meshcurvature( m )
 %
 % THIS PROCEDURE IS NEVER USED. It is likely experimental and incomplete.
@@ -42,8 +42,7 @@ function vxdeficit = meshcurvature( m )
     trilensq = edgelensq( m.celledges );
     trilen = edgelen( m.celledges );
     
-% 3. Calculate by the cos rule for two of the angles of each triangle.
-
+% 3. Calculate two of the angles of each triangle by the cos rule.
     numerators = trilensq*[-1 1;1 -1;1 1];
     denominators = 2 * [ trilen(:,2) .* trilen(:,3), trilen(:,1) .* trilen(:,3) ];
     cosines = numerators ./ denominators;
@@ -92,6 +91,17 @@ function vxdeficit = meshcurvature( m )
         end
         vxdeficit(vi) = nbdeficit;
     end
+    
+% 8. Calculate the surface area associated with each vertex. This is 1/3 of
+% the area of all of the triangles that the vertex belongs to.
+%     vertexareas = sum( m.cellareas( m.tricellvxs ), 2 )/3;
+    
+    vertexareas = zeros( getNumberOfVertexes( m ), 1 );
+    for vi=1:getNumberOfVertexes( m )
+        vxcells = m.nodecelledges{vi}(2,:);
+        vertexareas(vi) = sum( m.cellareas( vxcells ) )/3;
+    end
+    curvatures = vxdeficit ./ vertexareas;
     
     return;
     

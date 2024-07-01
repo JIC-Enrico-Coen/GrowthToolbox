@@ -39,7 +39,7 @@ function [result,s] = performRSSSdialogFromFile( fn, initvals, userdata, initfun
         complain( 'Failed to build dialog from layout file %s.\n', fn );
         return;
     end
-    set( s.handle, 'WindowStyle', 'modal' );
+    set( s.handle, 'WindowStyle', 'modal', 'Visible', 'on' );
     if isfield( s.attribs, 'focus' )
       % fprintf( 1, 'Have s.attribs.focus = %s\n', s.attribs.focus );
         focus = s.attribs.focus;

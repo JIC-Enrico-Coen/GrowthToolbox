@@ -6,13 +6,13 @@ function [data,headers] = readcsv( filename )
 %   one row for every line in the file and one column for every field.
 %   Missing values will be returned as zero.
 
+    data = [];
+    headers = {};
     fid = fopen( filename, 'r' );
     if fid==-1
         error( 'RK:readcsv', 'File %s not found.', filename );
         return;
     end
-    data = [];
-    headers = {};
     x = fgetl( fid );
     if iseof( x )
         error( 'RK:readcsv', 'No data in file %s.', filename );
@@ -20,7 +20,7 @@ function [data,headers] = readcsv( filename )
     end
     headers = splitString( ',', x );
     numfields = length(headers);
-    data = textscan( fid, '%f', inf, 'Delimiter', ', ' );
+    data = textscan( fid, '%f', inf, 'Delimiter', ',' );
     data = data{1};
     fclose( fid );
     rmdr = mod(length(data),numfields);

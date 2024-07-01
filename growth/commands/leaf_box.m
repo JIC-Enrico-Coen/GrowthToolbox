@@ -147,6 +147,8 @@ function [m,ok] = leaf_box( m, varargin )
         zedges = curvedvxid==6;
         corners = curvedvxid==7;
 
+        % Refer the vectors to the centres of curvature and scale them to
+        % unit length. These are surface normals.
         reducedvxs = max( abs( vxs ) + (-s.size/2 + s.edgeradius), 0 );
         reducedvxs(vxs<0) = -reducedvxs(vxs<0);
         reducedvxs = reducedvxs./s.edgeradius;
@@ -203,20 +205,8 @@ function [m,ok] = leaf_box( m, varargin )
                -st ct zz;
                zz zz oo ];
         
-%         ct = shiftdim( reducedvxs(corners,1), -2 );
-%         st = shiftdim( reducedvxs(corners,2), -2 );
-%         sp = shiftdim( reducedvxs(corners,3), -2 );
-%         cp = sqrt( 1-sp.^2 );
-%         zz = zeros( size( ct ) );
-%         rp = [ cp zz sp;
-%                zz zz zz;
-%                -sp zz cp ];
-%         rt = [ ct st zz;
-%                -st st zz;
-%                zz zz zz ];
         r = pagemtimes( rt, rp );
         curvatures(:,:,corners) = pagemtimes( pagemtimes( r, diag([0 uniquecurvature uniquecurvature]) ), pagetranspose( r ) );
-%         curvatures(:,:,corners) = repmat( [1 0 0; 0 1 0; 0 0 0], 1, 1, sum(corners) );
     end
     
     auxdata.curvatures = curvatures;

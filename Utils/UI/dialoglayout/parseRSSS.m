@@ -170,7 +170,8 @@ function [t2,initvals] = convertAttribType( ts, t, t1, initvals )
     switch t
         case { 'value', 'fontsize', ...
                'lines', 'rows', 'columns', 'min', 'max', ...
-               'minorstep', 'majorstep' }
+               'minorstep', 'majorstep', ...
+               'LineWidth' }
             [t2,errmsg] = parseNumbers( t1, '%f', 1 );
         case { 'margin', 'outermargin' }
             [t2,errmsg] = parseNumbers( t1, '%f', 1, 4 );

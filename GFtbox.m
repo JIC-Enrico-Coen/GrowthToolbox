@@ -279,7 +279,7 @@ axis( handles.colorbar, 'off' );
 fillAxes( handles.colorbar, [1 1 1] );
 
 addUserData( handles.picture, 'mousemode', 'off' );
-handles = setViewControlMode( handles, 'rotate', 1 );
+handles = setViewControlMode( handles, 'rotupright', 1 );
 
 makeHelpMenu( handles ); % Must precede installTooltips().
 handles = makeStageMenu( handles );

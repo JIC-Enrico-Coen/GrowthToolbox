@@ -375,9 +375,9 @@ function [m,ok] = leaf_makesecondlayer( m, varargin )
         s.numcells = defaultNumCells;
     end
     
-    if ~isempty( s.numcells )
-        fprintf( 1, 'Making %d cells.\n', s.numcells );
-    end
+%     if ~isempty( s.numcells )
+%         fprintf( 1, 'Making %d cells.\n', s.numcells );
+%     end
     
     if ~s.add
         m.secondlayer = deleteSecondLayerCells( m.secondlayer );
@@ -498,7 +498,7 @@ function [m,ok] = leaf_makesecondlayer( m, varargin )
             numoldcells = 0;
             m = makeSecondlayerHexgrid( m, s.hexrows, s.hexperrow );
         case 'universal'
-            totalCells = sum( m.cellareas )/(celldiameter*pi/4);
+            totalCells = round( sum( m.cellareas )/(celldiameter*pi/4) );
             fprintf( 1, 'About to make "%s" layer of about %d cells.\n', s.mode, totalCells );
             numoldcells = 0;
             if isFull3D

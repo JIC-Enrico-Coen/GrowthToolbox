@@ -100,6 +100,7 @@ function m = leaf_deletebiocells( m, varargin )
     
     numcells = length( m.secondlayer.cells );
     if numcells==0
+        % There are already no cells. Nothing to do.
         return;
     end
     

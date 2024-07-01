@@ -265,7 +265,7 @@ function bareExptID = GFtboxCommand( varargin )
 %         experimentID = [ ProjectName, '-', datestr(now,'yyyymmdd_HHMMSS') ];
 %     end
     if isempty( experimentID )
-        experimentIndex = floor(1000000*rand());
+        experimentIndex = 100000 + floor(900000*rand());
         experimentID = sprintf('%06d',experimentIndex);
     else
         experimentIndex = sscanf( experimentID, '%d' );
@@ -586,7 +586,7 @@ function doOneRun( m, stages, runname, movieframetimes, movieformat )
                 Steps(m)+1, stages(end)/m.globalProps.timestep, m.globalDynamicProps.currenttime, stages(end) );
             m = leaf_iterate( m, 1, 'plot', 0 );
             timedFprintf( 1, 'Completed iteration %d of %d at sim time %f of %f.\n', ...
-                Steps(m)+1, stages(end)/m.globalProps.timestep, m.globalDynamicProps.currenttime, stages(end) );
+                Steps(m), stages(end)/m.globalProps.timestep, m.globalDynamicProps.currenttime, stages(end) );
             [m,mov,nextMovieFrame] = savemovieframe( m, mov, nextMovieFrame, movieframetimes, bgcolor );
         end
         m = savemesh( m, ProjectName, localExperimentUniqueFullPath, m.globalProps.saveDeletesOlderStages );
@@ -668,12 +668,30 @@ function m = savemesh(m,ProjectName,localExperimentUniqueFullPath,deleteOlderSta
     [~,~,~] = mkdir( savedir );
     savefilebasename = [ProjectName stagesuffix];
     savefilename = fullfile( savedir, savefilebasename );
-    if m.globalProps.saveDeletesOlderStages
-        % Delete all other files in the meshes directory.
-    end
+%     if m.globalProps.saveDeletesOlderStages
+%         % Get a list of all other files in the meshes directory.
+%         oldfiles = dir( savedir );
+%         oldfilenames = { oldfiles.name };
+%         matfilemap = endsWith(oldfilenames,'.mat');
+%         oldfilenames = oldfilenames( matfilemap )';
+%     end
     ok = savemodelfile( m, savefilename, false, false, false );
     if ok
         timedFprintf( 1, 'savemesh: Saved stage for time %f to %s\n', m.globalDynamicProps.currenttime, savefilename );
+        
+%         if m.globalProps.saveDeletesOlderStages && ~isempty( oldfilenames )
+%             % Delete all of the list of previously saved files.
+%             for ofni=1:length(oldfilenames)
+%                 oldfile = fullfile( savedir, oldfilenames{ofni} );
+%                 try
+%                     delete( oldfile );
+%                     timedFprintf( 'Deleted old stage file: %s\n', oldfile );
+%                 catch e
+%                     timedFprintf( 'Could not delete old stage file %s:\n', oldfile );
+%                     disp(e);
+%                 end
+%             end
+%         end
         
         if deleteOlderStages
             % Delete older stage files, except for the first.
@@ -700,7 +718,7 @@ function m = savemesh(m,ProjectName,localExperimentUniqueFullPath,deleteOlderSta
                 
                 % Delete everything else.
                 delete( fullfile( savedir, sfn ) );
-                timedFprintf( 'Deleted old stage file %s from run directory %s\n', sfn, savedir );
+                timedFprintf( 'savemesh: Deleted old stage file %s from run directory %s\n', sfn, savedir );
             end
         end
     else
@@ -728,11 +746,47 @@ function m = savepng(m,localExperimentUniqueFullPath)
             m = leaf_plot(m,'invisibleplot',true,'uicontrols', true);
             print(gcf,'-dpng','-noui',printfilename);
         end
+        makeLegend( m );
         timedFprintf('Saved image to %s\n',printfilename);
         img = imread( printfilename );
         timedFprintf( 1, 'savepng about to add the saved image to the movie.\n' );
         m = recordframe( m, img );
     end
+end
+
+function makeLegend( m )
+    theaxes = m.pictures(1);
+    time = m.globalDynamicProps.currenttime;
+    runid = getModelOption( m, 'cluster_expt_id' );
+    rep = getModelOption( m, 'cluster_expt_repetition' );
+    aspect = exp( getModelOption( m, 'YXlogratio' ) );
+    if isempty( aspect )
+        legendText = sprintf( 'Time %.f\nExptID %06d rep %d', time, runid, rep );
+    else
+        legendText = sprintf( 'Time %.f\nExptID %06d rep %d aspect ratio %.1f', time, runid, rep, aspect );
+    end
+%     fig = ancestor( theaxes, 'figure' );
+%     leg = findobj( 'Parent', fig, 'Tag', 'legend' );
+%     leg.String = { legendText };
+%     leg.Visible = 'on';
+%     if sum( theaxes.Color ) < 1.5
+%         legColor = [1 1 1];
+%     else
+%         legColor = [0 0 0];
+%     end
+%     leg.ForegroundColor = legColor;
+%     leg.BackgroundColor = theaxes.Color;
+%     timedFprintf( '\n' );
+%     fprintf( '    %s\n', leg.String{:} );
+%     get(leg)
+%     fig.Children
+    
+    
+    hl = legend( theaxes, legendText, 'Location', 'NorthWest', 'FontSize', 28, 'FontWeight', 'bold', ...
+        'Color', [1 1 1], 'EdgeColor', [1 1 1], 'TextColor', [0 0 0], 'LineWidth', 0.01 );
+    hl.Position = [ -0.03, hl.Position(2) - 0.02, hl.Position(3:4) ];
+    hl.EdgeColor = [1 1 1];
+    get(hl)
 end
 
 
@@ -890,12 +944,16 @@ function [m,mov] = startmovie( m, localExperimentUniqueFullPath, movieformat )
 end
 
 function [m,mov,nextMovieFrame] = savemovieframe( m, mov, nextMovieFrame, movieframetimes, bgcolor )
-    timedFprintf( 'savemovieframe called.\n' );
+    timedFprintf( 'savemovieframe called, nextMovieFrame %d.\n', nextMovieFrame );
+%     fprintf( '    nextMovieFrame %d\n    movieframetimes: ', nextMovieFrame );
+%     fprintf( ' %f', movieframetimes );
+%     fprintf( '\n' );
     if isempty( mov )
         timedFprintf( 'savemovieframe: could not make movie, so not saving frame.\n' );
         return;
     end
     if nextMovieFrame > length( movieframetimes )
+        timedFprintf( 'Movie apparently completed: nextMovieFrame %d, num frames %d.\n', nextMovieFrame, length( movieframetimes ) );
         return;
     end
     
@@ -905,6 +963,11 @@ function [m,mov,nextMovieFrame] = savemovieframe( m, mov, nextMovieFrame, movief
     if meshAtOrAfterTime( m, nextFrameTime )
         timedFprintf( 1, 'savemovieframe about to plot the mesh.\n' );
         m = leaf_plot(m,'invisibleplot',true,'uicontrols', true);
+        makeLegend( m );
+        theaxes = m.pictures(1);
+        fig = ancestor( theaxes, 'figure' );
+        timedFprintf( 'PaperPositionMode = ''%s'', setting to ''auto''\n', fig.PaperPositionMode );
+        fig.PaperPositionMode = 'auto';
         drawnow;
         timedFprintf( 1, 'savemovieframe about to record a frame.\n' );
         print( gcf, '-dpng', '-noui', '-r100', tempimgname );
@@ -913,11 +976,13 @@ function [m,mov,nextMovieFrame] = savemovieframe( m, mov, nextMovieFrame, movief
         mov = addmovieframe( mov, img, bgcolor );
         timedFprintf( 1, 'Saved frame %d of movie.\n', nextMovieFrame );
         nextMovieFrame = nextMovieFrame+1;
+    else
+        timedFprintf( 'Frame %d time %f not reached, current time is %f.\n', nextMovieFrame, nextFrameTime, m.globalDynamicProps.currenttime );
     end
     
     if ~isempty(mov) && (nextMovieFrame > length(movieframetimes))
         % End movie.
-        timedFprintf( 1, 'Wrote %s movie frames.\n', length(movieframetimes) );
+        timedFprintf( 1, 'Wrote %d movie frames.\n', length(movieframetimes) );
         timedFprintf( 1, 'Closing movie %s.\n', mov.Filename );
         close( mov );
     end

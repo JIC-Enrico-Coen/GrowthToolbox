@@ -67,8 +67,13 @@ function s = compactRSSSSpace( s )
     if s.attribs.square
         s.attribs.position([3 4]) = max(s.attribs.position([3 4]));
     end
-    if ~strcmp( s.type, 'slider' )
-        s.attribs.minsize = max( s.attribs.minsize, s.attribs.position([3 4]) );
+    switch s.type
+        case {'slider', 'xlabel', 'ylabel', 'zlabel' }
+            % Nothing
+        otherwise
+            if size( s.attribs.position, 2 ) >= 4
+                s.attribs.minsize = max( s.attribs.minsize, s.attribs.position([3 4]) );
+            end
     end
   % s_a_ms = s.attribs.minsize
 end

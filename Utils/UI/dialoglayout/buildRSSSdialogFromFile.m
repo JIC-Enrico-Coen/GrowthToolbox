@@ -49,7 +49,8 @@ function s = buildRSSSdialogFromFile( fn, modal, initvals, userdata, initfun )
         fh( s.handle );
     end
     % setGUIColors( s.handle, [0.4 0.8 0.4], [0.9 1 0.9] );
-    set( s.handle, 'Visible', 'on' );
+    set( s.handle, 'Visible', s.attribs.visible );
+%     set( s.handle, 'Visible', 'on' );
     if isfield( s.attribs, 'focus' )
       % fprintf( 1, 'Have s.attribs.focus = %s\n', s.attribs.focus );
         focus = s.attribs.focus;

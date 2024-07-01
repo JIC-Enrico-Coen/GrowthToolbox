@@ -25,8 +25,21 @@ function [s,links] = buildRSSSstructdialog( s, parent, bbox, path, initvals, lin
                 'Tag', s.attribs.tag, ...
                 'Visible', s.attribs.visible ...
                 );
+            setIfPosNonempty( s.handle, 'FontSize', s.attribs, 'fontsize' );
+            setIfPosNonempty( s.handle, 'FontWeight', s.attribs, 'fontweight' );
+            setIfPosNonempty( s.handle, 'LineWidth', s.attribs );
+            setIfPosNonempty( s.handle, 'YAxisLocation', s.attribs );
             if isfield( s.attribs, 'string' )
                 title( s.handle, s.attribs.string );
+            end
+            for i=1:length(s.children)
+                [s.children{i},links] = buildRSSSstructdialog( ...
+                    s.children{i}, s.handle, [], [], initvals, links );
+            end
+            xlabelChild = findChild( s, 'xlabel' );
+            if ~isempty( xlabelChild )
+                xlabel_handle = xlabel( s.handle, xlabelChild.attribs.string );
+                setHandleAttribs( xlabel_handle, xlabelChild.attribs );
             end
             if isfield( s.attribs, 'xtitle' )
                 xlabel( s.handle, s.attribs.xtitle );
@@ -37,6 +50,8 @@ function [s,links] = buildRSSSstructdialog( s, parent, bbox, path, initvals, lin
             if isfield( s.attribs, 'ztitle' )
                 zlabel( s.handle, s.attribs.ztitle );
             end
+        case 'xlabel'
+%             s.handle = xlabel( parent, s.attribs.string );
         case 'figure'
             s.handle = getFigure( 'Visible', 'off', ...
                                'Resize', s.attribs.resize, ...
@@ -51,6 +66,8 @@ function [s,links] = buildRSSSstructdialog( s, parent, bbox, path, initvals, lin
                                'CreateFcn', s.attribs.createfcn, ...
                                'KeyPressFcn', 'checkTerminationKey(gcbo)', ...
                                'CloseRequestFcn', 'closeDialog(gcbo)' );
+            setIfPosNonempty( s.handle, 'IntegerHandle', s.attribs );
+            setIfPosNonempty( s.handle, 'Color', s.attribs, 'color' );
             s.attribs.interiorsize = handleInteriorSize( s.handle );
             [s,links] = buildRSSSstructdialoggroup( s, s.handle, ...
                 s.attribs.interiorsize + s.attribs.outermargin.*[1 1 -2 -2], ...
@@ -361,6 +378,46 @@ function [s,links] = buildRSSSstructdialoggroup( s, parent, bbox, margin, horizo
     for i=1:numitems
         [s.children{i},links] = buildRSSSstructdialog( s.children{i}, parent, childbbox, [path i], initvals, links );
         childbbox = childbbox + [itemstep, 0, 0];
+    end
+end
+
+function setIfPosNonempty( h, attribName, s, fieldname )
+    if nargin < 4
+        fieldname = attribName;
+    end
+    
+    if ~isfield( s, fieldname )
+        return;
+    end
+    
+    value = s.(fieldname);
+    if isempty( value )
+        return;
+    end
+    
+    if (isnumeric(value) && ((length(value) > 1) || (value > 0))) || ischar(value) || isstring(value)
+        h.(attribName) = value;
+    end
+end
+
+function c = findChild( s, childType )
+    c = [];
+    for ci=1:length(s.children)
+        if strcmp( s.children{ci}.type, childType )
+            c = s.children{ci};
+            return;
+        end
+    end
+end
+
+function setHandleAttribs( h, attribs )
+    if isfield( attribs, 'YAxisLocation' )
+        xxxx = 1;
+    end
+    fns = intersect( fieldnames( h ), fieldnames( attribs ) );
+    for fi=1:length(fns)
+        fn = fns{fi};
+        h.(fn) = attribs.(fn);
     end
 end
 

@@ -107,7 +107,7 @@ function slhandles = drawStreamlines( theaxes, m, s )
             lineIndex( tubuleStarts ) = 1;
             lineIndex = cumsum(lineIndex) - 1;
             foo2 = lineIndex + (1:length(lineIndex));
-            allvxs2 = nan( length(foo2), 3 );
+            allvxs2 = nan( max(foo2), 3 );
             allvxs2( foo2, : ) = allvxs1;
             slhandles.h_streamlines(ci) = plotpts( theaxes, allvxs2, '-', ...
                 'Color', m.tubules.tubuleparams.linecolormap( linecolorindex1, : ), ...

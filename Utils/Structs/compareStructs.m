@@ -124,6 +124,11 @@ function compatible = compareStructs1( fid, s1, s2, reportCompatible, tolerance,
             compatible = false;
             if ~silent
                 fprintf( fid, 'At %s, class %s, elements differ in %d of %d places.\n', path, c1, numdiffs, numel(s1) );
+                if numel(s1)==1
+                    valuestring = formattedDisplayText( [s1 s2] );
+                    valuestring = regexprep( valuestring, ' +$', '' );
+                    fwrite( fid, valuestring );
+                end
             end
             return;
         end
@@ -143,6 +148,11 @@ function compatible = compareStructs1( fid, s1, s2, reportCompatible, tolerance,
                     fprintf( fid, 'At %s, class %s, elements differ in %d of %d places.\n', path, c1, numdiffs, numel(s1) );
                 else
                     fprintf( fid, 'At %s, class %s, elements differ in %d of %d places by more than %g.\n', path, c1, numdiffs, numel(s1), tolerance );
+                end
+                if numel(s1)==1
+                    valuestring = formattedDisplayText( [s1 s2] );
+                    valuestring = regexprep( valuestring, ' +$', '' );
+                    fwrite( fid, valuestring );
                 end
             end
         end
