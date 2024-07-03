@@ -97,11 +97,17 @@ function [curvatures,vxdeficit] = meshcurvature( m )
 %     vertexareas = sum( m.cellareas( m.tricellvxs ), 2 )/3;
     
     vertexareas = zeros( getNumberOfVertexes( m ), 1 );
+    bordervertexes = false( getNumberOfVertexes( m ), 1 );
     for vi=1:getNumberOfVertexes( m )
         vxcells = m.nodecelledges{vi}(2,:);
+        bordervertexes(vi) = any(vxcells==0);
+        vxcells = vxcells(vxcells>0);
         vertexareas(vi) = sum( m.cellareas( vxcells ) )/3;
     end
     curvatures = vxdeficit ./ vertexareas;
+    % Our method of estimating curvature does not work well for vertexes on
+    % the border of the mesh.
+    curvatures(bordervertexes) = 0;
     
     return;
     
