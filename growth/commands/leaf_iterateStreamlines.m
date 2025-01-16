@@ -13,7 +13,11 @@ function [m,ok] = leaf_iterateStreamlines( m )
     m = recalcStreamlineGlobalData( m );
 
     [arealTubuleDensity,~,~,~] = tubuleDensity( m );
-    maxDensityFraction = trimnumber( 0, arealTubuleDensity/m.tubules.tubuleparams.max_mt_density, 1 );
+    if m.tubules.tubuleparams.max_mt_density==0
+        maxDensityFraction = 1;
+    else
+        maxDensityFraction = trimnumber( 0, arealTubuleDensity/m.tubules.tubuleparams.max_mt_density, 1 );
+    end
     if m.tubules.tubuleparams.min_mt_density==0
         minDensityFraction = Inf;
     else
@@ -24,8 +28,11 @@ function [m,ok] = leaf_iterateStreamlines( m )
     
     m.tubules.tubuleparams.plus_catastrophe_scaling = min( m.tubules.tubuleparams.max_plus_catastrophe_scaling, ...
                                                            1/(cos(maxDensityFraction * (pi/2)) ^ m.tubules.tubuleparams.density_max_cat_sharpness) );
-%         1 + m.tubules.tubuleparams.density_max_cat_sharpness*tan(densityFraction * (pi/2)) );
-    m.tubules.tubuleparams.density_branch_scaling = 1; % 20230921 NO LONGER USED. % 1 - maxDensityFraction^m.tubules.tubuleparams.density_max_branch_sharpness;
+    if isnan( m.tubules.tubuleparams.density_max_branch_sharpness ) || (maxDensityFraction==0)
+        m.tubules.tubuleparams.density_branch_scaling = 1;
+    else
+        m.tubules.tubuleparams.density_branch_scaling = 1 - maxDensityFraction^m.tubules.tubuleparams.density_max_branch_sharpness;
+    end
     timedFprintf( '\n    density ratio %g\n    plus_catastrophe_scaling %g (max %g)\n    density_branch_scaling %g\n', ...
         maxDensityFraction, ...
         m.tubules.tubuleparams.plus_catastrophe_scaling, ...
@@ -148,17 +155,9 @@ function [m,ok] = leaf_iterateStreamlines( m )
                 case 's'
                     % Severance.
                     catfronttail = rand(1) < m.tubules.tubuleparams.prob_crossover_cut_fronttailcat;
-                    catrearhead = rand(1) < m.tubules.tubuleparams.prob_crossover_cut_rearheadcat;
-                    rescuerearhead = rand(1) < m.tubules.tubuleparams.prob_crossover_cut_rearheadrescue;
-                    forcecatrearhead = false;
-                    if ~catrearhead
-                        % The head of the tail section is supposed to grow, but
-                        % if we cannot get a new growing head, we catastrophe
-                        % instead.
-                        grantednum = requestMTcreation( m, 1 );
-                        catrearhead = grantednum==0;
-                        forcecatrearhead = catrearhead;
-                    end
+                    catrearhead = (rand(1) < m.tubules.tubuleparams.prob_crossover_cut_rearheadcat) || (requestMTcreation( m, 1 )==0);
+%                     rescuerearhead = (rand(1) < m.tubules.tubuleparams.prob_crossover_cut_rearheadrescue) && (requestMTcreation( m, 1 )==1);
+%                     catrearhead = ~rescuerearhead;
                     [mtrear,mtfront] = splitMT( m, mt, sevs(sevpi).vertex, catrearhead, catfronttail );
                     if isempty( mtfront )
                         mtrear.status.severance(sevpi) = [];
@@ -168,17 +167,15 @@ function [m,ok] = leaf_iterateStreamlines( m )
                         mtfront.id = m.tubules.maxid;
                         deltasev = length(mtrear.status.severance) + length(mtfront.status.severance) - length(mt.status.severance);
                         m.tubules.tracks(end+1) = mtfront;
-                        if catrearhead && ~forcecatrearhead && rescuerearhead
-                            % Rescue the tail end.
-                            % Potential problem: will the rescued tubule
-                            % immediately collide with the other tubule?
-                            xxxx = 1;
-                            [m,mtrear] = rescueTubuleAtHead( m, mtrear );
-                            xxxx = 1;
-                        end
+%                         if rescuerearhead
+%                             % Rescue the tail end.
+%                             % Potential problem: will the rescued tubule
+%                             % immediately collide with the other tubule?
+%                             xxxx = 1;
+%                             [m,mtrear] = rescueTubuleAtHead( m, mtrear );
+%                             xxxx = 1;
+%                         end
                         m.tubules.tracks(si) = mtrear;
-                        
-                        
                         
 %                         m.tubules.statistics.severings = m.tubules.statistics.severings+1;
                         % severinginfo
@@ -206,8 +203,8 @@ function [m,ok] = leaf_iterateStreamlines( m )
                     % Ignore.
                     xxxx = 1;
                 
-                case 'B'
-                    % Expired branching event. Ignore.
+                case { 'B', 'S' }
+                    % Expired branching or severance event. Ignore.
                     xxxx = 1;
                 
                 otherwise
@@ -412,7 +409,11 @@ function [m,ok] = leaf_iterateStreamlines( m )
                         else
                             % Determine when a spontaneous rescue will happen.
                             
-                            minDensityRescueIncrease = 1 + m.tubules.tubuleparams.density_min_rescue_sharpness/max( minDensityFraction - 1, 0 );
+                            if isnan( m.tubules.tubuleparams.density_min_rescue_sharpness )
+                                minDensityRescueIncrease = 1;
+                            else
+                                minDensityRescueIncrease = 1 + m.tubules.tubuleparams.density_min_rescue_sharpness/max( minDensityFraction - 1, 0 );
+                            end
                             
                             spontaneous_rescue_time = sampleexp( params.prob_plus_rescue * minDensityRescueIncrease );
                             spontaneous_rescue_length = spontaneous_rescue_time * params.plus_shrinkrate;

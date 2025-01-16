@@ -1,5 +1,5 @@
 function result = compareStructs( s1, s2, varargin )
-%compareStructs( s1, s2, ... )
+%result = compareStructs( s1, s2, ... )
 %   Compare two structs, reporting which fields in either are not in the
 %   other, and for common fields, whether their contents differ.
 %
@@ -140,7 +140,7 @@ function compatible = compareStructs1( fid, s1, s2, reportCompatible, tolerance,
     
     % Check reals for identity to within tolerance.
     if isnumeric(s1) && isnumeric(s2)
-        numdiffs = sum( abs(double(s1(:)) - double(s2(:))) > tolerance );
+        numdiffs = sum( (abs(double(s1(:)) - double(s2(:))) > tolerance) | (isnan(s1(:)) ~= isnan(s2(:))) );
         if numdiffs > 0
             compatible = false;
             if ~silent

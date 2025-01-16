@@ -61,7 +61,8 @@ function [m,ok] = leaf_loadrun( m, varargin )
     
     allrunfiles = dir(fullfile(meshdir,'*_s*.mat'));
     allrunfilenames = { allrunfiles.name };
-    results = regexp( allrunfilenames, '_s[0-9]+\.mat$' );
+    resultsOLD = regexp( allrunfilenames, '_s[0-9]+\.mat$' );
+    results = regexp( allrunfilenames, '_s[0-9]+(d[0-9]+)?\.mat$' );
     isstagefile = false( 1, length(results) );
     for i=1:length(results)
         isstagefile(i) = ~isempty( results{i} );

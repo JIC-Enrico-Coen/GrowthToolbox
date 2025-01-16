@@ -34,7 +34,13 @@ function viewParams = ourViewParamsFromCameraParams( camParams )
     [cameraLook, cameraUp, cameraRight] = cameraFrame( ...
         camParams.CameraPosition, camParams.CameraTarget, camParams.CameraUpVector );
     
-    cameraHorizRight = [ cameraLook(2), -cameraLook(1), 0 ];
+    HORIZ_TOLERANCE = eps(20);
+    verticalView = max( abs( cameraLook([1 2]) ) ) < HORIZ_TOLERANCE;
+    if verticalView
+        cameraHorizRight = cameraRight;
+    else
+        cameraHorizRight = [ cameraLook(2), -cameraLook(1), 0 ];
+    end
     if all(cameraHorizRight==0)
         cameraHorizRight = cameraRight;
     else
@@ -42,10 +48,16 @@ function viewParams = ourViewParamsFromCameraParams( camParams )
     end
     
     camxy = sqrt( cameraLook(1)^2 + cameraLook(2)^2 );
-    viewParams.azimuth = atan2( -cameraLook(1), cameraLook(2) ) * 180/pi;
-    viewParams.elevation = atan2( -cameraLook(3), camxy ) * 180/pi;
-    viewParams.roll = atan2( -dot(cameraUp,cameraHorizRight), ...
-           dot(cross(cameraUp,cameraHorizRight),cameraLook) ) * 180/pi;
+    if verticalView
+        viewParams.azimuth = atan2( -cameraUp(1), cameraUp(2) ) * 180/pi;
+        viewParams.elevation = -90 * sign( cameraLook(3) );
+        viewParams.roll = 0;
+    else
+        viewParams.azimuth = atan2( -cameraLook(1), cameraLook(2) ) * 180/pi;
+        viewParams.elevation = atan2( -cameraLook(3), camxy ) * 180/pi;
+        viewParams.roll = atan2( -dot(cameraUp,cameraHorizRight), ...
+               dot(cross(cameraUp,cameraHorizRight),cameraLook) ) * 180/pi;
+    end
     camunitvertical = cross( cameraRight, cameraLook );
     camlookVector = camParams.CameraTarget - camParams.CameraPosition;
     viewParams.targetdistance = dot( camParams.CameraTarget, cameraLook );

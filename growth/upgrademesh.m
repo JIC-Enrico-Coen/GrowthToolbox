@@ -801,10 +801,11 @@ end
 
 function m = upgradeTubules( m )
     emptyTubules = initTubules();
-    if isempty( m.tubules.tracks )
-        m.tubules.tracks = emptyTubules.tracks;
-        return;
-    end
+    
+%     if isempty( m.tubules.tracks )
+%         m.tubules.tracks = emptyTubules.tracks;
+%         return;
+%     end
     
     m.tubules.tubuleparams = renameFields( m.tubules.tubuleparams, 'max_mt_per_area', 'max_growing_mt_per_area' );
     m.tubules.tubuleparams = renameFields( m.tubules.tubuleparams, 'prob_branch_scaling', 'prob_free_branch_scaling' );

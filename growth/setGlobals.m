@@ -529,10 +529,13 @@ function setGlobals()
         'edge_pause_prob', ... % probability
         'edge_pause_time', ... % time
         'prob_plus_catastrophe', ... % probability/time
+        'prob_plus_catastrophe2', ... % probability/time
         'curvature_power', ... % The power of tubule curvature to be used in determining the probability of catastrophe or branching.
         'plus_curvature_cat', ... % There is a probability of catastrophe per unit length equal to this value times the square of the tubule curvature at the growing head.
         'plus_catastrophe_scaling', ... % dimensionless
+        'SCALE_CURVATURE_CAT_BY_DENSITY', ... % Boolean
         ... % 'edge_plus_catastrophe', ... % probability/time  OBSOLETE, handled in i.f., although this means that GFtbox is accessing specific model options.
+        'barrier_incidence', ... % angle
         'curve_stop_per_dist', ... % prob per dist per curvature^2.
         'prob_plus_stop', ... % probability/time
         'prob_plus_rescue', ... % probability/time
@@ -550,9 +553,9 @@ function setGlobals()
         'min_angle_crossover_branch', ... % When a crossover happens at below this angle, no new branch can be generated from the crossover point.
         'prob_crossover_cut', ... % probability per crossover that one of the mts involved is severed
         'prob_crossover_cut_collider', ... % probability per severance that the colliding mt is severed.
-        'prob_crossover_cut_fronttailcat', ... % probability, given that a cut happens, that the head of the trailing half catastrophizes;
-        'prob_crossover_cut_rearheadcat', ... % probability, given that a cut happens, that the tail of the leading half catastrophizes;
-        'prob_crossover_cut_rearheadrescue', ... % probability, given a cut happens with catastrophe of the rear half, that the head of the rear half is rescued.
+        'prob_crossover_cut_fronttailcat', ... % probability, given that a cut happens, that the tail of the leading half catastrophizes.
+        'prob_crossover_cut_rearheadcat', ... % probability, given that a cut happens, that the head of the trailing half catastrophizes.
+        'prob_crossover_cut_rearheadrescue', ... % probability, given that a cut happens with catastrophe of the rear half, that the head of the rear half is rescued.
         'delay_cut', ... % The time after a crossover that cutting happens, in those cases where it does.
         'delay_branch', ... % The time after a crossover that branching happens, in those cases where it does.
         'min_cut_angle', ... % radians

@@ -33,7 +33,7 @@ function [m,ok,splitdata] = onestep( m, useGrowthTensors, useMorphogens )
     growthByFE = false;
     if m.globalProps.growthEnabled
         if useGrowthTensors
-            if any( reshape( [ m.celldata.cellThermExpGlobalTensor ], 1, [] ) ~= 0 )
+            if any( reshape( [ m.celldata.cellThermExpGlobalTensor ], 1, [] ) ~= 0 ) || any( reshape( [ m.directGrowthTensors ], 1, [] ) ~= 0 )
                 growthByFE = true;
             else
                 useGrowthTensors = false;

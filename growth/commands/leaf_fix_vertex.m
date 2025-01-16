@@ -109,10 +109,8 @@ function m = leaf_fix_vertex( m, varargin )
         s.vertex = s.vertex( s.vertex <= numnodes );
     end
     if isVolumetricMesh( m )
-        for i=1:3
-            m.fixedDFmap(s.vertex,fixdfbits) = true;
-            m.fixedDFmap(s.vertex,freedfbits) = false;
-        end
+        m.fixedDFmap(s.vertex,fixdfbits) = true;
+        m.fixedDFmap(s.vertex,freedfbits) = false;
     else
         vxsB = 2*s.vertex(:)';
         vxsA = vxsB-1;

@@ -1,14 +1,19 @@
 function t = initTubules()
     global gMTProperties
     
+    % Initialise all tubule parameters to zero.
     for i=1:length(gMTProperties)
         tubuleparams.(gMTProperties{i}) = 0;
     end
-    tubuleparams.linecolormap = [ 0 0 1 ];
-    tubuleparams.plus_catastrophe_scaling = 1;
-    tubuleparams.prob_free_branch_scaling = 1;
-    tubuleparams.prob_xover_branch_scaling = 1;
-    tubuleparams.density_branch_scaling = 1;
+    % For most parameters, the value that "does nothing" is zero. Here
+    % follow the exceptions:
+    tubuleparams.linecolormap = [ 0 0 1 ]; % This must be an rgb triple.
+    tubuleparams.mt_max_density = Inf; % Inf = no cap on density.
+    tubuleparams.plus_catastrophe_scaling = 1; % Scaling by 1 = no effect.
+    tubuleparams.prob_free_branch_scaling = 1; % Scaling by 1 = no effect.
+    tubuleparams.prob_xover_branch_scaling = 1; % Scaling by 1 = no effect.
+    tubuleparams.density_branch_scaling = 1; % Scaling by 1 = no effect.
+    tubuleparams.SCALE_CURVATURE_CAT_BY_DENSITY = false; % This is a boolean, not a number.
     
     emptytrack = newemptystreamline();
     statsWidth = 6;

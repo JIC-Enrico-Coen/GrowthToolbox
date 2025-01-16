@@ -107,7 +107,7 @@ function joinMoviesWithFade( outputvideo, inputmoviefiles, varargin )
         timedFprintf( 'Could not read video file ''%s''.\n    Reason: %s\n', inputvideofile, e.message );
         return;
     end
-    if isempty( s.fps )
+    if isempty( fps )
         frameRate = vin.FrameRate;
     else
         frameRate = fps;

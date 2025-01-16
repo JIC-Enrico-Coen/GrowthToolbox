@@ -1,5 +1,5 @@
 function [m,U,K,F] = totalK( m, useGrowthTensors, useMorphogens )
-%[m,U,K,F] = totalK( m, useGrowthTensors )
+%[m,U,K,F] = totalK( m, useGrowthTensors, useMorphogens )
 %    Solve the FEM model for the mesh.
 %    The mesh already contains the temperature at each node and the residual
 %    displacements of the nodes.  After the computation, the mesh will contain

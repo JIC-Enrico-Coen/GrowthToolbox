@@ -58,6 +58,9 @@ function m = doTubuleBranching( m, dt )
     
     branchPerVertex = max( 0, leaf_getTubuleParamsPerVertex( m, 'prob_branch_length_time' ) ) .* freeBranchScalingPerVertex;
     branchPerCurvature = leaf_getTubuleParamsPerVertex( m, 'prob_branch_length_curvature_time' ) .* freeBranchScalingPerVertex;
+    if any(branchPerVertex ~= 0) || any(branchPerCurvature ~= 0)
+        xxxx = 1;
+    end
     
     if all( branchPerVertex == 0 ) && all( branchPerCurvature == 0 )
         numfreebranches = 0;

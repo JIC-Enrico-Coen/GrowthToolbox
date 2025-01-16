@@ -62,16 +62,18 @@ function paramValues = getTubuleParamsModifiedByMorphogens( m, varargin )
     for i=1:length(fns)
         fn = fns{i};
         
+        if strcmp( fn, 'linecolormap' )
+            % Not really a tubule parameter.
+            continue;
+        end
+        
         if getForTubule && isfield( s, 'overrideparams' ) && isfield( s.overrideparams, fn )
             overridevalue = s.overrideparams.(fn);
             allParams.(fn) = overridevalue;
             xxxx = 1;
         end
         
-%         if isnumeric(allParams.(fn)) && (size(allParams.(fn),1)==1)
-%             paramValues.(fn) = repmat( allParams.(fn), numvertexes, 1 );
-%             continue;
-%         end
+        mgen_interpType = 'mid';
         if ischar( allParams.(fn) )
             mi = FindMorphogenIndex( m, m.tubules.tubuleparams.(fn) );
             if isempty(mi)
@@ -79,6 +81,7 @@ function paramValues = getTubuleParamsModifiedByMorphogens( m, varargin )
                 continue;
             end
             pervertex = m.morphogens(:,mi);
+            mgen_interpType = m.mgen_interpType{mi};
         elseif isempty(allParams.(fn))
             pervertex = 0; % zeros( numvertexes, 1 );
         elseif size( allParams.(fn), 1 )==numvertexes
@@ -107,13 +110,33 @@ function paramValues = getTubuleParamsModifiedByMorphogens( m, varargin )
             if size(pervertex,1)==1
                 paramValues.(fn) = pervertex;
             else
-                paramValues.(fn) = bc * pervertex( m.tricellvxs( ci, : ) );
+                switch mgen_interpType
+                    case 'min'
+                        paramValuesX.(fn) = min( pervertex( m.tricellvxs( ci, : ) ) );
+                    case 'max'
+                        paramValuesX.(fn) = max( pervertex( m.tricellvxs( ci, : ) ) );
+                    otherwise
+                        paramValuesX.(fn) = bc * pervertex( m.tricellvxs( ci, : ) );
+                end
+                paramValues.(fn) = interpolateOverSimplexes( pervertex, m.tricellvxs( ci, : ), bc, mgen_interpType );
+            end
+            if length( unique( pervertex( m.tricellvxs( ci, : ) ) ) ) > 1
+                xxxx = 1;
             end
         else
             if size(pervertex,1)==1
                 paramValues.(fn) = repmat( pervertex, length(cis), 1 );
             else
-                paramValues.(fn) = sum( reshape( pervertex( m.tricellvxs( cis, : ) ), [], 3 ) .* bcs, 2 );
+                switch mgen_interpType
+                    case 'min'
+                        paramValuesX.(fn) = min( reshape( pervertex( m.tricellvxs( cis, : ) ), [], 3 ), 2 );
+                    case 'max'
+                        paramValuesX.(fn) = max( reshape( pervertex( m.tricellvxs( cis, : ) ), [], 3 ), 2 );
+                    otherwise
+                        paramValuesX.(fn) = sum( reshape( pervertex( m.tricellvxs( cis, : ) ), [], 3 ) .* bcs, 2 );
+                end
+                paramValues.(fn) = interpolateOverSimplexes( pervertex, m.tricellvxs( cis, : ), bcs, mgen_interpType );
+                xxxx = 1;
             end
         end
         

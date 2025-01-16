@@ -184,7 +184,7 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
     
     curvature = curvatureFromEdge + curvatureFromField;
     curvelengthbound = MAXANGLEPERSTEP/abs(curvature);
-    maxlength = min( maxlength, curvelengthbound );
+    maxlength = min( maxlength, curvelengthbound, 'omitnan' );
     if (curvature ~= 0) && ~isempty( s.segmentlengths )
         % Correct dirglobal by curvature. The turning angle is limited to avoid numerical errors.
         % The length of the previous segment, from which the turning angle
@@ -193,7 +193,7 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
         angle = curvature * s.segmentlengths(end);
         if abs(angle) > MAXANGLEPERSTEP
             xxxx = 1;
-            angle = sign(angle) * min( abs(angle), MAXANGLEPERSTEP );
+            angle = sign(angle) * min( abs(angle), MAXANGLEPERSTEP, 'omitnan' );
         end
         trivxs = m.tricellvxs( s.vxcellindex(end), : );
         pointnormal = s.barycoords(end,:) * m.vertexnormals( trivxs, : );
@@ -254,32 +254,72 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
         % minimum probability of either end. If the resulting probability
         % is NaN, this is equivalent to zero.
         
-        edge_plus_catastrophe = getModelOptionModifiedByMorphogens( m, 'edge_plus_catastrophe' );
-        if all( edge_plus_catastrophe==edge_plus_catastrophe(1) )
-            edge_plus_catastrophe = edge_plus_catastrophe(1);
-        end
-        if numel( edge_plus_catastrophe )==1
-            % A single value is the probability to use everywhere.
-            prob_edge_catastrophe = edge_plus_catastrophe;
-        else
-            % Otherwise there is assumed to be one value per vertex.
-            if ~isempty(whichvertex)
-                prob_edge_catastrophe = edge_plus_catastrophe( m.tricellvxs( ci, whichvertex ) );
-            elseif ~isempty(whichedge)
-                civxs = othersOf3( whichedge );
-                edgevxs = m.tricellvxs( ci, civxs );
-                prob_per_edgevx = edge_plus_catastrophe( edgevxs );
-                if any( isnan(prob_per_edgevx) )
-                    prob_edge_catastrophe = 0;
-                else
-                    prob_edge_catastrophe = min( prob_per_edgevx(:), [], 2, 'includenan' );
-%                     bc_per_edgevx = bc(civxs);
-%                     prob_edge_catastrophe = sum( prob_per_edgevx(:) .* bc_per_edgevx(:) );
+        does_edge_cat = false;
+        
+        s_barrier_incidence_i = FindMorphogenIndex( m, 's_edge_barrier' );
+        s_barrier_incidence_perFEvertex = m.morphogens( m.tricellvxs( ci, : ), s_barrier_incidence_i )';
+        collisionbarrieredges = [];
+        if any( s_barrier_incidence_perFEvertex > 0 )
+            barrieredges = (s_barrier_incidence_perFEvertex([2 3 1]) > 0) & (s_barrier_incidence_perFEvertex([3 1 2]) > 0);
+            if ~isempty(whichedge)
+                if barrieredges(whichedge)
+                    collisionbarrieredges = whichedge;
+                    whichvxs = othersOf3( whichedge );
+                    barriervalue = sum( s_barrier_incidence_perFEvertex( othersOf3( whichedge ) ) .* s.barycoords(end,whichvxs) );
+                end
+            elseif ~isempty(whichvertex)
+                if s_barrier_incidence_perFEvertex( whichvertex ) > 0
+                    barrieredges( whichvertex ) = false;
+                    collisionbarrieredges = find( barrieredges );
+                    barriervalue = s_barrier_incidence_perFEvertex( whichvertex );
                 end
             end
         end
-        prob_edge_catastrophe( isnan(prob_edge_catastrophe) ) = 0;
-        does_edge_cat = rand(1) < prob_edge_catastrophe;
+        if ~isempty( collisionbarrieredges )
+            if numel(collisionbarrieredges) > 1
+                xxxx = 1;
+            end
+            trivxs = m.tricellvxs( s.vxcellindex(end), : );
+            cellvxs = m.nodes( trivxs, : );
+            cellvecs = cellvxs( 1 + mod(collisionbarrieredges-2,3), : ) - cellvxs( 1 + mod(collisionbarrieredges,3), : );
+            cosincidenceangles = abs( dot( cellvecs, repmat( dirglobal, length(collisionbarrieredges), 1 ) ) ./ (sqrt(sum(cellvecs.^2,2)) * norm(dirglobal)) );
+            incidenceangles = abs( acos( cosincidenceangles ) );
+            tooshallow = incidenceangles < barriervalue;
+            if ~tooshallow
+                xxxx = 1;
+            end
+            does_edge_cat = any( tooshallow );
+        end
+        
+        
+        if ~does_edge_cat
+            edge_plus_catastrophe = getModelOptionModifiedByMorphogens( m, 'edge_plus_catastrophe' );
+            if all( edge_plus_catastrophe==edge_plus_catastrophe(1) )
+                edge_plus_catastrophe = edge_plus_catastrophe(1);
+            end
+            if numel( edge_plus_catastrophe )==1
+                % A single value is the probability to use everywhere.
+                prob_edge_catastrophe = edge_plus_catastrophe;
+            else
+                % Otherwise there is assumed to be one value per vertex.
+                if ~isempty(whichvertex)
+                    prob_edge_catastrophe = edge_plus_catastrophe( m.tricellvxs( ci, whichvertex ) );
+                elseif ~isempty(whichedge)
+                    civxs = othersOf3( whichedge );
+                    edgevxs = m.tricellvxs( ci, civxs );
+                    prob_per_edgevx = edge_plus_catastrophe( edgevxs );
+                    if any( isnan(prob_per_edgevx) )
+                        prob_edge_catastrophe = 0;
+                    else
+                        prob_edge_catastrophe = min( prob_per_edgevx(:), [], 2, 'includenan' );
+    %                     bc_per_edgevx = bc(civxs);
+    %                     prob_edge_catastrophe = sum( prob_per_edgevx(:) .* bc_per_edgevx(:) );
+                    end
+                end
+            end
+            prob_edge_catastrophe( isnan(prob_edge_catastrophe) ) = 0;
+            does_edge_cat = rand(1) < prob_edge_catastrophe;
+        end
         
         if does_edge_cat
             % Catastrophise now.
@@ -537,16 +577,35 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                 end
                 xxxx = 1;
             end
-%             effective_prob_plus_catastrophe_per_time = (params.prob_plus_catastrophe + curvature_cat_prob_per_time) * m.tubules.tubuleparams.plus_catastrophe_scaling;
             
 
             % There is also a probability of spontaneous catastrophe per
             % unit time. This is added to the probability of
             % curvature-induced catastrophe per unit time.
-            effective_prob_plus_catastrophe_per_time = params.prob_plus_catastrophe * m.tubules.tubuleparams.plus_catastrophe_scaling + curvature_cat_prob_per_time;
+            if isinf( params.prob_plus_catastrophe )
+                xxxx = 1;
+            end
+            if m.tubules.tubuleparams.SCALE_CURVATURE_CAT_BY_DENSITY
+                effective_prob_plus_catastrophe_per_time = (params.prob_plus_catastrophe + curvature_cat_prob_per_time) * m.tubules.tubuleparams.plus_catastrophe_scaling;
+            else
+                effective_prob_plus_catastrophe_per_time = params.prob_plus_catastrophe * m.tubules.tubuleparams.plus_catastrophe_scaling + curvature_cat_prob_per_time;
+            end
+            
+            % Extra for testing purposes: we also use
+            % prob_plus_catastrophe2, but not scaled by
+            % m.tubules.tubuleparams.plus_catastrophe_scaling.
+            if ~isnan( params.prob_plus_catastrophe2 ) && (params.prob_plus_catastrophe2 ~= 0)
+                effective_prob_plus_catastrophe_per_time = effective_prob_plus_catastrophe_per_time + params.prob_plus_catastrophe2;
+            end
+
             % Now we sample from this exponential distribution to find the
             % time until the next catastrophe.
             nextcat = sampleexp( effective_prob_plus_catastrophe_per_time );
+            if isnan(nextcat)
+                nextcat = Inf;
+            else
+                xxxx = 1;
+            end
             if doedgecat
                 edgecat = timeused;
             else

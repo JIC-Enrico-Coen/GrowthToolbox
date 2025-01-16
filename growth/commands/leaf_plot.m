@@ -199,6 +199,14 @@ function varargout = leaf_plot( m, varargin )
             else
                 crange = s.crange;
             end
+            if s.autoColorRange && any(~isfinite(crange))
+                % Trim infinite values and NaNs of m.plotdata.(fn_value) here.
+                NOMINAL_INF_FACTOR = 9;
+                [m.plotdata.(fn_value),maxinfval] = reduceInfToFinite( m.plotdata.(fn_value), NOMINAL_INF_FACTOR, 0 );
+                if any(isinf(crange))
+                    crange(isinf(crange)) = maxinfval * sign( crange(isinf(crange)) );
+                end
+            end
             if s.autoColorRange && (s.falsecolorscaling ~= 1)
                 crange = syntheticRange( crange, s.falsecolorscaling );
             end

@@ -48,9 +48,6 @@ if full3d
 else
     numallnodes = numnodes*2;
 end
-numedges = getNumberOfEdges( m );
-numelements = getNumberOfFEs(m);
-cptsPerTensor = getComponentsPerSymmetricTensor();
 
 setGlobals();
 global gDYNAMICFIELDS gSTATICFIELDS gHYBRIDFIELDS gUNSAVEDFIELDS gTRANSIENTFIELDS
@@ -75,6 +72,16 @@ if ~isempty(extrafields)
         fprintf( 1, '\n    %s', extrafields{ci} );
     end
     fprintf( 1, '\n' );
+end
+
+try
+    numedges = getNumberOfEdges( m );
+    numelements = getNumberOfFEs(m);
+    cptsPerTensor = getComponentsPerSymmetricTensor();
+catch e
+    complain2( errorseverity(1), 'Mesh has vital missing fields:' );
+    result = false;
+    return;
 end
 
 if ~checknumel( m, 'celldata', numelements )

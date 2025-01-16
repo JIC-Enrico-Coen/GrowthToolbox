@@ -15,7 +15,7 @@ function [haveOurViewParams,ourViewParams,haveMatlabViewParams,matlabViewParams,
         if isfield( gOurViewParams, fn ) && ~isempty( s.(fn) )
             haveOurViewParams = true;
             ourViewParams.(fn) = s.(fn);
-        elseif isfield( gOurViewParams, fn ) && ~isempty( s.(fn) )
+        elseif isfield( gMatlabViewParams, fn ) && ~isempty( s.(fn) )
             haveMatlabViewParams = true;
             matlabViewParams.(fn) = s.(fn);
         end

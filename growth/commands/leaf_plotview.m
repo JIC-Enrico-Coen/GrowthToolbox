@@ -22,7 +22,8 @@ function m = leaf_plotview( m, varargin )
 %           of coordinates)
 %   Both sets of parameters are maintained in the mesh structure.
 %
-%   For example, to set an overhead view:
+%   For example, to set an overhead view without changing the field of view
+%   or the distance of the camera from the target point:
 %
 %       m = leaf_plotview( m, 'azimuth', 0, 'elevation', 90, 'roll', 0 );
 %

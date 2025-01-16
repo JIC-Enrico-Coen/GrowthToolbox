@@ -123,9 +123,9 @@ function [m,ok] = leaf_iterate( m, varargin )
         end
         startTime = cputime;
         starttic = tic;
-        timedFprintf( 1, 'Starting iter %d, sim time %.3g - %.3g.\n', ...
+        timedFprintf( 1, 'Starting iter %d, sim time %g - %g.\n', ...
         	m.globalDynamicProps.currentIter+1, m.globalDynamicProps.currenttime, m.globalDynamicProps.currenttime + m.globalProps.timestep );
-        timedFprintf( 2, 'Starting iter %d, sim time %.3g - %.3g.\n', ...
+        timedFprintf( 2, 'Starting iter %d, sim time %g - %g.\n', ...
         	m.globalDynamicProps.currentIter+1, m.globalDynamicProps.currenttime, m.globalDynamicProps.currenttime + m.globalProps.timestep );
         if teststopbutton(m)
             ok = false;
@@ -241,7 +241,7 @@ function [m,ok] = leaf_iterate( m, varargin )
         if any( m.secondlayer.edgeattriblength==0 )
             xxxx = 1;
         end
-        m.secondlayer.edgeattriblength = [];
+%         m.secondlayer.edgeattriblength = [];  % Why was this done?
     
         % Update cell data display factors.
         if hasNonemptySecondLayer(m)

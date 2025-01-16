@@ -1020,8 +1020,7 @@ Bring up a dialog in which to specify the times of a set of stages to
 add to the Stages menu, without computing them.
 
 #importRemoteStagesItem (menu item)
-Import stage files from a remote cluster job. The current stage will also
-be reloaded.
+Load the state files from a run that was saved with the "Stages>Import Experiment Stages..." menu command. A window will open for you to choose one from a listing all saved runs.
 
 #saveExperimentStagesItem (menu item)
 Copy all of the current stage files to a subdirectory of the current project's

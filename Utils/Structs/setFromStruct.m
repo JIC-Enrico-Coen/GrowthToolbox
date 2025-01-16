@@ -3,6 +3,7 @@ function s = setFromStruct( s, t, fns, mode )
 %   Set fields of S in the cellarray FNS of field names to the
 %   corresponding values of T.  FNS is optional and defaults to the set of
 %   all fields of T.  Other fields of s are left unchanged.
+%   If the input argument s is empty, it is replaced by the empty struct.
 %   If mode is 'all' (the default) then all specified fields are used.  If
 %   mode is 'existing', then only fields that already exist in s (and in t)
 %   will be updated. Fields that exist in s but not in t will not be

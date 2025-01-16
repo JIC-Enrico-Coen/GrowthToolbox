@@ -36,8 +36,8 @@ function [vertexes,vertexnormals,curvature] = projectBoxToCapsule( totalLength, 
     
     [vv,vvn,capcurvature] = projectSquareToCap( capheight/radius, numplanes, vertexPlanes( lastYplane, [1 3] ) );
     vv = vv*radius;
-    vv = vv( :, [1 3 2]);
-    vvn = vvn( :, [1 3 2]);
+    vv = vv( :, [1 3 2] );
+    vvn = vvn( :, [1 3 2] );
     vv(:,2) = vv(:,2) + cylhalflength;
     capcurvature = capcurvature/radius;
     capcurvature = capcurvature( [1 3 2], [1 3 2], : );
@@ -45,8 +45,8 @@ function [vertexes,vertexnormals,curvature] = projectBoxToCapsule( totalLength, 
     
     [vvneg,vvnegn,negcapcurvature] = projectSquareToCap( capheight/radius, numplanes, vertexPlanes( firstYplane, [1 3] ) );
     vvneg = vvneg*radius;
-    vvneg = vvneg( :, [1 3 2]);
-    vvnegn = vvnegn( :, [1 3 2]);
+    vvneg = vvneg( :, [1 3 2] );
+    vvnegn = vvnegn( :, [1 3 2] );
     vvneg(:,2) = vvneg(:,2) + cylhalflength;
     negcapcurvature = negcapcurvature/radius;
     negcapcurvature = negcapcurvature( [1 3 2], [1 3 2], : );

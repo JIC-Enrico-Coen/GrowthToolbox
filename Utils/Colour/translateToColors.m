@@ -1,4 +1,4 @@
-function c = translateToColors( v, vrange, cmap, negcmap )
+function [c,vrange] = translateToColors( v, vrange, cmap, negcmap, normaliseInf )
 %c = translateToColors( v, vrange, cmap, negcmap )
 % Given a vector of values v, a range vrange = [lo,hi], and a list of
 % colours, map every element of v to the corresponding colour.

@@ -1,18 +1,18 @@
-function [a,a_each,eigs_each] = anisoMirabet( dirs, wts )
+function [a,a_each,eigs_each,eigv_each,anisoTensorVec] = anisoMirabet( dirs, wts, dim )
 %a = anisoMirabet( dirs )
-%   Given a set of directions as a 3*N matrix, calculate the measure of
+%   Given a set of directions as a K*N matrix, calculate the measure of
 %   anisotropy given by Mirabet et al in
 %   https://doi.org/10.1371/journal.pcbi.1006011.
 %
 %   This measure calculates M = dirs'*dirs/size(dirs,1), and then the
-%   eigenvalues of M. Anisotropy is then defined as
+%   eigenvalues of M. For 3 dimensions, anisotropy is then defined as
 %
 %   A = (3/sqrt(2)) * std(eigs)/norm(eigs)
 %
 %   It is always between 0 and 1.
 %
 %   dirs may also be given as a cell array of direction matrices of
-%   possibly differing numbers of directions. Anisotripy will be
+%   possibly differing numbers of directions. Anisotropy will be
 %   calculated for each one, and returned in A_EACH, and A will be their
 %   average, weighted by the numbers of directions.
 %
@@ -56,20 +56,27 @@ function [a,a_each,eigs_each] = anisoMirabet( dirs, wts )
     if iscell(dirs)
         a_each = zeros(size(dirs));
         eigs_each = zeros(size(dirs));
+        eigv_each = zeros(size(dirs,1),size(dirs,1),size(dirs,2));
+        anisoTensor = zeros( size(dirs,1), 6 ); % Note that this will not work if size(dirs,1) is not 3.
         n_each = zeros(size(dirs));
+        if nargin < 3
+            dim = size(dirs{i},2);
+        end
         for i=1:numel(dirs)
             n_each(i) = size(dirs{i},1);
             if iscell(wts)
-                [a_each(i),~,eigs_each(i,:)] = anisoMirabet( dirs{i}, wts{i} );
+                [a_each(i),~,eigs_each(i,:),eigv_each(:,:,i),anisoTensor(:,i)] = anisoMirabet( dirs{i}, wts{i}, dim );
             else
-                [a_each(i),~,eigs_each(i,:)] = anisoMirabet( dirs{i}, wts );
+                [a_each(i),~,eigs_each(i,:),eigv_each(:,:,i),anisoTensor(:,i)] = anisoMirabet( dirs{i}, wts, dim );
             end
         end
         good_a_each = isfinite(a_each);
         n_each = n_each(good_a_each);
         a = sum( n_each .* a_each(good_a_each) )/sum( n_each );
     else
-        dim = size(dirs,2);
+        if nargin < 3
+            dim = size(dirs,2);
+        end
         normdir = sqrt( sum( dirs.^2, 2 ) );
         dirs = dirs ./ normdir;
         baddirs = ~all(isfinite(dirs),2);
@@ -90,11 +97,31 @@ function [a,a_each,eigs_each] = anisoMirabet( dirs, wts )
             a = NaN;
         else
             dirs = dirs.*wts(:);
-            M = dirs' * dirs / sum(wts); %numdirs;
-            e = eigs(M,size(M,1));
-            a = (dim/sqrt(dim-1)) * std(e,1)/norm(e);
+            anisoTensor = dirs' * dirs / sum(wts);
+            switch size(dirs,2)
+                case 1
+                    anisoTensorVec = anisoTensor;
+                case 2
+                    anisoTensorVec = convert22matrixTo3vector( anisoTensor );
+                case 3
+                    anisoTensorVec = convert33matrixTo6vector( anisoTensor );
+                otherwise
+                    anisoTensorVec = [];
+            end
+            [eigenvectors,ediag] = eigs(anisoTensor,size(anisoTensor,1));
+            % The eigenvectors are returned as unit vectors.
+            % The eigenvalues are returned in a diagonal matrix in
+            % descending order.
+            eigenvalues = diag(ediag);
+            % anisoTensor is equal to eigenvectors*ediag*eigenvectors'
+            % (within rounding error).
+            if dim < length(eigenvalues)
+                eigenvalues = eigenvalues(1:dim);
+            end
+            a = (dim/sqrt(dim-1)) * std(eigenvalues,1)/norm(eigenvalues);
         end
         a_each = a;
-        eigs_each = e(:)';
+        eigs_each = eigenvalues(:)';
+        eigv_each = eigenvectors;
     end
 end

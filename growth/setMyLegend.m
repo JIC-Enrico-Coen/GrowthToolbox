@@ -1,36 +1,46 @@
-function setMyLegend( m )
+function [legendHandles,legendString] = setMyLegend( m )
 %setMyLegend( m )
 %   Update and draw the legend.
+
+    legendString = '';
+    
     if isempty( m ), return; end
     
     m.pictures = m.pictures( ishandle( m.pictures ) );
     if isempty( m.pictures ), return; end
-    legends = [];
+    legendHandles = [];
     for i=1:length(m.pictures)
         h = guidata( m.pictures(i) );
         if hashandle( h, 'legend' )
-            legends(end+1) = h.legend;
+            legendHandles(end+1) = h.legend;
         end
     end
-    if isempty( legends )
+    if isempty( legendHandles )
         complain( 'setMyLegend: no legend handle.' );
         return;
     end
-    legend_s = assembleLegend( m );
-    nonemptyLegend = ~isempty(legend_s);
+    legendString = assembleLegend( m );
+    nonemptyLegend = ~isempty(legendString);
 %     timedFprintf( 1, 'Legend is ''%s''\n', legend_s );
-    set( legends, 'String', legend_s, 'Visible', boolchar(nonemptyLegend && m.plotdefaults.drawlegend, 'on', 'off') );
-    for i=1:length(legends)
-        extent = get( legends(i), 'Extent' );
-        pos = get( legends(i), 'Position' );
-        set( legends(i), 'Position', ...
-            [ pos(1), pos(2) + pos(4) - extent(4), extent([3 4]) ] );
+    if ~isempty( m.pictures )
+        set( legendHandles, 'String', legendString, 'Visible', boolchar(nonemptyLegend && m.plotdefaults.drawlegend, 'on', 'off') );
+        for i=1:length(legendHandles)
+            extent = get( legendHandles(i), 'Extent' );
+            pos = get( legendHandles(i), 'Position' );
+            set( legendHandles(i), 'Position', ...
+                [ pos(1), pos(2) + pos(4) - extent(4), extent([3 4]) ] );
+        end
+        drawnow;
     end
-    drawnow;
 end
 
 function s = assembleLegend( m )
     template = m.globalProps.legendTemplate;
+    if ~ischar( template )
+        timedFprintf( 2, 'Invalid legend template type %s.\n', class( template ) );
+        s = '';
+        return;
+    end
     s = '';
     ignoring = false;
     i = 1;

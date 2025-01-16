@@ -113,9 +113,12 @@ function bareExptID = GFtboxCommand( varargin )
     repetitions = 1;
     plotoptions = {};
     movieparams = [];
+    moviefps = 10; % Default number of frames per second.
     movieformat = '';
     parallelOptions = true;
+    viewparams = [];
     stages=[];
+    timestep = NaN;
     sendToCluster = ~oncluster();
     timedFprintf( 'Start at %s\n', datestr(now) );
     timedFprintf( 'Arguments:\n' );
@@ -150,6 +153,8 @@ function bareExptID = GFtboxCommand( varargin )
             case 'PLOTOPTIONS'
                 plotoptions = argvalue;
                 % argStruct = rmfield( argStruct, argname );
+            case 'VIEW'
+                viewparams = argvalue;
             case 'MOVIEFORMAT'
                 movieformat = argvalue;
             case 'MOVIE'
@@ -160,6 +165,10 @@ function bareExptID = GFtboxCommand( varargin )
                 % and the simulation time at which the last frame should be
                 % recorded.
                 movieparams = argvalue;
+            case 'FPS'
+                % If supplied and nonempty, the number of frames per
+                % secondthat a movie will play at.
+                moviefps = argvalue;
             case 'COMBINEOPTIONS'
                 switch argvalue
                     case 'together'
@@ -174,6 +183,8 @@ function bareExptID = GFtboxCommand( varargin )
                 runname = argvalue;
             case 'STAGES'
                 stages = argvalue;
+            case 'TIMESTEP'
+                timestep = argvalue;
             case 'MATLAB'
                 MatlabModule = ['matlab/' argvalue];
                 
@@ -193,6 +204,14 @@ function bareExptID = GFtboxCommand( varargin )
 %         if isGFtboxCommandOption
 %             argStruct = rmfield( argStruct, argname );
 %         end
+    end
+    
+    if isempty(movieformat)
+        if oncluster()
+            movieformat = 'Motion JPEG AVI';
+        else
+            movieformat = 'MPEG-4';
+        end
     end
     
     if iscell( plotoptions )
@@ -215,6 +234,8 @@ function bareExptID = GFtboxCommand( varargin )
         disp( plotoptions );
         return;
     end
+    
+    
     
     if isempty( ProjectName )
         dbstack();
@@ -284,13 +305,16 @@ function bareExptID = GFtboxCommand( varargin )
     % cluster, we still need to load it, in order to determine the valid
     % options and the default time stamp. Actually, maybe this is pointless
     % and we should do this only when actually running the model.
-    [m,ok] = leaf_loadmodel( [], ProjectName, localProjectsDirectory, 'rewrite', false);
+    [m,ok] = leaf_loadmodel( [], ProjectName, localProjectsDirectory, 'rewrite', false, 'soleaccess', false );
     if ~ok
          error('Cannot load project %s', LocalProjectFullPath);
     end
-    m = leaf_setproperty( m, 'staticreadonly', true, 'allowInteraction',true ); % prevent cross talk when on cluster
-    m = leaf_reload( m, 'restart' , 'rewrite', false);
-    m = leaf_setproperty( m, 'staticreadonly', true, 'allowInteraction',true ); % prevent cross talk when on cluster
+    if ~isnan(timestep) && (timestep > 0)
+        m = leaf_setproperty( m, 'timestep', timestep ); % prevent cross talk when on cluster
+    end
+    m = leaf_setproperty( m, 'staticreadonly', true, 'allowInteraction', true ); % prevent cross talk when on cluster
+    m = leaf_reload( m, 'restart' , 'rewrite', false, 'soleaccess', false );
+    m = leaf_setproperty( m, 'staticreadonly', true, 'allowInteraction', true ); % prevent cross talk when on cluster
     
     % Initialise the model, so that we can then extract all the range
     % variables.
@@ -321,8 +345,8 @@ function bareExptID = GFtboxCommand( varargin )
         stages = m.stagetimes;
     end
     if isempty( stages )
-        timePerRun = modeloptions.stepsperrun * m.globalProps.timestep;
-        stages = timePerRun*(1:modeloptions.runsperset);
+        % This is an error.
+        error( 'GFtbox:GFTboxCommand:NoStages', 'No stage times were supplied.' )
     end
     
     % Combine the model options in all possible ways.
@@ -457,9 +481,9 @@ function bareExptID = GFtboxCommand( varargin )
         fclose(h_master);
         ok = sendShellScript( sh_fullfilename, ['./' sh_basefilename], true );
     else
-        m = leaf_loadmodel( [], ProjectName, localProjectsDirectory, 'rewrite', false);
+        m = leaf_loadmodel( [], ProjectName, localProjectsDirectory, 'rewrite', false, 'soleaccess', false );
         m = leaf_setproperty( m, 'staticreadonly', true, 'allowInteraction', true ); % prevent cross talk when on cluster
-        m = leaf_reload( m, 'restart' , 'rewrite', false);
+        m = leaf_reload( m, 'restart' , 'rewrite', false, 'soleaccess', false );
         m = leaf_setproperty( m, 'staticreadonly', true, 'allowInteraction', true ); % prevent cross talk when on cluster
         
         runnum = 0;
@@ -484,6 +508,9 @@ function bareExptID = GFtboxCommand( varargin )
                 end
                 m = leaf_setproperty( m, 'currentrun', runname ); % Tell the model which run it should be saving stages to.
                 m = initialiseOptions( m );
+                teststructToString = structToString( temp_argument_struct );
+                xxxx = 1;
+
                 if haveModelOptions
                     m = setModelOptions( m, temp_argument_struct );
                     temp_argument_struct = defaultFromStruct( temp_argument_struct, ...
@@ -510,10 +537,14 @@ function bareExptID = GFtboxCommand( varargin )
                     end
                     timedFprintf( 'Setting plotting options.\n' );
                     disp( plotoptions );
-                    m = leaf_plotoptions( m, plotoptions{:} );
+                    m = leaf_plotoptions( m, plotoptions );
+                end
+                if ~isempty( viewparams )
+                    m.plotdefaults.matlabViewParams = viewparams;
+                    m.plotdefaults.ourViewParams = ourViewParamsFromCameraParams( viewparams );
                 end
     
-                doOneRun( m, stages, runname, movieframetimes, movieformat );
+                doOneRun( m, stages, runname, movieframetimes, movieformat, moviefps );
             end
         end
     end
@@ -540,7 +571,7 @@ function ok = copyProjectFile( filename )
 end
 
 
-function doOneRun( m, stages, runname, movieframetimes, movieformat )
+function doOneRun( m, stages, runname, movieframetimes, movieformat, moviefps )
 % This is the procedure that actually runs the simulation. It may be
 % running on either the desktop machine or the cluster.
 
@@ -570,7 +601,7 @@ function doOneRun( m, stages, runname, movieframetimes, movieformat )
     m = leaf_deletestages( m, 'stages', true, 'times', true );
     
     m = savemesh( m, ProjectName, localExperimentUniqueFullPath, m.globalProps.saveDeletesOlderStages );
-    [m,mov] = startmovie( m, localExperimentUniqueFullPath, movieformat );
+    [m,mov] = startmovie( m, localExperimentUniqueFullPath, movieformat, moviefps );
     m = savepng( m, localExperimentUniqueFullPath );
     
     m.stagetimes = stages;
@@ -733,20 +764,11 @@ function m = savepng(m,localExperimentUniqueFullPath)
         imagesDir = fullfile( localExperimentUniqueFullPath, 'images' );
         [~,~,~] = mkdir( imagesDir );
         printfilename = fullfile( imagesDir, sprintf('E%s.png',stagesuffix) );
-        oldPPM = get(gcf,'PaperPositionMode');
-        newPPM = 'auto';
-        set(gcf,'PaperPositionMode',newPPM);
-        fprintf( 1, 'PaperPositionMode: old %s, new %s\n', oldPPM, newPPM );
-        fprintf( 1, 'Saving image to %s\n',printfilename);
+        m = plotMesh( m );
         timedFprintf( 1, 'savepng about to plot the mesh.\n' );
-        if ispc()
-            m = leaf_plot(m,'invisibleplot',true,'uicontrols', true);
-            print(gcf,'-dpng',printfilename);
-        else
-            m = leaf_plot(m,'invisibleplot',true,'uicontrols', true);
-            print(gcf,'-dpng','-noui',printfilename);
-        end
+        fig = ancestor( m.pictures(1), 'figure' );
         makeLegend( m );
+        print(fig,'-dpng',printfilename);
         timedFprintf('Saved image to %s\n',printfilename);
         img = imread( printfilename );
         timedFprintf( 1, 'savepng about to add the saved image to the movie.\n' );
@@ -755,38 +777,37 @@ function m = savepng(m,localExperimentUniqueFullPath)
 end
 
 function makeLegend( m )
-    theaxes = m.pictures(1);
-    time = m.globalDynamicProps.currenttime;
-    runid = getModelOption( m, 'cluster_expt_id' );
-    rep = getModelOption( m, 'cluster_expt_repetition' );
-    aspect = exp( getModelOption( m, 'YXlogratio' ) );
-    if isempty( aspect )
-        legendText = sprintf( 'Time %.f\nExptID %06d rep %d', time, runid, rep );
+    [m,results] = invokeIFcallback( m, 'MakeLegend' );
+    if isempty( results )
+        timedFprintf( 'MakeLegend callback failed.\n' );
+
+        time = m.globalDynamicProps.currenttime;
+        runid = getModelOption( m, 'cluster_expt_id' );
+        rep = getModelOption( m, 'cluster_expt_repetition' );
+        aspect = exp( getModelOption( m, 'YXlogratio' ) );
+        if isempty( aspect )
+            legendText = sprintf( 'Time %.f\nExptID %06d rep %d', time, runid, rep );
+        else
+            legendText = sprintf( 'Time %.f\nExptID %06d rep %d aspect ratio %.1f', time, runid, rep, aspect );
+        end
     else
-        legendText = sprintf( 'Time %.f\nExptID %06d rep %d aspect ratio %.1f', time, runid, rep, aspect );
+        timedFprintf( 'MakeLegend callback succeeded.\n' );
+        legendText = m.globalProps.legendTemplate;
     end
-%     fig = ancestor( theaxes, 'figure' );
-%     leg = findobj( 'Parent', fig, 'Tag', 'legend' );
-%     leg.String = { legendText };
-%     leg.Visible = 'on';
-%     if sum( theaxes.Color ) < 1.5
-%         legColor = [1 1 1];
-%     else
-%         legColor = [0 0 0];
-%     end
-%     leg.ForegroundColor = legColor;
-%     leg.BackgroundColor = theaxes.Color;
-%     timedFprintf( '\n' );
-%     fprintf( '    %s\n', leg.String{:} );
-%     get(leg)
-%     fig.Children
     
-    
-    hl = legend( theaxes, legendText, 'Location', 'NorthWest', 'FontSize', 28, 'FontWeight', 'bold', ...
-        'Color', [1 1 1], 'EdgeColor', [1 1 1], 'TextColor', [0 0 0], 'LineWidth', 0.01 );
-    hl.Position = [ -0.03, hl.Position(2) - 0.02, hl.Position(3:4) ];
-    hl.EdgeColor = [1 1 1];
-    get(hl)
+    [legendTextHandles,legendTextString] = setMyLegend( m );
+    theaxes = m.pictures(1);
+    for lhi=1:length(legendTextHandles)
+%         htl = handle( legendTextHandles(lhi) );
+%         set( htl, 'FontSize', 28, 'FontWeight', 'bold', ...
+%                  'ForegroundColor', [0 0 0] );
+        hl = legend( theaxes, legendTextString, 'Location', 'NorthWest', 'FontSize', 28, 'FontWeight', 'bold', ...
+            'Color', [1 1 1], 'EdgeColor', [1 1 1], 'TextColor', [0 0 0], 'LineWidth', 0.01, 'Interpreter', 'none' );
+        hl.Position = [ -0.03, hl.Position(2) - 0.02, hl.Position(3:4) ];
+        hl.EdgeColor = [1 1 1];
+%         htl.Parent.Visible = 'on';
+%         get(hl)
+    end
 end
 
 
@@ -903,7 +924,7 @@ function selectedOptions = selectOptions( optionnames, optionIndexes, optionStru
     end
 end
 
-function [m,mov] = startmovie( m, localExperimentUniqueFullPath, movieformat )
+function [m,mov] = startmovie( m, localExperimentUniqueFullPath, movieformat, moviefps )
     [~,moviebasename] = fileparts( localExperimentUniqueFullPath );
     fullmoviepath = fullfile( localExperimentUniqueFullPath, [ moviebasename, '_', regexprep( movieformat, ' ', '_' ) ] );
     
@@ -925,7 +946,7 @@ function [m,mov] = startmovie( m, localExperimentUniqueFullPath, movieformat )
         mov = [];
         return;
     end
-    mov.FrameRate = 10;
+    mov.FrameRate = moviefps;
     if isfield( mov, 'Quality' )
         mov.Quality = 75;
     end
@@ -958,19 +979,20 @@ function [m,mov,nextMovieFrame] = savemovieframe( m, mov, nextMovieFrame, movief
     end
     
     tempimgname = fullfile( mov.Path, 'tempimg.png' );
+    tempfigname = fullfile( mov.Path, 'tempimg.fig' );
     
     nextFrameTime = movieframetimes( nextMovieFrame );
     if meshAtOrAfterTime( m, nextFrameTime )
         timedFprintf( 1, 'savemovieframe about to plot the mesh.\n' );
-        m = leaf_plot(m,'invisibleplot',true,'uicontrols', true);
-        makeLegend( m );
-        theaxes = m.pictures(1);
-        fig = ancestor( theaxes, 'figure' );
-        timedFprintf( 'PaperPositionMode = ''%s'', setting to ''auto''\n', fig.PaperPositionMode );
-        fig.PaperPositionMode = 'auto';
+        [m,fig] = plotMesh( m );
+        
         drawnow;
         timedFprintf( 1, 'savemovieframe about to record a frame.\n' );
-        print( gcf, '-dpng', '-noui', '-r100', tempimgname );
+        
+        % Matlab on the cluster cannot print uicontrols, incuding the text
+        % legend.
+        print( fig, '-dpng', '-noui', '-r100', tempimgname );
+        saveas( fig, tempfigname );
         img = imread( tempimgname );
 %         m = recordframe( m, img );
         mov = addmovieframe( mov, img, bgcolor );
@@ -986,6 +1008,34 @@ function [m,mov,nextMovieFrame] = savemovieframe( m, mov, nextMovieFrame, movief
         timedFprintf( 1, 'Closing movie %s.\n', mov.Filename );
         close( mov );
     end
+end
+
+function [m,fig] = plotMesh( m )
+    m = leaf_plot(m,'invisibleplot',true,'uicontrols', true);
+    makeLegend( m );
+    theaxes = m.pictures(1);
+    fig = ancestor( theaxes, 'figure' );
+    timedFprintf( 'PaperPositionMode = ''%s'', setting to ''auto''\n', fig.PaperPositionMode );
+    fig.PaperPositionMode = 'auto';
+    fig.Color = [1 1 1];
+    hh = guidata(fig);
+    hh.resetViewControl.Visible = 'off';
+    hh.rollzeroControl.Visible = 'off';
+    hh.colorbar.Visible = 'off';
+    hh.azimuth.Visible = 'off';
+    hh.elevation.Visible = 'off';
+    hh.roll.Visible = 'off';
+    hh.azimuthtext.Visible = 'off';
+    hh.elevationtext.Visible = 'off';
+    hh.rolltext.Visible = 'off';
+    hh.report.Visible = 'off';
+    hh.scalebar.Visible = 'off';
+    hh.colortexthi.Visible = 'off';
+    hh.colornamehi.Visible = 'off';
+    hh.colortitle.Visible = 'off';
+    hh.colortextlo.Visible = 'off';
+    hh.colornamelo.Visible = 'off';
+    hh.legend.Position(1) = 10;
 end
 
 % function m = closemovie( m )

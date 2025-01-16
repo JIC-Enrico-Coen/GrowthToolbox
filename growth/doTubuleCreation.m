@@ -32,18 +32,51 @@ function m = doTubuleCreation( m, dt )
     useDirectionField = getModelOption( m, 'edgecreaterate_perareasecond' ) > 0;
     spread = getModelOption( m, 'edgecreation_anglespread' );
     for i=1:grantednum
-        vxs = m.nodes( m.tricellvxs(elementindexes(i),:), : );
+        vxsi = m.tricellvxs(elementindexes(i),:);
+        vxs = m.nodes( vxsi, : );
+        isInUpperPartOfCell = all( vxs(:,3) >= 0 );
+        vxplanes = m.auxdata.planes(vxsi,:);
+        isInTopOfCell = all( vxplanes(:,3) >= m.auxdata.numplanes(3) - m.auxdata.numedgeplanes(3) );
+        isInBottomOfCell = all( vxplanes(:,3) <= m.auxdata.numedgeplanes(3) + 1 );
+        isInTopBottomOfCell = isInTopOfCell || isInBottomOfCell;
+        isInMiddlePartOfCell = all( vxplanes(:,3) <= m.auxdata.numplanes(3) - m.auxdata.numedgeplanes(3) ) ...
+                                & all( vxplanes(:,3) >= m.auxdata.numedgeplanes(3) + 1 );
+        if (~isInTopOfCell) && (~isInBottomOfCell)
+            xxxx = 1;
+        end
         if useDirectionField
+            % This code is specific to the tubules model. It's bad to have
+            % such code in GFtbox, but there was no alternative.
             normal = trinormal( vxs );
             normal = normal/norm(normal);
-            fieldDir = [0 0 1];
+            if isInMiddlePartOfCell
+                fieldDir = [1 0 0]; % Hard-wired horizontal direction.
+            else
+                fieldDir = [0 0 1]; % Hard-wired vertical direction.
+            end
             fieldDir = projectToPlaneOfTwoVectors( fieldDir, vxs(2,:)-vxs(1,:), vxs(3,:)-vxs(1,:) );
             fieldDir = fieldDir/norm(fieldDir);
             if all(isfinite(fieldDir))
                 fieldPerp = cross( fieldDir, normal );
-                theta = randn(1) * spread;
-                if rand(1) < 0.5
-                    theta = theta + pi;
+                if isinf( spread ) || isnan( spread )
+                    % Uniform distribution of initial directions over 360 degrees.
+                    theta = (rand(1) - 0.5) * 2 * pi;
+                elseif getModelOption( m, 'edgecreation_uniformToIO' )
+                    towardsIO = rand(1) < 0.5;
+                    if towardsIO
+                        theta = (rand(1) - 0.5) * pi; % Uniform between +/- pi/2.
+                    else
+                        theta = randn(1) * spread; % Normal with mean 0 (i.e. perpendicular to edge) and std dev 'edgecreation_anglespread'.
+                    end
+                    if isInTopOfCell ~= towardsIO
+                        theta = theta + pi;
+                    end
+                else
+                    theta = randn(1) * spread;
+                    if rand(1) < 0.5
+                        % Toss a coin to decide between the two opposite directions.
+                        theta = theta + pi;
+                    end
                 end
                 theta = mod(theta,2*pi);
                 c = cos(theta);

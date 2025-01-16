@@ -17,9 +17,6 @@ function h = plotmeshsurface( h, theaxes, s, vxs, polygons, data, pervertex, edg
         facecolorinterpmode = 'flat';
         % data = data( visible.cells==1, : );
     end
-    if size(data,2)==1
-        data = translateToColors( data, s.crange, s.cmap );
-    end
 
     [lw,ls,vw,vs] = basicLineStyle( edgethickness, pointsize );
     h = patchReuse( h, ...

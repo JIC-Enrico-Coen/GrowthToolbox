@@ -23,7 +23,8 @@ function c = randcolor( n, hsv1, hsv2 )
     spread = 0.2;
     h = spreadHue( randInRange( n, unspreadHue( [hsv1(1) hsv2(1)], spread ) ), spread );
     
-    % Colours low in saturation are closer to each other than those of high
+    % Colours low in saturation are closer to each other than those of
+    % highcd
     % saturation.
     s = sqrt( randInRange( n, [hsv1(2) hsv2(2)].^2 ) );
 

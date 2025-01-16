@@ -25,7 +25,7 @@ function [m,ok] = leaf_savestage( m, savedir )
         savedir = fullfile( modeldir, savedir );
     end
     
-    ok = savemodelfile( m, fullfile( savedir, modelname ), false, true );
+    ok = savemodelfile( m, fullfile( savedir, modelname ), false, ~m.globalDynamicProps.staticreadonly );
     isInitial = m.globalDynamicProps.currentIter==0;
     if ~isInitial
         stagesuffix = makestagesuffixf( m.globalDynamicProps.currenttime );
