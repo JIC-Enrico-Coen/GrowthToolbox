@@ -3,7 +3,7 @@ function m = doTubuleCreation( m, dt )
 %   Randomly create microtubules according to the distribution of creation
 %   rate and the elapsed time.
 %
-%   The calculation also finds the creation time of each micsrotubule, but
+%   The calculation also finds the creation time of each microtubule, but
 %   this information is not currently used. It could be stored in each mt
 %   and used to calculate the length of its first step.
 

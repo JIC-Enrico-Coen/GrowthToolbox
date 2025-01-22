@@ -16,7 +16,8 @@ function grantednum = attemptCreation( maxnum, usednum, requestednum )
 %   REQUESTEDNUM times into a box containing all the resources, both those
 %   in use and those still available, and draw one at random. If that one
 %   is already in use, it is returned to the box and the resource is not
-%   granted. If it is granted, the resource is removed from the box.
+%   granted. If it is granted, the resource is marked as used and returned
+%   to the box.
 
     initialnum = usednum;
     if isinf( requestednum )
