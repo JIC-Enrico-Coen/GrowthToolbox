@@ -259,7 +259,15 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
         s_barrier_incidence_i = FindMorphogenIndex( m, 's_edge_barrier' );
         s_barrier_incidence_perFEvertex = m.morphogens( m.tricellvxs( ci, : ), s_barrier_incidence_i )';
         collisionbarrieredges = [];
+        barriervalue = 0;
         if any( s_barrier_incidence_perFEvertex > 0 )
+            barrier_spread = getModelOption( m, 'barrier_spread' );
+            if isempty( barrier_spread ) || isnan( barrier_spread )
+                spreadAngle = 0;
+            else
+                spreadAngle = abs( randn(1) * barrier_spread );
+            end
+            
             barrieredges = (s_barrier_incidence_perFEvertex([2 3 1]) > 0) & (s_barrier_incidence_perFEvertex([3 1 2]) > 0);
             if ~isempty(whichedge)
                 if barrieredges(whichedge)
@@ -274,6 +282,8 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                     barriervalue = s_barrier_incidence_perFEvertex( whichvertex );
                 end
             end
+            
+            barriervalue = barriervalue - spreadAngle;
         end
         if ~isempty( collisionbarrieredges )
             if numel(collisionbarrieredges) > 1
