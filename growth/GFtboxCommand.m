@@ -115,6 +115,7 @@ function bareExptID = GFtboxCommand( varargin )
     movieparams = [];
     moviefps = 10; % Default number of frames per second.
     movieformat = '';
+    maxnummovies = Inf;
     parallelOptions = true;
     viewparams = [];
     stages=[];
@@ -165,6 +166,8 @@ function bareExptID = GFtboxCommand( varargin )
                 % and the simulation time at which the last frame should be
                 % recorded.
                 movieparams = argvalue;
+            case 'MAXNUMMOVIES'
+                maxnummovies = argvalue;
             case 'FPS'
                 % If supplied and nonempty, the number of frames per
                 % secondthat a movie will play at.
@@ -459,7 +462,12 @@ function bareExptID = GFtboxCommand( varargin )
                                         'cluster_expt_id', experimentIndex, ...
                                         'cluster_expt_variant', variantIndex, ...
                                         'cluster_expt_repetition', repnum );
-                temp_argument_struct = combineStructs( clusterArgstruct, ...
+                clusterArgstruct1 = clusterArgstruct;
+                if repnum > maxnummovies
+                    clusterArgstruct1.movie = [];
+                else
+                end
+                temp_argument_struct = combineStructs( clusterArgstruct1, ...
                                                        allmodeloptions(variantIndex), ...
                                                        struct( 'Runname', runname, 'ExpID', experimentID ), ...
                                                        job_id_struct );
@@ -543,8 +551,15 @@ function bareExptID = GFtboxCommand( varargin )
                     m.plotdefaults.matlabViewParams = viewparams;
                     m.plotdefaults.ourViewParams = ourViewParamsFromCameraParams( viewparams );
                 end
-    
-                doOneRun( m, stages, runname, movieframetimes, movieformat, moviefps );
+                if repnum <= maxnummovies
+                    movieframetimes1 = movieframetimes;
+                    timedFprintf( 1, 'repnum %d <= maxnummovies %d.\n', repnum, maxnummovies );
+                else
+                    movieframetimes1 = [];
+                    timedFprintf( 1, 'repnum %d > maxnummovies %d, so no movie.\n', repnum, maxnummovies );
+                end
+                movieframetimes1
+                doOneRun( m, stages, runname, movieframetimes1, movieformat, moviefps );
             end
         end
     end
@@ -601,13 +616,20 @@ function doOneRun( m, stages, runname, movieframetimes, movieformat, moviefps )
     m = leaf_deletestages( m, 'stages', true, 'times', true );
     
     m = savemesh( m, ProjectName, localExperimentUniqueFullPath, m.globalProps.saveDeletesOlderStages );
-    [m,mov] = startmovie( m, localExperimentUniqueFullPath, movieformat, moviefps );
+    if ~isempty( movieframetimes )
+        timedFprintf( 1, 'movieframetimes nonempty, starting movie.\n' );
+        movieframetimes
+        [m,mov] = startmovie( m, localExperimentUniqueFullPath, movieformat, moviefps );
+    else
+        timedFprintf( 1, 'movieframetimes nonempty, starting movie.\n' );
+        mov = [];
+    end
     m = savepng( m, localExperimentUniqueFullPath );
     
     m.stagetimes = stages;
     nextMovieFrame = 1;
     bgcolor = [ 1 1 1 ];
-
+    
     timedFprintf( 1, '%d stages to compute:', length(stages) );
     fprintf( 1, ' %f', stages );
     fprintf( 1, '\n' );
@@ -618,7 +640,9 @@ function doOneRun( m, stages, runname, movieframetimes, movieformat, moviefps )
             m = leaf_iterate( m, 1, 'plot', 0 );
             timedFprintf( 1, 'Completed iteration %d of %d at sim time %f of %f.\n', ...
                 Steps(m), stages(end)/m.globalProps.timestep, m.globalDynamicProps.currenttime, stages(end) );
-            [m,mov,nextMovieFrame] = savemovieframe( m, mov, nextMovieFrame, movieframetimes, bgcolor );
+            if ~isempty(mov)
+                [m,mov,nextMovieFrame] = savemovieframe( m, mov, nextMovieFrame, movieframetimes, bgcolor );
+            end
         end
         m = savemesh( m, ProjectName, localExperimentUniqueFullPath, m.globalProps.saveDeletesOlderStages );
         m = savepng( m, localExperimentUniqueFullPath );
@@ -970,7 +994,7 @@ function [m,mov,nextMovieFrame] = savemovieframe( m, mov, nextMovieFrame, movief
 %     fprintf( ' %f', movieframetimes );
 %     fprintf( '\n' );
     if isempty( mov )
-        timedFprintf( 'savemovieframe: could not make movie, so not saving frame.\n' );
+        timedFprintf( 'savemovieframe: no movie, so not saving frame.\n' );
         return;
     end
     if nextMovieFrame > length( movieframetimes )

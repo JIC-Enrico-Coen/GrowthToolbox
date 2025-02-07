@@ -4,6 +4,11 @@ function dbc = randDirectionBC( vxs, n )
 %   three vertexes are the rows of vxs, and express them as directional
 %   barycentric coordinates with respect to those points.
 %
+%   Directional barycentric coordinates always sum to 0. Their meaning is
+%   invariant under scaling, and we do not attempt to normalise any
+%   measure of their scale. The directions of the vectors dbs*vxs will be
+%   uniformly distributed in the plane of the triangle.
+%
 %   If the triangle has zero area, then the components of dbc will all be NaN.
 
     if nargin < 2

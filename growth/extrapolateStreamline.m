@@ -98,8 +98,10 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
         % model options nor to m.userdata. But I was in a hurry and there
         % was not the time to do this right.
         edge_alignment = getModelOption( m, 'edge_alignment' );
-        field_alignment = getModelOption( m, 'field_alignment' );
         edge_alignment_power = getModelOption( m, 'edge_alignment_power' );
+        field_alignment = getModelOption( m, 'field_alignment' );
+        field_alignment2 = getModelOption( m, 'field_alignment2' );
+        field_alignment_power = getModelOption( m, 'field_alignment_power' );
         if isempty(edge_alignment_power)
             edge_alignment_power = 3; % Value chosen from physical principles when attempting
                                       % to minimise the bending energy of the growing head.
@@ -149,7 +151,14 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
     end
     
     curvatureFromField = 0;
-    if ~isempty( field_alignment ) && isfield( m.auxdata, 'flow' ) && ~isempty( m.auxdata.flow )
+    haveFirstField = ~isempty( field_alignment ) && (field_alignment ~= 0);
+    haveSecondField = ~isempty( field_alignment2 ) && (field_alignment2 ~= 0);
+    haveFieldAlignment = (haveFirstField || haveSecondField) ...
+                         && ~isempty( field_alignment_power ) ...
+                         && ~isnan( field_alignment_power ) ...
+                         && isfield( m.auxdata, 'flow' ) ...
+                         && ~isempty( m.auxdata.flow );
+    if haveFieldAlignment
         % Code for defining the direction to turn towards by
         % a morphogen gradient.
         surfaceNormal = m.cellFrames( :, 3, s.vxcellindex(end) )';
@@ -159,9 +168,10 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
         flowperp2 = cross( flowdir2, surfaceNormal );
 
         if all( flowperp==0 )
+            % Use the other field alignment parameter.
             flowdir = m.auxdata.flow2( s.vxcellindex(end), : );
             flowperp = cross( flowdir, surfaceNormal );
-            field_alignment = getModelOption( m, 'field_alignment2' );
+            field_alignment = field_alignment2;
             xxxx = 1;
         end
 
@@ -169,11 +179,11 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
             [incidenceAngle,lateralCurveAxis,rotmat] = vecangle( flowdir, s.directionglobal, surfaceNormal );
             sinIE = sin(incidenceAngle);
             cosIE = cos(incidenceAngle);
-            incidenceEffect = sign(incidenceAngle) * (abs(sinIE)^edge_alignment_power) * cosIE;
-            cc = 1/sqrt(edge_alignment_power+1); % cos of the angle at which incidenceEffect reaches its maximum.
+            incidenceEffect = sign(incidenceAngle) * (abs(sinIE)^field_alignment_power) * cosIE;
+            cc = 1/sqrt(field_alignment_power+1); % cos of the angle at which incidenceEffect reaches its maximum.
             ss = sqrt(1-cc^2); % sin of the angle.
             if ss > 0
-                max_incidenceEffect = (ss^edge_alignment_power) * cc; % Maximum possible value of incidenceEffect.
+                max_incidenceEffect = (ss^field_alignment_power) * cc; % Maximum possible value of incidenceEffect.
                 % Normalise incidenceEffect to have maximum value 1.
                 incidenceEffect = incidenceEffect / max_incidenceEffect;
             end
@@ -283,7 +293,8 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
                 end
             end
             
-            barriervalue = barriervalue - spreadAngle;
+%             barriervalue = barriervalue - spreadAngle;
+            barriervalue = min( barriervalue, pi/2 - spreadAngle );
         end
         if ~isempty( collisionbarrieredges )
             if numel(collisionbarrieredges) > 1
