@@ -39,24 +39,14 @@ function bareExptID = GFtboxCommand( varargin )
     % Using steps
     %    'Steps', 20,...        % number of steps to be run
     %
-    %    'Modeloptions', [], ... % IGNORE, NOT IMPLEMENtED
+    %    'Modeloptions', [], ... % IGNORE, NOT IMPLEMENTED
     %
     %    'param',value          % Set a model parameter.
     %
-    %                           %Sensitivity testing
-    %                           %m.modeloptions.sensitivity.range
-    %                           %m.modeloptions.sensitivity.index
-    %                           this is a reserved  modeloptions field
-    %                           that is recognised by GFtboxCommand.
-    %                           To perform a sensitivity test, there must
-    %                           be set of obj files in a directory called
-    %                           objs. One obj per time step.
-    %                           It is differences between the test sensitivity values
-    %                           and these obj files that will be computed.
-    %                           that will 
-    %    'ExpID',name,          Not for general use. Used internally by GFtboxCommand
-    %                           to label experiments as they are run on
-    %                           the cluster
+    %    'ExpID',name,          Not for external use. Used internally by
+    %                           GFtboxCommand to label experiments as they
+    %                           are run on the cluster.
+    %
     %    'Matlab',modulename    Specifies which version of Matlab to use.
     %                           The value must be a valid argument to the
     %                           "module add" command on the cluster. To
@@ -88,7 +78,6 @@ function bareExptID = GFtboxCommand( varargin )
            RemoteProjectFullPath ...
            RemoteProjectsDirectory ...
            RemoteScriptDirectory ...
-           RemoteArchitecture ...
            DryRun ...
            MatlabModule
 
@@ -97,14 +86,15 @@ function bareExptID = GFtboxCommand( varargin )
     RemoteProjectFullPath = '';
     RemoteProjectsDirectory = '';
     RemoteScriptDirectory = 'ClusterScripts';
-    RemoteArchitecture = '';
     DryRun = false;
+    MatlabModule = 'matlab';
+    
     experimentID = '';
     experimentUserID = '';
     runname = '';
     rundate = datestring();
     
-    if rem(nargin,2)
+    if rem(nargin,2) ~= 0
         dbstack();
         error('GFtboxCommand: arguments should be in pairs');
     end
@@ -125,7 +115,6 @@ function bareExptID = GFtboxCommand( varargin )
     timedFprintf( 'Arguments:\n' );
     disp( varargin' );
     starttime=clock();
-    MatlabModule = 'matlab';
 
     argStruct = safemakestruct( mfilename(), varargin );
     argNames = fieldnames( argStruct );
@@ -162,7 +151,7 @@ function bareExptID = GFtboxCommand( varargin )
                 % If supplied and nonempty, parameters for making a movie.
                 % These parameters must have the form of a list of numbers
                 % [ start, step, stop ] specifying the simulation time at
-                % which the first frame should be recorded, the time stepm
+                % which the first frame should be recorded, the time step,
                 % and the simulation time at which the last frame should be
                 % recorded.
                 movieparams = argvalue;
