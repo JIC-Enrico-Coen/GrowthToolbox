@@ -200,8 +200,13 @@ function bareExptID = GFtboxCommand( varargin )
     
     if isempty(movieformat)
         if oncluster()
+            % The cluster can only make movies in this format.
+            % Movies in this format are enormous and there's not much
+            % software that will play them. They have to be converted to
+            % MPEG-4 to be useful. This cannot be done on the cluster.
             movieformat = 'Motion JPEG AVI';
         else
+            % My local machine can only make movies in this format.
             movieformat = 'MPEG-4';
         end
     end
