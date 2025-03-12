@@ -1,5 +1,5 @@
 function perFE = perVertextoperFE( m, perVx, method, fes )
-%perVx = perVertextoperFE( m, perVx, method, fes )
+%perFE = perVertextoperFE( m, perVx, method, fes )
 %   Given a quantity that is defined for each vertex, calculate an
 %   equivalent quantity per finite element.
 %

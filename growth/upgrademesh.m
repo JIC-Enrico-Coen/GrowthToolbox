@@ -544,6 +544,10 @@ function m = upgrademesh( m, checkValidity )
     end
     
     
+    if ~isfield( m, 'mgenVertexColoring' )
+        m.mgenVertexColoring = true( 1, getNumberOfMorphogens(m) );
+    end
+    
     if ~isfield( m.globalProps, 'starttime' )
         m.globalProps.starttime = ...
             m.globalDynamicProps.currenttime ...
@@ -810,10 +814,14 @@ function m = upgradeTubules( m )
     m.tubules.tubuleparams = renameFields( m.tubules.tubuleparams, 'max_mt_per_area', 'max_growing_mt_per_area' );
     m.tubules.tubuleparams = renameFields( m.tubules.tubuleparams, 'prob_branch_scaling', 'prob_free_branch_scaling' );
     
+    numtubules = length( m.tubules.tracks );
     newfields = setdiff( fieldnames( emptyTubules.tracks ), fieldnames( m.tubules.tracks ) );
     for nfi=1:length(newfields)
         nf = newfields{nfi};
         m.tubules.tracks(1).(nf) = [];
+    end
+    if numtubules==0
+        m.tubules.tracks(1) = [];
     end
     
     for ti=1:length(m.tubules.tracks)

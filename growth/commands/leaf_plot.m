@@ -316,8 +316,13 @@ function varargout = leaf_plot( m, varargin )
                     visdata = m.plotdata.(['value' suffix]);
                     if m.plotdata.(['pervertex' suffix])
                         visdata = visdata( m.visible.nodes==1, : );
-                    else
+                    elseif isfield( m.plotdata, ['perelement' suffix] ) && m.plotdata.(['perelement' suffix])
                         visdata = visdata( m.visible.cells==1, : );
+                    else  % if m.plotdata.(['percorner' suffix])
+                        visibleCorners = false( getNumberOfVertexesPerFE(m), getNumberOfFEs(m) );
+                        visibleCorners( :, m.visible.cells==1 ) = true;
+                        visibleCorners = visibleCorners(:);
+                        visdata = visdata( visibleCorners, : );
                     end
                     m.plothandles.patchM = plotmeshsurface( [], theaxes, s, vxs, vistriangles, ...
                             visdata, ... % m.plotdata.(['value' suffix]), ...
@@ -1067,6 +1072,7 @@ function m = calculatePlotData( m, side )
     fn_value = ['value' side];
     fn_pervertex = ['pervertex' side];
     fn_perelement = ['perelement' side];
+    fn_percorner = ['percorner' side];
     fn_tensors = ['tensor' side];
     fn_morphogen = ['morphogen' side];
     fn_outputquantity = ['outputquantity' side];
@@ -1098,22 +1104,90 @@ function m = calculatePlotData( m, side )
     end
     if ~isempty(m.plotdefaults.(fn_pervertex))
         m.plotdata.(fn_pervertex) = true;
+        m.plotdata.(fn_perelement) = false;
+        m.plotdata.(fn_percorner) = false;
         m.plotdata.(fn_value) = m.plotdefaults.(fn_pervertex);
         m.plotdata.description = 'Value';
     elseif ~isempty(m.plotdefaults.(fn_perelement))
         m.plotdata.(fn_pervertex) = false;
+        m.plotdata.(fn_perelement) = true;
+        m.plotdata.(fn_percorner) = false;
         m.plotdata.(fn_value) = m.plotdefaults.(fn_perelement);
+        m.plotdata.description = 'Value';
+    elseif ~isempty(m.plotdefaults.(fn_percorner))
+        m.plotdata.(fn_pervertex) = false;
+        m.plotdata.(fn_perelement) = false;
+        m.plotdata.(fn_percorner) = true;
+        m.plotdata.(fn_value) = m.plotdefaults.(fn_percorner);
         m.plotdata.description = 'Value';
     elseif ~isempty( m.plotdefaults.(fn_morphogen) )
         mgenindexes = FindMorphogenIndex( m, m.plotdefaults.(fn_morphogen) );
 %         interpMode = m.mgen_interpType{ mgenindexes };
-        m.plotdata.(fn_pervertex) = true;
         if length( mgenindexes )==1
-            m.plotdata.(fn_value) = getEffectiveMgenLevels( m, mgenindexes );
+            if m.mgenVertexColoring( mgenindexes )
+                m.plotdata.(fn_pervertex) = true;
+                m.plotdata.(fn_perelement) = false;
+                m.plotdata.(fn_percorner) = false;
+                m.plotdata.(fn_value) = getEffectiveMgenLevels( m, mgenindexes );
+            else
+                m.plotdata.(fn_pervertex) = false;
+                m.plotdata.(fn_perelement) = true;
+                m.plotdata.(fn_percorner) = false;
+                mgenValuesPerVertex = getEffectiveMgenLevels( m, mgenindexes );
+                mgenValuesPerFE = perVertextoperFE( m, mgenValuesPerVertex, m.mgen_interpType{ mgenindexes } );
+                m.plotdata.(fn_value) = mgenValuesPerFE;
+            end
             m.plotdata.description = m.mgenIndexToName{mgenindexes};
         else
-            m.plotdata.(fn_value) = multicolourmgens( ...
-                    m, mgenindexes, m.plotdefaults.multibrighten, [] );
+            mgenVC = m.mgenVertexColoring( mgenindexes );
+            if all(mgenVC)
+                m.plotdata.(fn_pervertex) = true;
+                m.plotdata.(fn_perelement) = false;
+                m.plotdata.(fn_percorner) = false;
+                m.plotdata.(fn_value) = multicolourmgens( ...
+                        m, mgenindexes, m.plotdefaults.multibrighten, [] );
+            elseif ~any(mgenVC)
+                m.plotdata.(fn_pervertex) = false;
+                m.plotdata.(fn_perelement) = true;
+                m.plotdata.(fn_percorner) = false;
+                mvalsPerVertex = getEffectiveMgenLevels( m, mgenindexes );
+                mvalsPerFE = zeros( getNumberOfFEs(m), length(mgenindexes) );
+                for mi=1:length(mgenindexes)
+                    mvalsPerFE(:,mi) = perVertextoperFE( m, mvalsPerVertex(:,mi), m.mgen_interpType{ mgenindexes(mi) } );
+                end
+                m.plotdata.(fn_value) = combineColors( ...
+                                            mvalsPerFE, ...
+                                            m.mgenposcolors(:,mgenindexes), ...
+                                            m.mgennegcolors(:,mgenindexes), ...
+                                            m.mgen_plotpriority(mgenindexes), ...
+                                            m.mgen_plotthreshold(mgenindexes), ...
+                                            m.plotdefaults.multibrighten, ...
+                                            [], ...
+                                            m.plotdefaults.canvascolor );
+            else
+                m.plotdata.(fn_pervertex) = false;
+                m.plotdata.(fn_perelement) = false;
+                m.plotdata.(fn_percorner) = true;
+                mvalsPerVertex = getEffectiveMgenLevels( m, mgenindexes );
+                mvalsPerFECorner = zeros( getNumberOfFEs(m) * getNumberOfVertexesPerFE( m ), length(mgenindexes) );
+                for mi=1:length(mgenindexes)
+                    if mgenVC(mi)
+                        mvalsPerFECorner(:,mi) = reshape( perVertextoperFECorner( m, mvalsPerVertex(:,mi), m.mgen_interpType{ mgenindexes(mi) } )', [], 1 );
+                    else
+                        mvalsPerFE = perVertextoperFE( m, mvalsPerVertex(:,mi), m.mgen_interpType{ mgenindexes(mi) } );
+                        mvalsPerFECorner(:,mi) = reshape( perFEtoperFECorner( m, mvalsPerFE )', [], 1 );
+                    end
+                end
+                m.plotdata.(fn_value) = combineColors( ...
+                                            mvalsPerFECorner, ...
+                                            m.mgenposcolors(:,mgenindexes), ...
+                                            m.mgennegcolors(:,mgenindexes), ...
+                                            m.mgen_plotpriority(mgenindexes), ...
+                                            m.mgen_plotthreshold(mgenindexes), ...
+                                            m.plotdefaults.multibrighten, ...
+                                            [], ...
+                                            m.plotdefaults.canvascolor );
+            end
             m.plotdata.description = 'Multiple';
         end
     elseif ~isempty( m.plotdefaults.(fn_tensors) )
@@ -1166,9 +1240,13 @@ end
 function m = makeCanvasColor( m, side )
     fn_value = ['value' side];
     fn_pervertex = ['pervertex' side];
+    fn_perelement = ['perelement' side];
+    fn_percorner = ['percorner' side];
     if ~isfield( m.plotdata, fn_value ) || isempty( m.plotdata.(fn_value) )
         if ~isfield( m.plotdata, fn_pervertex )
             m.plotdata.(fn_pervertex) = false;
+            m.plotdata.(fn_perelement) = true;
+            m.plotdata.(fn_percorner) = false;
         end
         if m.plotdata.(fn_pervertex)
             numdata = size( m.nodes, 1 );

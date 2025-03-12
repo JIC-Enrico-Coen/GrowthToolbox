@@ -5,7 +5,7 @@ function m = leaf_mgen_conductivity( m, varargin )
 %   morphogen: The name or index of a morphogen.
 %   conductivity: The diffusion constant for the morphogen, in units of
 %       length^2/time. conductivity can also be a cell array {c,mode},
-%       where c is the condictuvity and m is the mixing mode to be used
+%       where c is the conductivity and m is the mixing mode to be used
 %       when calculating per-element values from per-vertex values. The
 %       mixing mode is 'min', 'mid', or 'max'.
 %   Values can be set for multiple morphogens by listing morphogen names

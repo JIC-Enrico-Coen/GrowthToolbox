@@ -6,7 +6,7 @@ function d = isDiffusible( varargin )
 %       d = isDiffusible( m.conductivity(morphogenindex) )
 %   The third type asks for the diffusibility of all morphogens.
 %
-%   For each morphogen, the corresponding result is triue if and only if
+%   For each morphogen, the corresponding result is true if and only if
 %   the morphogen has somewhere a non-zero diffusion coefficient.
 
     if nargin==1

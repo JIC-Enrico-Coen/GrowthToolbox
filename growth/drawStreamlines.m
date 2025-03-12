@@ -85,13 +85,28 @@ function slhandles = drawStreamlines( theaxes, m, s )
     allend = baryToEuc( m, allend_ci, allend_bc, m.plotdefaults.streamlineoffset );
     allmiddle = baryToEuc( m, allmiddle_ci, allmiddle_bc, m.plotdefaults.streamlineoffset );
     
+    if isfield( m.tubules.tubuleparams, 'linecolormap' )
+        linecolormap = m.tubules.tubuleparams.linecolormap;
+    else
+        linecolormap = m.plotdefaults.streamlinecolor;
+    end
     
-    if isfield( m.tubules.tracks(1), 'linecolorindex' ) && isfield( m.tubules.tubuleparams, 'linecolormap' )
+    if isfield( m.tubules.tracks(1), 'linecolorindex' )
+        linecolorindexes = [ s.linecolorindex ];
+        if all( linecolorindexes==1 )
+            m.tubules.tubuleparams.linecolormap = m.plotdefaults.streamlinecolor;
+        end
+    else
+        linecolorindexes = ones( 1, length(s) );
+    end
+    
+    
+    % if isfield( m.tubules.tracks(1), 'linecolorindex' ) && isfield( m.tubules.tubuleparams, 'linecolormap' )
         vxsPerTubule = zeros( 1, length(s) );
         for si=1:length(s)
             vxsPerTubule(si) = length( s(si).vxcellindex );
         end
-        linecolorindexes = [ s.linecolorindex ];
+        % linecolorindexes = [ s.linecolorindex ];
         [linecolorindexes1,perm] = sort( linecolorindexes );
         [starts,ends] = runends( linecolorindexes1 );
         for ci=1:length(starts)
@@ -113,7 +128,7 @@ function slhandles = drawStreamlines( theaxes, m, s )
                 'Color', m.tubules.tubuleparams.linecolormap( linecolorindex1, : ), ...
                 'LineWidth', m.plotdefaults.streamlinethick );
         end
-    end
+    % end
     
     
     

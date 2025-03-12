@@ -317,6 +317,9 @@ function bareExptID = GFtboxCommand( varargin )
     % variables.
     m = leaf_setproperty( m, 'IFsetsoptions', true );
     [m,ok] = leaf_dointeraction( m );
+    timedFprintf( ' After calling i.f., plotted morphogens are: ' );
+    fprintf( ' %s', m.plotdefaults.morphogen{:} );
+    fprintf( '\n' );
     if ~ok
         dbstack();
         error('Problem with the interaction function.');
@@ -564,7 +567,14 @@ end
 function m = initialiseOptions( m )
     timedFprintf( 'Calling initialiseOptions.\n' );
     m = leaf_setproperty( m, 'IFsetsoptions', true );
-    m = leaf_dointeraction( m );
+    [m,ok] = leaf_dointeraction( m );
+    timedFprintf( ' In initialiseOptions, after calling i.f., plotted morphogens are: ' );
+    fprintf( ' %s', m.plotdefaults.morphogen{:} );
+    fprintf( '\n' );
+    if ~ok
+        dbstack();
+        error('Problem with the interaction function.');
+    end
     m = leaf_setproperty( m, 'IFsetsoptions', false );
 end
 

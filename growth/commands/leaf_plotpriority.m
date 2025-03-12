@@ -42,8 +42,8 @@ function [m,ok] = leaf_plotpriority( m, values, priority, threshold, varargin )
 %   greater than 0.1, its colour will be plotted.  Elsewhere, where id_sink or
 %   id_source is greater than zero, their colours will be mixed and plotted.
 %   Everywhere else, the other morphogen colours will be mixed together.
-%   This will have the effect that id_source will overlie id_sink, and both
-%   will overlie all other morphogens.
+%   This will have the effect that id_ridge will overlie id_sink and
+%   id_source, and all three will overlie all other morphogens.
 %
 %   Equivalent GUI operation: None.
 %
