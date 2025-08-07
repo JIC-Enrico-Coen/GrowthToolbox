@@ -12,7 +12,7 @@ function [m,ok] = leaf_iterateStreamlines( m )
     
     m = recalcStreamlineGlobalData( m );
 
-    [arealTubuleDensity,~,~,~] = tubuleDensity( m );
+    [arealTubuleDensity,~,~,~] = tubuleDensity( m, 1 );
     if m.tubules.tubuleparams.max_mt_density==0
         maxDensityFraction = 1;
     else
@@ -113,6 +113,27 @@ function [m,ok] = leaf_iterateStreamlines( m )
                             branchAngles = getMTBranchingAngles( m, 1, 'crossover' );
                         else
                             branchAngles = getMTBranchingAngles( m, 1, 'free' );
+                            
+                            
+                            
+%                             paramsNeeded = { 'prob_branch_forwards', ...
+%                                              'prob_branch_parallel', ...
+%                                              'prob_branch_antiparallel', ...
+%                                              'branch_forwards_mean', ...
+%                                              'branch_forwards_spread', ...
+%                                              'branch_backwards_mean', ...
+%                                              'branch_backwards_spread' };
+%                             paramValues0 = getTubuleParamsModifiedByMorphogens( m, selbranchElements0, selbranchBcs0, paramsNeeded );
+%                             paramValues1 = getTubuleParamsModifiedByMorphogens( m, selbranchElements1, selbranchBcs1, paramsNeeded );
+%                             paramValues = struct();
+%                             for pi=1:length(paramsNeeded)
+%                                 fn = paramsNeeded{pi};
+%                                 paramValues.(fn) = paramValues0.(fn) .* selbranchSegbc(:,1) + paramValues1.(fn) .* selbranchSegbc(:,2);
+%                             end
+
+    
+    
+%                             branchAnglesNew = getMTLocalBranchingAngles( 1, paramValues );
                         end
                         [m,newbranchinfo,newmtindexes] = spawnBranches( m, si, sevs(sevpi).vertex, [1 0], ...
                                 sevs(sevpi).time - m.globalDynamicProps.currenttime, ...
@@ -268,7 +289,7 @@ function [m,ok] = leaf_iterateStreamlines( m )
         return;
     end
     
-    % Grow the steamlines.
+    % Grow the streamlines.
     if ~isempty( m.tubules.tracks )
         fprintf( 1, '%s: growing %d streamlines.\n', mfilename(), length( m.tubules.tracks ) );
     end

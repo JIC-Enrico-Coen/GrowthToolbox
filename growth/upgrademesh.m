@@ -546,6 +546,8 @@ function m = upgrademesh( m, checkValidity )
     
     if ~isfield( m, 'mgenVertexColoring' )
         m.mgenVertexColoring = true( 1, getNumberOfMorphogens(m) );
+    elseif length(m.mgenVertexColoring) < getNumberOfMorphogens(m)
+        m.mgenVertexColoring( (end+1):getNumberOfMorphogens(m) ) = true;
     end
     
     if ~isfield( m.globalProps, 'starttime' )
@@ -820,8 +822,8 @@ function m = upgradeTubules( m )
         nf = newfields{nfi};
         m.tubules.tracks(1).(nf) = [];
     end
-    if numtubules==0
-        m.tubules.tracks(1) = [];
+    if (numtubules==0) && ~isempty(m.tubules.tracks)
+        m.tubules.tracks(:) = [];
     end
     
     for ti=1:length(m.tubules.tracks)

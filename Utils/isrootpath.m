@@ -1,6 +1,6 @@
 function isroot = isrootpath( filename )
 %isroot = isrootpath( filename )
-%   Determine whether a file path is a root path or a relataive path.
+%   Determine whether a file path is a root path or a relative path.
 %   This works for both Windows and *nix systems.
 %
 %   A Windows root path is assumed to begin with a letter, a colon, and a

@@ -1,14 +1,14 @@
 function setCameraParams( theaxes, cp )
-    if any(isnan(cp.CameraPosition))
+    if any(~isfinite(cp.CameraPosition))
         cp.CameraPosition = [40 0 0];
     end
-    if any(isnan(cp.CameraTarget))
+    if any(~isfinite(cp.CameraTarget))
         cp.CameraTarget = [0 0 0];
     end
-    if any(isnan(cp.CameraUpVector))
+    if any(~isfinite(cp.CameraUpVector))
         cp.CameraUpVector = [0 0 1];
     end
-    if any(isnan(cp.CameraViewAngle))
+    if any(~isfinite(cp.CameraViewAngle))
         cp.CameraViewAngle = 10;
     end
     

@@ -24,7 +24,33 @@ function [arealDensity,linearDensity,totalTubuleLength,meshArea] = tubuleDensity
         linearDensity = 0;
         totalTubuleLength = 0;
         meshArea = 0;
-    elseif nargin < 2
+        return;
+    end
+    
+    if nargin < 2
+        sections = 1:getNumberOfFEs(m);
+    end
+    
+%     if nargin < 2
+%         % Each element is a section.
+%         numFEs = getNumberOfFEs(m);
+%         totalTubuleLength = zeros( 1, numFEs );
+%         meshArea = m.cellareas;
+%         for ti=1:length(m.tubules.tracks)
+%             s = m.tubules.tracks(ti);
+%             if ~isempty( s.segmentlengths )
+%                 scis = s.segcellindex(1:length(s.segmentlengths));
+%                 totalTubuleLength( scis ) = totalTubuleLength( scis ) + s.segmentlengths;
+%             end
+%         end
+%         totalTubuleLength = totalTubuleLength';
+%         linearDensity = totalTubuleLength./meshArea;
+%         linearDensity( ~isfinite(linearDensity) ) = 0;
+%         arealDensity = linearDensity * m.tubules.tubuleparams.radius * 2;
+%     else
+    if numel(sections)==1
+        % The whole mesh is a single section, so we only want the aggregate
+        % values.
         totalTubuleLength = sum([m.tubules.tracks.segmentlengths]);
         meshArea = sum(m.cellareas);
         linearDensity = totalTubuleLength/meshArea;
@@ -36,9 +62,9 @@ function [arealDensity,linearDensity,totalTubuleLength,meshArea] = tubuleDensity
         for ti=1:length(m.tubules.tracks)
             s = m.tubules.tracks(ti);
             numsegments = length(s.segmentlengths);
-            fes = s.segcellindex(1:(numsegments-1));
+            fes = s.segcellindex; % (1:(numsegments-1));
             for segi=1:numsegments
-                fe = s.segcellindex(segi);
+                fe = fes(segi);
                 fesect = sections(fe);
                 if fesect ~= 0
                     totalTubuleLength( fesect ) = totalTubuleLength( fesect ) + s.segmentlengths(segi);

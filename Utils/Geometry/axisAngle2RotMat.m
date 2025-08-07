@@ -5,7 +5,13 @@ function m = axisAngle2RotMat( ax, angle )
 %
 %   If angle is omitted, then the norm of ax is taken to be the rotation
 %   angle. If angle is provided, ax does not have to be normalised. ax can
-%   be a row or column vector.
+%   be a nonzero row or column vector.
+%
+%   If ax is zero, the identity rotation is returned.
+%
+%   The rows of the matrix are the axes of the rotated coordinate system.
+%   To rotate a vector v by the result , do v*m where v is a row vector.
+%   The inverse transformation is v*m', or m*v if v is a column vector.
 %
 %   Formula obtained from
 %   https://en.wikipedia.org/wiki/Rotation_matrix#Conversion_from_and_to_axis-angle

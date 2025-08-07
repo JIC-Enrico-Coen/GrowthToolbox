@@ -193,6 +193,19 @@ function m = doTubuleBranching( m, dt )
         tailbranchprobstepPerTail = 1 - exp( -dt * tailbranchprobPerTail );  % Should use [numevents,times] = poissevents( tailbranchprobtime, dt )
         tailbranches = rand(numtubules,1) < tailbranchprobstepPerTail;
         tailBranchTubules = find( tailbranches );
+        
+        % A tubule containing just one vertex has no defined direction, so
+        % we cannot branch off it at a specified angle.
+        isnonempty = false( size( tailBranchTubules ) );
+        for tbi = 1:length(tailBranchTubules)
+            vxs = m.tubules.tracks( tailBranchTubules(tbi) ).globalcoords;
+            isnonempty(tbi) = size( vxs, 1 ) > 1;
+        end
+        if any(~isnonempty)
+            xxxx = 1;
+        end
+        tailBranchTubules = tailBranchTubules( isnonempty );
+        
         numtailbranches = length( tailBranchTubules );
         if numtailbranches > 0
             xxxx = 1;
@@ -256,7 +269,7 @@ function m = doTubuleBranching( m, dt )
     end
     
     branchSides = randSign(numNewTubules,1);
-    branchAnglesOld = getMTBranchingAngles( m, numNewTubules, 'free' ) .* branchSides;
+%     branchAnglesOld = getMTBranchingAngles( m, numNewTubules, 'free' ) .* branchSides;
     
     branchAnglesNew = getMTLocalBranchingAngles( numNewTubules, paramValues );
     

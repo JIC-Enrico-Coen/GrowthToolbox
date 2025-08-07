@@ -22,19 +22,28 @@ function rgbVec = colorCode2rgb(c)
 %    rgb =
 %          [1 0 0]
 
-if iscell(c) 
-    rgbVec = cell2mat(cellfun(@colorCode2rgb,c,'uni',false));
-    return
+    if isnumeric(c)
+        rgbVec = c;
+        return;
+    end
+
+    if iscell(c) 
+        rgbVec = cell2mat(cellfun(@colorCode2rgb,c,'uni',false));
+        return
+    end
+
+    switch c
+        case {'y','yellow'}, rgbVec = [1,1,0];
+        case {'o','orange'}, rgbVec = [1,0.5,0];
+        case {'n','brown'}, rgbVec = [0.3,0.15,0];
+        case {'m','magenta'}, rgbVec = [1,0,1];
+        case {'c','cyan'}, rgbVec = [0,1,1];
+        case {'r','red'}, rgbVec = [1,0,0];
+        case {'g','green'}, rgbVec = [0,1,0];
+        case {'b','blue'}, rgbVec = [0,0,1];
+        case {'w','white'}, rgbVec = [1,1,1];
+        case {'k','black'}, rgbVec = [0,0,0];
+        otherwise, error('unknown color code %s',c)
+    end
 end
 
-switch c
-case {'y','yellow'}, rgbVec = [1,1,0];
-case {'m','magenta'}, rgbVec = [1,0,1];
-case {'c','cyan'}, rgbVec = [0,1,1];
-case {'r','red'}, rgbVec = [1,0,0];
-case {'g','green'}, rgbVec = [0,1,0];
-case {'b','blue'}, rgbVec = [0,0,1];
-case {'w','white'}, rgbVec = [1,1,1];
-case {'k','black'}, rgbVec = [0,0,0];
-otherwise, error('unknown color code %s',c)
-end;

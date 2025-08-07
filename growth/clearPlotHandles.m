@@ -9,8 +9,10 @@ function m = clearPlotHandles( m )
         fn = fns{i};
         hh = m.plothandles.(fn);
         hh = hh( ishandle(hh) );
-        hh = hh(hh ~= 0);
-        delete( hh );
+        if ~isempty(hh)
+            hh = hh(hh ~= 0);
+            delete( hh );
+        end
     end
     m.plothandles = gPlotHandles;
     for i=1:length(m.pictures)

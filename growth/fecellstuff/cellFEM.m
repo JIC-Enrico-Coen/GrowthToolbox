@@ -1,10 +1,13 @@
-function [cell,k,f] = cellFEM( cell, v, gaussInfo, C, eps0, residualScale )
+function [cell,k,f] = cellFEM( cell, v, gaussInfo, C, eps0, residualScale, pressure )
 %[k,f] = cellFEM( cell, v, gaussInfo, C, eps0, residualScale )
 %    Calculate the K matrix and force vector for a finite element cell.
 %    Calculate also the pre-strain at each Gauss point (by interpolating eps0).
-%    v: cell vertexes. 3*6 matrix, one column per vertex.
-%    gaussInfo: Gauss quadrature structure in isoparametric coordinates.  Includes
-%       the points, and the values and gradients of the shape functions there.
+%    v: cell vertexes. 3*6 matrix, one column per vertex. The three
+%       vertexes on the A side are listed first, then the three on the B
+%       side.
+%    gaussInfo: Gauss quadrature structure in isoparametric coordinates.
+%       Includes the points, and the values and gradients of the shape
+%       functions there.
 %    C: stiffness matrix. 6*6.
 %    eps0: pre-strain at each vertex (calculated from thermal expansion).
 %        6*6, one column for each vertex.  Each column is a 6-vector
@@ -20,17 +23,22 @@ global gJacobianMethod
     dfsPerNode = 3;
     vxsPerCell = 6;
     numDfs = dfsPerNode * vxsPerCell;
+    if nargin < 7
+        pressure = 0;
+    end
 
     k = zeros(numDfs,numDfs);
     f = zeros(numDfs,1);
     index1 = [ 2, 3, 1 ];
     index2 = [ 3, 1, 2 ];
-    if size(cell.residualStrain,2)==1
-        cell.eps0gauss = eps0*gaussInfo.N + ...
-            cell.residualStrain * residualScale * ones( 1, numGaussPoints );
-    else
-        cell.eps0gauss = eps0*gaussInfo.N + ...
-            cell.residualStrain * residualScale;
+    if residualScale ~= 0
+        if size(cell.residualStrain,2)==1
+            cell.eps0gauss = eps0*gaussInfo.N + ...
+                cell.residualStrain * residualScale * ones( 1, numGaussPoints );
+        else
+            cell.eps0gauss = eps0*gaussInfo.N + ...
+                cell.residualStrain * residualScale;
+        end
     end
     [cell.gnGlobal,detJ] = computeCellGNGlobal( v, gaussInfo );
     
@@ -52,6 +60,15 @@ global gJacobianMethod
             k1 = snC * sn;
             f1 = snC * cell.eps0gauss(:,i);
         end
+        
+        if pressure ~= 0
+            nv = trinormal( v(:,1:3)' );
+            nv = nv/norm(nv);
+            nv = nv * pressure;
+%             f1(1:9) = f1(1:9) - repmat( nv(:), 3, 1 );
+            f1 = f1 - repmat( nv(:), 6, 1 );
+        end
+        
         k = k + k1;
         f = f + f1;
     end

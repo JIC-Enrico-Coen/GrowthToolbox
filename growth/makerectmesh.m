@@ -1,4 +1,4 @@
-function m = makerectmesh( x, y, c, nx, ny )
+function m = makerectmesh( x, y, c, nx, ny, taper )
 %m = makerectmesh( x, y, c, nx, ny )
 %    Make a rectangular plate divided into triangles.
 %    If x is a single number, it is the diameter of the mesh along the x
@@ -11,6 +11,10 @@ function m = makerectmesh( x, y, c, nx, ny )
 %    c is the position of the centre of the rectangle.
 
 % x, y, nx, and xy must be positive.
+
+    if nargin < 6
+        taper = [1 1];
+    end
 
     if length(x)==1
         xmin = -x/2;
@@ -153,6 +157,25 @@ function m = makerectmesh( x, y, c, nx, ny )
             end
             previns = ins;
         end
+    end
+    
+    haveTaper = any(taper ~= 1);
+    if haveTaper
+        xwidth1 = xmax-xmin;
+        xwidth2 = xwidth1 * taper(1);
+        ywidth1 = ymax-ymin;
+        ywidth2 = ywidth1 * taper(2);
+        x1 = c(1) - xwidth1/2;
+        x2 = c(1) + xwidth1/2;
+        y1 = c(2) - ywidth1/2;
+        y2 = c(2) + ywidth1/2;
+        nodes_x = m.nodes(:,1);
+        nodes_y = m.nodes(:,2);
+        nodes_xx = c(1) + (nodes_x-c(1)) .* (1 - (nodes_y-y1)./(y2-y1) * (1 - xwidth2/xwidth1));
+        nodes_yy = c(2) + (nodes_y-c(2)) .* (1 - (nodes_x-x1)./(x2-x1) * (1 - ywidth2/ywidth1));
+        m.nodes(:,1) = nodes_xx;
+        m.nodes(:,2) = nodes_yy;
+        xxxx = 1;
     end
     
     m.nodes = m.nodes + repmat( c, size(m.nodes,1), 1 );

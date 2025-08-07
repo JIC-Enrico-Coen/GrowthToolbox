@@ -1,7 +1,8 @@
 function bareExptID = GFtboxCommand( varargin )
     %function GFtboxCommand(...)
     %
-    %   IGNORE ALL OF THESE COMMENTS. THEY ARE HOPELESSLY OUT OF DATE.
+    %   IGNORE ALL OF THESE COMMENTS. THEY ARE HOPELESSLY OUT OF DATE AND
+    %   WILL NEVER BE UPDATED.
     %
     %For running growth models in batch mode.
     %
@@ -110,6 +111,7 @@ function bareExptID = GFtboxCommand( varargin )
     viewparams = [];
     stages=[];
     timestep = NaN;
+    saveDeletesOlderStages = true;
     sendToCluster = ~oncluster();
     timedFprintf( 'Start at %s\n', datestr(now) );
     timedFprintf( 'Arguments:\n' );
@@ -179,7 +181,8 @@ function bareExptID = GFtboxCommand( varargin )
                 timestep = argvalue;
             case 'MATLAB'
                 MatlabModule = ['matlab/' argvalue];
-                
+            case upper('saveDeletesOlderStages')
+                saveDeletesOlderStages = argvalue;
             case 'MODELOPTIONS'
                 % A struct array that is an alternative to setting the
                 % model options.
@@ -289,13 +292,18 @@ function bareExptID = GFtboxCommand( varargin )
         experimentIndex = sscanf( experimentID, '%d' );
     end
     
-    if isempty( movieparams )
-        movieframetimes = [];
+%     if isempty( movieparams )
+%         movieframetimes = [];
+%     else
+%         if length(movieparams)==2
+%             movieparams = [ movieparams(1), 1, movieparams(2) ];
+%         end
+%         movieframetimes = movieparams(1) : movieparams(2) : movieparams(3);
+%     end
+    if ischar(movieparams) && strcmp( movieparams, 'all' )
+        movieframetimes = stages;
     else
-        if length(movieparams)==2
-            movieparams = [ movieparams(1), 1, movieparams(2) ];
-        end
-        movieframetimes = movieparams(1) : movieparams(2) : movieparams(3);
+        movieframetimes = movieparams;
     end
     
     % Even if we are not going to run the model here, but submit it to the
@@ -312,6 +320,7 @@ function bareExptID = GFtboxCommand( varargin )
     m = leaf_setproperty( m, 'staticreadonly', true, 'allowInteraction', true ); % prevent cross talk when on cluster
     m = leaf_reload( m, 'restart' , 'rewrite', false, 'soleaccess', false );
     m = leaf_setproperty( m, 'staticreadonly', true, 'allowInteraction', true ); % prevent cross talk when on cluster
+    m = leaf_setproperty( m, 'saveDeletesOlderStages', saveDeletesOlderStages );
     
     % Initialise the model, so that we can then extract all the range
     % variables.
@@ -490,7 +499,7 @@ function bareExptID = GFtboxCommand( varargin )
         m = leaf_setproperty( m, 'staticreadonly', true, 'allowInteraction', true ); % prevent cross talk when on cluster
         m = leaf_reload( m, 'restart' , 'rewrite', false, 'soleaccess', false );
         m = leaf_setproperty( m, 'staticreadonly', true, 'allowInteraction', true ); % prevent cross talk when on cluster
-        
+        m = leaf_setproperty( m, 'saveDeletesOlderStages', saveDeletesOlderStages );
         runnum = 0;
         IS_SPECIFIED_RUN = ~isempty( runname ) && (length(allmodeloptions)==1) && (repetitions==1);
         for variantIndex=1:length(allmodeloptions)
@@ -622,7 +631,7 @@ function doOneRun( m, stages, runname, movieframetimes, movieformat, moviefps )
     m = savemesh( m, ProjectName, localExperimentUniqueFullPath, m.globalProps.saveDeletesOlderStages );
     if ~isempty( movieframetimes )
         timedFprintf( 1, 'movieframetimes nonempty, starting movie.\n' );
-        movieframetimes
+        % movieframetimes
         [m,mov] = startmovie( m, localExperimentUniqueFullPath, movieformat, moviefps );
     else
         timedFprintf( 1, 'movieframetimes nonempty, starting movie.\n' );

@@ -10,4 +10,8 @@ function stop = teststopbutton(m)
         stop = userinterrupt( findStopButton( m ) );
         m.stop = stop;
     end
+    
+    if stop
+        xxxx = 1;
+    end
 end

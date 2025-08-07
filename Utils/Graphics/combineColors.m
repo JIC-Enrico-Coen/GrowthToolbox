@@ -51,6 +51,15 @@ function c = combineColors( values, poscolors, negcolors, priority, threshold, m
     else
         maxmvals = valuebound;
     end
+    for i=1:numvals
+        if maxmvals(i)==-Inf
+            maxmvals(i) = 0;
+        elseif maxmvals(i)==Inf
+            INFSCALING = 3;
+            maxmvals(i) = INFSCALING * max( values( values(:,i) < Inf, i ) );
+            values(:,i) = min( values(:,i), maxmvals(i) );
+        end
+    end
 
     % Calculate the colour per node per value.  We also calculate how
     % much the background colour should show through.

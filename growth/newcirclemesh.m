@@ -12,6 +12,9 @@ function [m,rimnodes,vxringindexes,faceringindexes] = newcirclemesh( sz, circumd
     if (nargin < 1) || isempty(sz)
         sz = [2 2 1];
     end
+    if length(sz)==2
+        sz(3) = 0;
+    end
     if (nargin < 2) || isempty(circumdivs) || ((length(circumdivs)==1) && (circumdivs < 3))
         circumdivs = 0;
     end
@@ -41,8 +44,6 @@ function [m,rimnodes,vxringindexes,faceringindexes] = newcirclemesh( sz, circumd
         end
     end
     
-    circumdivs = max( circumdivs, 3 );
-    
     % Some of the zeros we filled in still represent default values, but
     % defaults that depend on other values.  We calculate these now.
     % So far, the following arguments are known to have real values:
@@ -58,6 +59,8 @@ function [m,rimnodes,vxringindexes,faceringindexes] = newcirclemesh( sz, circumd
     if circumdivs==0
         circumdivs = totalrings*6;
     end
+    
+    circumdivs = max( circumdivs, 3 );
     
     if length(circumdivs)==1
         % The default for inneredges is determined by circum, hollow, and nrings.

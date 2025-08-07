@@ -172,7 +172,7 @@ function [m,ok] = leaf_iterate( m, varargin )
         
         [m,ok] = leaf_iterateStreamlines( m );
         if ~ok
-            return;
+            break;
         end
         
         stepstarttime = m.globalDynamicProps.currenttime;

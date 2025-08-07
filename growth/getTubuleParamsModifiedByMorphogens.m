@@ -119,9 +119,9 @@ function paramValues = getTubuleParamsModifiedByMorphogens( m, varargin )
                         paramValuesX.(fn) = bc * pervertex( m.tricellvxs( ci, : ) );
                 end
                 paramValues.(fn) = interpolateOverSimplexes( pervertex, m.tricellvxs( ci, : ), bc, mgen_interpType );
-            end
-            if length( unique( pervertex( m.tricellvxs( ci, : ) ) ) ) > 1
-                xxxx = 1;
+                if length( unique( pervertex( m.tricellvxs( ci, : ) ) ) ) > 1
+                    xxxx = 1;
+                end
             end
         else
             if size(pervertex,1)==1

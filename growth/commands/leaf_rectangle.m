@@ -20,6 +20,7 @@ function m = leaf_rectangle( m, varargin )
 %                 Default 8.
 %       'base'    The number of divisions along the side with minimum Y
 %                 value.  The default is xdivs.
+%       'taper'   The taper in the x and y directions.
 %       'fetype'  EXPERIMENTAL, NOT FULLY IMPLEMENTED.  Specify the type of
 %                 finite elements to use.  This is a string which must be
 %                 one of the following:  'P6', 'H8', "H8Q', 'T3', 'Q4'.
@@ -63,9 +64,20 @@ function m = leaf_rectangle( m, varargin )
     elseif isempty(m)
         s.new = true;
     end
+    
+    if length(s.xwidth) > 1
+        taper(1) = s.xwidth(2)/s.xwidth(1);
+    else
+        taper(1) = 1;
+    end
+    if length(s.ywidth) > 1
+        taper(2) = s.ywidth(2)/s.ywidth(1);
+    else
+        taper(2) = 1;
+    end
 
     if isempty( s.fetype )
-        newm = makerectmesh( s.xwidth, s.ywidth, s.centre, [s.base s.xdivs], s.ydivs );
+        newm = makerectmesh( s.xwidth(1), s.ywidth(1), s.centre, [s.base s.xdivs], s.ydivs, taper );
     else
         rectconstructor = [ 'makeRectMesh' s.fetype ];
         if ~exists( [rectconstructor,'.m'], 'file' )

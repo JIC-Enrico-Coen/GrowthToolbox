@@ -1,5 +1,5 @@
 function c = emptyfecell()
-    tensorLength = 6;
+%     tensorLength = 6;
 
     c.cellThermExpGlobalTensor = []; % zeros( tensorLength, 1 );
     c.eps0gauss = [];

@@ -192,6 +192,11 @@ function [m,U,K,F] = totalK( m, useGrowthTensors, useMorphogens )
 %     TEST_K = zeros(18,18,numcells);
 %     TEST_F = zeros(18,numcells);
     timedFprintf( 1, 'Assembling K and F.\n' );
+    if isfield( m.globalDynamicProps, 'pressure' )
+        pressure = m.globalDynamicProps.pressure;
+    else
+        m.globalDynamicProps.pressure = 0;
+    end
     for ci=1:numcells
         gt1 = zeros(vxsPerCell,cptsPerTensor);
         if useGrowthTensors
@@ -231,7 +236,8 @@ function [m,U,K,F] = totalK( m, useGrowthTensors, useMorphogens )
                              m.globalProps.gaussInfo, ...
                              cs, ...
                              eps0, ...
-                             residualScalePerFE(ci) );
+                             residualScalePerFE(ci), ...
+                             pressure );
             end
             [m.celldata(ci),k,f] = ...
                 cellFEM_FE( m.celldata(ci), ...
@@ -240,7 +246,8 @@ function [m,U,K,F] = totalK( m, useGrowthTensors, useMorphogens )
                             cs, ...
                             eps0, ...
                             residualScalePerFE(ci), ...
-                            m.celldata(ci).residualStrain );
+                            m.celldata(ci).residualStrain, ...
+                            pressure );
             if CHECK_FE_METHOD
                 errk = max(abs(k1(:)-k(:)));
                 errf = max(abs(f1(:)-f(:)));
@@ -255,7 +262,8 @@ function [m,U,K,F] = totalK( m, useGrowthTensors, useMorphogens )
                          m.globalProps.gaussInfo, ...
                          cs, ...
                          eps0, ...
-                         residualScalePerFE(ci) );
+                         residualScalePerFE(ci), ...
+                         pressure );
         end
 %         TEST_K(:,:,ci) = k;
 %         TEST_F(:,ci) = f;
@@ -381,6 +389,11 @@ function [m,U,K,F] = totalK( m, useGrowthTensors, useMorphogens )
     cgmaxiter = size(K,1)*10; % size(K,1)*40;
     if EXACTINV
         UC = inv(K)*F; %#ok<UNRCH>
+        cgflag = 0;
+        cgrelres = 0;
+        m.globalProps.cgiters = 0;
+    elseif all(F==0)
+        UC = zeros(size(F));
         cgflag = 0;
         cgrelres = 0;
         m.globalProps.cgiters = 0;

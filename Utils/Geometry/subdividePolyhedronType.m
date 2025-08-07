@@ -6,6 +6,8 @@ function [newfaces,newpointweights] = subdividePolyhedronType( faces, tension )
 %   It does not use the actual positions of any of the points, but instead
 %   returns the linear combinations from which they can be calculated,
 %   together with the new triangles.
+%
+%   THIS PROCEDURE IS VERY INCOMPLETE. DO NOT USE IT.
 
     octafaces = [ 1 3 6;
                   3 2 6;
@@ -17,15 +19,23 @@ function [newfaces,newpointweights] = subdividePolyhedronType( faces, tension )
                   1 4 5 ];
 
     if nargin < 3
+        % 1/16 is the value that gives the smoothest surface. All values
+        % from 0 to 1/8 are valid. 0 gives flat subsivision. 1/8 makes the
+        % surfce more pointed at the middles of the faces. Outside that
+        % range, repeated subdivision generates fractal-like surfaces.
         tension = 1/16;
     end
 
+    % Butterfly weights.
     wts = [ 1/2 1/2 tension*2 tension*2 -tension -tension -tension -tension ];
     
+    % Augment the faces with their face indexes.
     f1 = [ faces, (1:size(faces,1))' ];
+    
     f1 = reshape( f1( :, [1 2 4 2 3 4 3 1 4] )', 3, [] )';
     flip = f1(:,1) > f1(:,2);
     f1(flip,[1 2]) = f1(flip,[2 1]);
+    % f1 is a list of all the new faces, specified as ....
     [edgeends,ia,ic] = unique( f1(:,[1 2]), 'rows' );
     
     

@@ -2,6 +2,7 @@ function [vxs,tris] = icosamesh( n, r )
 %[vxs,tris] = icosamesh( n, r )
 %   Generate an icosahedral mesh of radius r (default 1), refined to split
 %   each triangular face into n triangles (default 1) along each side.
+%   N is not implemented.
 
     if (nargin < 1) || isempty(n)
         n = 1;
@@ -24,5 +25,6 @@ function [vxs,tris] = icosamesh( n, r )
                  4 12 8 ];
                 
     tris = basetris;
-    vxs = vxs*r;
+    rvxs = sqrt(sum(basevxs.^2,2));
+    vxs = (basevxs./rvxs)*r;
 end

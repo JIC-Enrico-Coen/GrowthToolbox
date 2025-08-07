@@ -39,7 +39,9 @@ function [m,mgenNames,mgenIndexes] = leaf_add_mgen( m, varargin )
             fprintf( 1, '%s: Morphogen names must be strings.\n', mfilename() );
         else
             try
+                % Test that mgenname is a valid field name.
                 x.(mgenname) = 0; %#ok<STRNU>
+                
                 mgenNames{i} = mgenname;
                 if isfield( m.mgenNameToIndex, mgenname )
                     mgenIndexes(i) = m.mgenNameToIndex.(mgenname);

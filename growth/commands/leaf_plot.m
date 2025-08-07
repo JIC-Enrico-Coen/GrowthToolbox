@@ -319,10 +319,11 @@ function varargout = leaf_plot( m, varargin )
                     elseif isfield( m.plotdata, ['perelement' suffix] ) && m.plotdata.(['perelement' suffix])
                         visdata = visdata( m.visible.cells==1, : );
                     else  % if m.plotdata.(['percorner' suffix])
-                        visibleCorners = false( getNumberOfVertexesPerFE(m), getNumberOfFEs(m) );
-                        visibleCorners( :, m.visible.cells==1 ) = true;
-                        visibleCorners = visibleCorners(:);
-                        visdata = visdata( visibleCorners, : );
+%                         visibleCorners = false( getNumberOfVertexesPerFE(m), getNumberOfFEs(m) );
+%                         visibleCorners( :, m.visible.cells ) = true;
+%                         visibleCorners = visibleCorners(:);
+%                         visdata = visdata( visibleCorners, : );
+                        visdata( :, ~m.visible.cells ) = false;
                     end
                     m.plothandles.patchM = plotmeshsurface( [], theaxes, s, vxs, vistriangles, ...
                             visdata, ... % m.plotdata.(['value' suffix]), ...
@@ -1124,7 +1125,7 @@ function m = calculatePlotData( m, side )
         mgenindexes = FindMorphogenIndex( m, m.plotdefaults.(fn_morphogen) );
 %         interpMode = m.mgen_interpType{ mgenindexes };
         if length( mgenindexes )==1
-            if m.mgenVertexColoring( mgenindexes )
+            if isfield( m, 'mgenVertexColoring' ) && m.mgenVertexColoring( mgenindexes )
                 m.plotdata.(fn_pervertex) = true;
                 m.plotdata.(fn_perelement) = false;
                 m.plotdata.(fn_percorner) = false;
