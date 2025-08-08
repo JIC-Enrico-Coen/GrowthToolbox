@@ -31,14 +31,14 @@ global gJacobianMethod
     f = zeros(numDfs,1);
     index1 = [ 2, 3, 1 ];
     index2 = [ 3, 1, 2 ];
+    cell.eps0gauss = eps0*gaussInfo.N;
     if residualScale ~= 0
         if size(cell.residualStrain,2)==1
-            cell.eps0gauss = eps0*gaussInfo.N + ...
-                cell.residualStrain * residualScale * ones( 1, numGaussPoints );
+            extra = cell.residualStrain * residualScale * ones( 1, numGaussPoints );
         else
-            cell.eps0gauss = eps0*gaussInfo.N + ...
-                cell.residualStrain * residualScale;
+            extra = cell.residualStrain * residualScale;
         end
+        cell.eps0gauss = cell.eps0gauss + extra;
     end
     [cell.gnGlobal,detJ] = computeCellGNGlobal( v, gaussInfo );
     
