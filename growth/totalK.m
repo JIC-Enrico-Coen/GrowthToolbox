@@ -162,7 +162,7 @@ function [m,U,K,F] = totalK( m, useGrowthTensors, useMorphogens )
         end
     end
     if useMorphogens
-        if m.globalProps.flatten || hasZeroGrowth( m );
+        if m.globalProps.flatten || hasZeroGrowth( m )
             m = makeZeroGrowthTensors( m );
         else
             m = makeMeshGrowthTensors( m );
@@ -635,6 +635,8 @@ function [m,U,K,F] = totalK( m, useGrowthTensors, useMorphogens )
 
         m.displacements = U;
         m = computeResiduals( m, retainedStrain );
+        
+        [m,result] = invokeIFcallback( m, 'ModifyDisplacements' );
     end
     
     if nargout < 2

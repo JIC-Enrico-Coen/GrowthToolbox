@@ -577,6 +577,8 @@ function [m,U,K,F] = totalKFE( m, useGrowthTensors, useMorphogens )
         end
         m.displacements = U;
         m = computeResiduals( m, retainedStrain );
+        
+        [m,result] = invokeIFcallback( m, 'ModifyDisplacements' );
     end
     
     if nargout < 2
