@@ -38,6 +38,12 @@ function [m,volumes,quality] = meshFromTetras( vxs, tetras )
             dets(ti) = det( tetvecs(:,:,ti) );
         end
         volumes = dets/6;
+        lefthanded = volumes < 0;
+        tetras(lefthanded,:) = tetras(lefthanded,[1 2 4 3]);
+        numlefthanded = sum(lefthanded);
+        if numlefthanded > 0
+            timedFprintf( '%d of %d tetrahedra were left-handed, converted to right-handed.\n', numlefthanded, numtetras );
+        end
         % The following code attempts to compute a measure of "quality" of
         % each tetrahedron, but the current version is not good. Something
         % better may follow.
