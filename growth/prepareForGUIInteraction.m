@@ -10,9 +10,9 @@ function [ok,handles,m,savedstate] = prepareForGUIInteraction( m, allowRunning )
 %   ALLOWRUNNING is true if, in the case where the active mesh is to be
 %   operated on, the subsequent procedure should be executed even if the
 %   simulation is currently running.  If false, then in that situation OK
-%   will be returned as false.  The default for ALLOWRUNNING is false.
+%   will be returned as false. The default for ALLOWRUNNING is false.
 %
-%   OK is returned as false it either m==0 but there is no active mesh, or
+%   OK is returned as false it either M==0 but there is no active mesh, or
 %   if the active mesh is to be operated on, ALLOWRUNNING is false, and
 %   GFtbox is currently busy.
 %
@@ -24,10 +24,10 @@ function [ok,handles,m,savedstate] = prepareForGUIInteraction( m, allowRunning )
 %
 %   If the active mesh is to be operated on, SAVEDSTATE is a structure
 %   which will be passed to concludeGUIInteraction at the end of the
-%   procedure calling prepareForGUIInteraction.  Typically it will include
+%   procedure calling prepareForGUIInteraction. Typically it will include
 %   the cursor to restore, but may include whatever other information is
 %   necessary to reverse any temporary changes to the GUI made by the
-%   procedure.  If the active mesh is not being operated on, SAVEDSTATE is
+%   procedure. If the active mesh is not being operated on, SAVEDSTATE is
 %   empty.
 %
 %   See also: concludeGUIInteraction
@@ -51,16 +51,19 @@ function [ok,handles,m,savedstate] = prepareForGUIInteraction( m, allowRunning )
     
     if findGUI
         if isempty( GFtboxFigure )
-            fprintf( 1, 'GFtbox is not running.\n' );
+            timedFprintf( 1, 'GFtbox is not running.\n' );
             return;
         end
         handles = guidata( GFtboxFigure );
         m = handles.mesh;
         if isempty( m )
-            fprintf( 1, 'There is no current mesh in GFtbox.\n' );
+            timedFprintf( 1, 'There is no current mesh in GFtbox.\n' );
             return;
         end
         haveGFtbox = true;
+    elseif ~isstruct( m )
+        timedFprintf( 'The mesh must be either 0 (for the mesh currently loaded in GFtbox) or a GFtbox mesh structure.\n' );
+        return;
     elseif ~isempty( m.pictures )
         fig = ancestor( m.pictures(1), 'figure' );
         if isGFtboxFigure(fig)
@@ -71,7 +74,7 @@ function [ok,handles,m,savedstate] = prepareForGUIInteraction( m, allowRunning )
     
     if haveGFtbox
         if findGUI && (~allowRunning) && get( handles.runFlag, 'Value' )
-            fprintf( 1, 'GFtbox is busy.\n' );
+            timedFprintf( 1, 'GFtbox is busy.\n' );
             beep;
             return;
         end

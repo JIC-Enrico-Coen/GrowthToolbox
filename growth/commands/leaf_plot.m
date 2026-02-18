@@ -323,7 +323,8 @@ function varargout = leaf_plot( m, varargin )
 %                         visibleCorners( :, m.visible.cells ) = true;
 %                         visibleCorners = visibleCorners(:);
 %                         visdata = visdata( visibleCorners, : );
-                        visdata( :, ~m.visible.cells ) = false;
+                        visibleCorners = reshape( repmat( m.visible.cells', 3, 1 ), [], 1 );    
+                        visdata = visdata( visibleCorners, : ); % visdata( ~m.visible.cells, : ) = false;
                     end
                     m.plothandles.patchM = plotmeshsurface( [], theaxes, s, vxs, vistriangles, ...
                             visdata, ... % m.plotdata.(['value' suffix]), ...
@@ -865,6 +866,10 @@ function plotWidgets( axs, s, ismultiple )
     if isfield( ph, 'pictureBackground' ) && ishandle( ph.pictureBackground )
         uistack( ph.pictureBackground, 'bottom' );
     end
+    
+%     if isfield( m, 'plotdefaults' ) && isfield( m.plotdefaults, 'autocamera_onload' ) && m.plotdefaults.autocamera_onload
+%         m = meshSetCameraDistanceByBbox( m );
+%     end
 end
 
 

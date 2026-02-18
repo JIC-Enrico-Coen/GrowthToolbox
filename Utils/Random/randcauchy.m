@@ -1,12 +1,12 @@
 function r = randcauchy( varargin )
-%r = randcauchy( sz )
+%r = randcauchy( sz, type )
 %   Get a random sample from the standard Cauchy distribution with median
 %   zero and spread parameter 1.
 %
-%   The final argument can be a class name specifying the type of the
-%   result; by default, 'double'.
+%   The optional TYPE argument is a class name specifying the type of the
+%   result; by default, 'double'. All types valid for RAND() are valid.
 %
-%   See also: cdfcauchy, invcdfcauchy, pdfcauchy.
+%   See also: cdfcauchy, invcdfcauchy, pdfcauchy, rand
 
     if (nargin > 0) && ischar( varargin{end} )
         classname = varargin{end};

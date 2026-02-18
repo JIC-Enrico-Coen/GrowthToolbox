@@ -35,7 +35,7 @@ function perCell = FEvertexToCell( m, perFEvertex, method, whichcells )
         perCell = CellvertexToCell( m, perCellvertex, method );
     else
         numCell = getNumberOfCells( m );
-        if nargin < 3
+        if nargin < 4
             whichcells = 1:numCell;
         elseif islogical( whichcells )
             whichcells = find(whichcells);

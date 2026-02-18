@@ -21,7 +21,13 @@ function cv = leaf_FEVertexToCellularValue( m, fev, varargin )
         'mode' );
     if ~ok, return; end
 
-    cv = sum( m.secondlayer.vxBaryCoords .* fev(m.tricellvxs(m.secondlayer.vxFEMcell,:)), 2 );
+    % Calculate the global coordinates of the cellular vertexes.
+    if isVolumetricMesh( m )
+        cv = sum( m.secondlayer.vxBaryCoords .* fev(m.FEsets.fevxs(m.secondlayer.vxFEMcell,:)), 2 );
+    else
+        cv = sum( m.secondlayer.vxBaryCoords .* fev(m.tricellvxs(m.secondlayer.vxFEMcell,:)), 2 );
+    end
+    
     if strcmp(s.mode,'cell')
         cv1 = zeros( length(m.secondlayer.cells), 1 );
         for i=1:length(m.secondlayer.cells)

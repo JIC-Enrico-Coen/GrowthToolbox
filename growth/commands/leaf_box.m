@@ -12,44 +12,66 @@ function [m,ok] = leaf_box( m, varargin )
         'size', [], 'xwidth', [], 'ywidth', [], 'zwidth', [], ...
         'centre', [0 0 0], ...
         'numdivs', [], 'xdivs', [], 'ydivs', [], 'zdivs', [], ...
-        'divsize', [], 'edgeradius', 0, ...
+        'divsize', [], ...
+        'edgeradius', 0, 'edgedivs', [], ...
+        'margin', 0, 'margindivs', [], ...
         'layers', 0, 'thickness', 0, 'generalFE', false, ...
         'new', [] );
     ok = checkcommandargs( mfilename(), s, 'exact', ...
         'size', 'xwidth', 'ywidth', 'zwidth', 'centre', ...
-        'numdivs', 'xdivs', 'ydivs', 'zdivs', 'divsize', 'edgeradius', ...
+        'numdivs', 'xdivs', 'ydivs', 'zdivs', ...
+        'divsize', ...
+        'edgeradius', 'edgedivs', ...
+        'margindivs', 'margin', ...
         'layers', 'thickness', 'generalFE', ...
         'new' );
     if ~ok, return; end
     
-    if isempty( s.size )
-        s.size = [ s.xwidth, s.ywidth, s.zwidth ];
-    end
-    if isempty( s.size )
-        s.size = [ 2 2 2 ];
-    end
-    if length(s.size)==1
-        s.size = repmat( s.size, 1, 3 );
-    end
+    s.size = default3( s.size, [ s.xwidth, s.ywidth, s.zwidth ], [2 2 2] );
     
-    if isempty( s.numdivs )
-        s.numdivs = [ s.xdivs, s.ydivs, s.zdivs ];
-    end
-    if isempty( s.numdivs )
-        s.numdivs = [ 4 4 4 ];
-    end
-    if length(s.numdivs)==1
-        s.numdivs = repmat( s.numdivs, 1, 3 );
-    end
-    
+    s.numdivs = default3( s.numdivs, [ s.xdivs, s.ydivs, s.zdivs ], [4 4 4] );
     if ~isempty( s.divsize )
-        s.numdivs = round( s.size./s.divsize );
+        s.numdivs = round( s.size ./ s.divsize );
     end
     
-    if numel(s.edgeradius)==1
-        s.edgeradius = s.edgeradius + [0 0 0];
+    
+%     divplanes = round( [ [0 0 0];
+%              s.edgeradius;
+%              s.edgeradius + s.margin ] .* ((s.numdivs+1)./s.size) );
+%     divplanes = [ divplanes; s.numdivs+1-divplanes(end:-1:1,:) ];
+%     divsPerSection = divplanes(2:end,:) - divplanes(1:(end-1),:);
+%     s.edgedivs = divsPerSection(1,:);
+%     s.margindivs = divsPerSection(2,:);
+    
+    s.margin = default3( s.margin, [0 0 0] );
+    s.margindivs = default3( s.margindivs, ceil( s.numdivs .* s.margin ./ s.size ) );
+    s.edgeradius = default3( s.edgeradius, [0 0 0] );
+    s.edgeradius = min( s.edgeradius, s.size/2 );
+    s.edgedivs = default3( s.edgedivs, ceil( s.numdivs .* s.edgeradius ./ s.size ) );
+    s.edgedivs = min( s.edgedivs, s.numdivs/2 );
+    negedges = -s.size/2 + s.edgeradius;
+    posedges = -negedges;
+    middivs = s.numdivs - (s.edgedivs + s.margindivs)*2;
+    
+    values_xyz = cell(1,3);
+    for di=1:3
+        negedgevalues = linspace( -s.size(di)/2, negedges(di), s.edgedivs(di)+1 );
+        posedgevalues = -negedgevalues(end:-1:1);
+        marginbasevalues = linspace( 0, s.margin(di), s.margindivs(di)+1 );
+        if ~isempty(marginbasevalues)
+            negmarginvalues = negedges(di) + marginbasevalues;
+            posmarginvalues = posedges(di) - marginbasevalues(end:-1:1);
+        end
+        midvalues = linspace( negedges(di) + marginbasevalues(end), posedges(di) - marginbasevalues(end), middivs(di)+1 );
+        negmarginvalues(1) = [];
+        posmarginvalues(end) = [];
+        midvalues([1 end]) = [];
+        values = [ negedgevalues, negmarginvalues, midvalues, posmarginvalues, posedgevalues ];
+        values_xyz{di} = values';
     end
-    s.edgeradius = min( s.edgeradius, min( s.size )/2 );
+    
+    
+    
     
     [ok,handles,m,savedstate] = prepareForGUIInteraction( m );
     if ~ok
@@ -88,17 +110,21 @@ function [m,ok] = leaf_box( m, varargin )
     end
     vxs = cell2mat( vxs(:) );
     tricellvxs = cell2mat( tricellvxs(:) );
-    tic;
+    %tic;
     [vxs,~,remap] = mergenodesprox( vxs, 0.01*min( s.size./s.numdivs ), false );
-    toc;
+    %toc;
     tricellvxs = remap(tricellvxs);
     [~,~,~,~,clumpindex1,~] = clumplinear( vxs(:,1) );
     [~,~,~,~,clumpindex2,~] = clumplinear( vxs(:,2) );
     [~,~,~,~,clumpindex3,~] = clumplinear( vxs(:,3) );
     auxdata.planes = [ clumpindex1 clumpindex2 clumpindex3 ];
+    zz = [ values_xyz{1}( auxdata.planes(:,1) ), values_xyz{2}( auxdata.planes(:,2) ), values_xyz{3}( auxdata.planes(:,3) ) ];
+    vxs = zz;
+    
+    
     
     stripthickness = s.size ./ s.numdivs;
-    numedgestrips = ceil( s.edgeradius ./ stripthickness );
+    numedgestrips = s.edgedivs;     % ceil( s.edgeradius ./ stripthickness );
     
     numvxs = size(vxs,1);
     if s.edgeradius > 0
@@ -243,3 +269,14 @@ function m = submesh( uwidth, vwidth, wwidth, udivs, vdivs, axisperm, flip )
     m.nodes(:,axisperm) = m.nodes;
 end
 
+function x = default3( x, dflt1, dflt2 )
+    if isempty(x)
+        x = dflt1;
+    end
+    if isempty(x) && (nargin >= 3)
+        x = dflt2;
+    end
+    if length(x)==1
+        x = x + [0 0 0];
+    end
+end

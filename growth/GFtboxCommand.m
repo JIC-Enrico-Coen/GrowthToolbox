@@ -10,7 +10,7 @@ function bareExptID = GFtboxCommand( varargin )
     %In addition, the command line used to invoke GFtboxCommand
     %and a copy of the interaction function are saved in the experimentname directory.
     %
-    %The meshes can be viewed using VMS (View Mesh System)
+    %The meshes can be viewed using VMS (View Mesh System)§
     %or VMSReport. They can also be moved into the project directory where
     %GFtbox will recognise them as 'Stages'.
     %
@@ -78,17 +78,21 @@ function bareExptID = GFtboxCommand( varargin )
            LocalProjectFullPath ...
            RemoteProjectFullPath ...
            RemoteProjectsDirectory ...
+           RemoteProjectsDirectoryExists ...
            RemoteScriptDirectory ...
            DryRun ...
-           MatlabModule
+           MatlabModule ...
+           RemoteDirectoriesCreated
 
     ProjectName = '';
     LocalProjectFullPath = '';
     RemoteProjectFullPath = '';
     RemoteProjectsDirectory = '';
+    RemoteProjectsDirectoryExists = false;
     RemoteScriptDirectory = 'ClusterScripts';
     DryRun = false;
     MatlabModule = 'matlab';
+    RemoteDirectoriesCreated = {};
     
     experimentID = '';
     experimentUserID = '';
@@ -110,6 +114,7 @@ function bareExptID = GFtboxCommand( varargin )
     parallelOptions = true;
     viewparams = [];
     stages=[];
+    startStage = [];
     timestep = NaN;
     saveDeletesOlderStages = true;
     sendToCluster = ~oncluster();
@@ -177,6 +182,8 @@ function bareExptID = GFtboxCommand( varargin )
                 runname = argvalue;
             case 'STAGES'
                 stages = argvalue;
+            case 'STARTSTAGE'
+                startStage = argvalue;
             case 'TIMESTEP'
                 timestep = argvalue;
             case 'MATLAB'
@@ -406,21 +413,25 @@ function bareExptID = GFtboxCommand( varargin )
         getClusterDetails();
         remoteProjectExists = existsRemoteFile( RemoteProjectFullPath );
         remoteClusterProjectFiles = clusterfullfile( RemoteProjectFullPath, ClusterProjectFiles );
-        makeRemoteDirectory( remoteClusterProjectFiles );
+        makeRemoteDirectory( remoteClusterProjectFiles, false );
         
         if remoteProjectExists
             timedFprintf( 1, 'Remote project %s exists, not copying across.\n', RemoteProjectFullPath );
         else
             % Copy the local project files across.
 
-            makeRemoteDirectory( clusterfullfile( RemoteProjectFullPath, 'runs' ) );
+            makeRemoteDirectory( clusterfullfile( RemoteProjectFullPath, 'runs' ), false );
             localProjectInfoFile = fullfile( LocalClusterProjectFiles, 'ProjectInfo.txt' );
             remoteProjectInfoFile = clusterfullfile( remoteClusterProjectFiles, 'ProjectInfo.txt' );
-            writefile( localProjectInfoFile, [LocalProjectFullPath newline] );
-            copyFileLocalRemote( localProjectInfoFile, remoteProjectInfoFile, '>', true );
-            copyProjectFile( [makeIFname(ProjectName),'.m'] );
-            copyProjectFile( [ProjectName,'.mat'] );
-            copyProjectFile( [ProjectName,'_static.mat'] );
+            send_ok = true;
+            send_ok = send_ok && writefile( localProjectInfoFile, [LocalProjectFullPath newline] );
+            send_ok = send_ok && copyFileLocalRemote( localProjectInfoFile, remoteProjectInfoFile, '>', true );
+            send_ok = send_ok && copyProjectFile( [makeIFname(ProjectName),'.m'] );
+            send_ok = send_ok && copyProjectFile( [ProjectName,'.mat'] );
+            send_ok = send_ok && copyProjectFile( [ProjectName,'_static.mat'] );
+            if ~isempty(startStage) && (startStage > 0)
+                send_ok = send_ok && copyProjectFile( [ProjectName,makestagesuffixf( startStage )] );
+            end
             
 %             objflag = false;
             localObjDirectory = fullfile(LocalProjectFullPath,'objs');
@@ -429,15 +440,19 @@ function bareExptID = GFtboxCommand( varargin )
             if ~isempty(objlist) && ~existsRemoteFile( remoteObjDirectory )
                 % There are local obj files but no remote objs directory.
                 % Make it and copy the obj files across.
-                makeRemoteDirectory( remoteObjDirectory );
+                send_ok = send_ok && makeRemoteDirectory( remoteObjDirectory, false );
 %                 objflag = true;
                 for oi = 1:length(objlist)
                     objfilename = objlist(oi).name;
-                    copyFileLocalRemote( ...
+                    send_ok = send_ok && copyFileLocalRemote( ...
                             fullfile(localObjDirectory,objfilename), ...
                             clusterfullfile( RemoteProjectFullPath, 'objs', objfilename ), ...
                             '>' );
                 end
+            end
+            if ~send_ok
+                timedFprintf( 1, 'Could not copy "', ProjectName, '" to cluster.' );
+                xxxx = 1;
             end
         end
         
@@ -445,9 +460,6 @@ function bareExptID = GFtboxCommand( varargin )
             rs = which('RunSilent');
             copyFileLocalRemote( rs, 'RunSilent.m', '>' );
         end
-%         executeRemote( sprintf( 'touch ''%s''', 'ClusterBuffer.txt' ) );
-        
-%         writefile( fullfile( LocalClusterProjectFiles, 'batchnumber.txt' ), [ exptID newline ] );
 
         
         
@@ -457,6 +469,7 @@ function bareExptID = GFtboxCommand( varargin )
         % Create a script for each cluster job and send it to the cluster.
         numruns = repetitions * length(allmodeloptions);
         subfilename = cell( 1, numruns );
+        subfullfilename = cell( 1, numruns );
         runnum = 0;
         for variantIndex=1:length(allmodeloptions)
             timedFprintf( 1, 'Options for variant %d:\n', variantIndex );
@@ -479,17 +492,21 @@ function bareExptID = GFtboxCommand( varargin )
                                                        job_id_struct );
                 timedFprintf( 1, 'temp_argument_struct =\n' );
                 disp( temp_argument_struct );
-                [~,subfilename{runnum}] = sendClusterJobScript( temp_argument_struct, runname );
+                [~,subfilename{runnum},subfullfilename{runnum}] = sendClusterJobScript( temp_argument_struct, runname, false );
             end
         end
+        subfilepattern = fullfile( LocalProjectFullPath, [ ProjectName, exptID, '_*.sh' ] );
+        ok = sendShellScript( subfilepattern, RemoteScriptDirectory, false );
         
         % Create a master script, send it to the cluster, and execute it
         % there. This script will run all of the scripts that we just sent
         % for the individual runs.
         h_master=fopen( sh_fullfilename, 'w' );
         fprintf(h_master,'#!/bin/bash\n');
+        fprintf( h_master, '. /etc/profile\n');
+        SBATCH_PATH = 'sbatch';
         for ri=1:numruns
-            fprintf( h_master, 'sbatch < %s\n', clusterfullfile( RemoteScriptDirectory, subfilename{ri} ) );
+            fprintf( h_master, '%s < %s\n', SBATCH_PATH, clusterfullfile( RemoteScriptDirectory, subfilename{ri} ) );
 %             fprintf( h_master, 'sleep 1\n' );
         end
         fclose(h_master);
@@ -500,6 +517,9 @@ function bareExptID = GFtboxCommand( varargin )
         m = leaf_reload( m, 'restart' , 'rewrite', false, 'soleaccess', false );
         m = leaf_setproperty( m, 'staticreadonly', true, 'allowInteraction', true ); % prevent cross talk when on cluster
         m = leaf_setproperty( m, 'saveDeletesOlderStages', saveDeletesOlderStages );
+        if ~isempty(startStage) && (startStage > 0)
+            % Find the stage file and load it. If fails, do not run job.
+        end
         runnum = 0;
         IS_SPECIFIED_RUN = ~isempty( runname ) && (length(allmodeloptions)==1) && (repetitions==1);
         for variantIndex=1:length(allmodeloptions)
@@ -522,8 +542,8 @@ function bareExptID = GFtboxCommand( varargin )
                 end
                 m = leaf_setproperty( m, 'currentrun', runname ); % Tell the model which run it should be saving stages to.
                 m = initialiseOptions( m );
-                teststructToString = structToString( temp_argument_struct );
-                xxxx = 1;
+                % teststructToString = structToString( temp_argument_struct );
+                % xxxx = 1;
 
                 if haveModelOptions
                     m = setModelOptions( m, temp_argument_struct );
@@ -564,7 +584,6 @@ function bareExptID = GFtboxCommand( varargin )
                     movieframetimes1 = [];
                     timedFprintf( 1, 'repnum %d > maxnummovies %d, so no movie.\n', repnum, maxnummovies );
                 end
-                movieframetimes1
                 doOneRun( m, stages, runname, movieframetimes1, movieformat, moviefps );
             end
         end
@@ -643,9 +662,7 @@ function doOneRun( m, stages, runname, movieframetimes, movieformat, moviefps )
     nextMovieFrame = 1;
     bgcolor = [ 1 1 1 ];
     
-    timedFprintf( 1, '%d stages to compute:', length(stages) );
-    fprintf( 1, ' %f', stages );
-    fprintf( 1, '\n' );
+    timedFprintf( 1, '%d stages to compute.\n', length(stages) );
     for si=1:length(stages)
         while meshBeforeTime( m, stages(si) ) % realtime<stages(i_stage)
             timedFprintf( 1, '\n\nBeginning iteration %d of %d at sim time %f of %f.\n', ...
@@ -668,24 +685,27 @@ function doOneRun( m, stages, runname, movieframetimes, movieformat, moviefps )
     timedFprintf( 1, '\n\nAll %d stages computed.\n', length(stages) );
 end
 
-
-function [errors,local_sh_basefilename] = sendClusterJobScript( argsstruct, jobname )
+function [errors,local_sh_basefilename,local_sh_fullfilename] = sendClusterJobScript( argsstruct, jobname, send )
 % This procedure creates a .sh file which, when executed on the cluster,
 % will run a batch job that invokes Matlab to run RunSilent.m with the
 % argument ARGSTRING. It first writes the file locally, then copies it
-% across to the cluster, makes it writable and executable there, and
-% converts its line endings from dos to unix. It does not execute the file.
+% across to the cluster. It does not execute the file.
 
     global LocalProjectFullPath RemoteProjectFullPath MatlabModule RemoteScriptDirectory
+    
+    ok = true;
+    
+    if (nargin < 3) || isempty(send)
+        send = true;
+    end
     
     % This file should be created in the local project directory in the
     % cluster subdirectory.
     local_sh_basefilename = sprintf( '%s.sh', jobname );
     local_sh_fullfilename = fullfile( LocalProjectFullPath, local_sh_basefilename );
     remote_sh_fullfilename = clusterfullfile( RemoteScriptDirectory, local_sh_basefilename );
-    ok = makeRemoteDirectory( RemoteScriptDirectory );
+    ok = makeRemoteDirectory( RemoteScriptDirectory, false );
     if ~ok
-        timedFprintf( 2, 'Cannot make remote script directory %s.\n', RemoteScriptDirectory );
         errors = true;
         return;
     end
@@ -695,31 +715,37 @@ function [errors,local_sh_basefilename] = sendClusterJobScript( argsstruct, jobn
     % The next few lines write shell comments to the file. This file will
     % not be directly executed, but provided as input to sbatch on
     % the cluster.
-    fprintf( h, '#SBATCH -p compute-24-96,compute-64-512\n');
+    % fprintf( h, '#SBATCH -p compute-24-96,compute-64-512\n'); % Hali does not recognise these queue names.
     outputDirBase = clusterfullfile( RemoteProjectFullPath, 'runs', jobname );
     fprintf( h, '#SBATCH --job-name %s\n',jobname);  % Specifies the name of the job.
     fprintf( h, '#SBATCH -t 64:00:00\n');  % cpu time limit HH:MM:SS.
+    fprintf( h, '#SBATCH --mem 8G\n');  % Memory in GB. Default is 2G, max is 8G.
     fprintf( h, '#SBATCH -o %s.out\n',outputDirBase);  % Specifies the file to receive the standard output of the job.
     fprintf( h, '#SBATCH -e %s.err\n',outputDirBase);  % Specifies the file to receive the standard error output of the job.
     fprintf( h, '. /etc/profile\n');
-    fprintf( h, 'echo "%s starting at `date` in directory `pwd`"\n', mfilename());
+    fprintf( h, 'echo "`date`: %s starting in directory `pwd`"\n', mfilename());
     fprintf( h, 'module add %s\n', MatlabModule);
-    fprintf( h, 'matlab -nosplash -nodesktop -nodisplay -jvm -singleCompThread -r "RunSilent(%s); exit(0)"\n', ...
+    fprintf( h, 'matlab -nosplash -nodesktop -nodisplay -jvm -singleCompThread -batch "RunSilent(%s); exit(0)"\n', ...
                 structToString( argsstruct ) );
     fprintf( h, 'echo "%s ending at `date`"\n', mfilename());
     fclose( h );
-    
-    ok = sendShellScript( local_sh_fullfilename, remote_sh_fullfilename, false );
+    if send
+        ok = sendShellScript( local_sh_fullfilename, remote_sh_fullfilename, false );
+    end
     errors = ~ok;
 end
 
 function ok = sendShellScript( localfullname, remotefullname, execute )
-    ok = copyFileLocalRemote( localfullname, remotefullname, '>', true );
-    if ok
-        ok = executeRemote( sprintf( 'chmod +wx ''%s''', remotefullname ) );
+    % We set the file to be executable locally, and copy it across with
+    % the -p flag, to avoid having to send a remote command to set it
+    % executable.
+    [status,result] = system( [ 'chmod a+x ', localfullname ] );
+    ok = status==0;
+    if ~ok
+        timedFprintf( 2, 'Could not set local file executable: %s\n  Reason: %s\n', localfullname, result )
     end
     if ok
-        ok = executeRemote( sprintf( 'dos2unix ''%s''', remotefullname ) );
+        ok = copyFileLocalRemote( localfullname, remotefullname, '>', true );
     end
     if ok && execute
         ok = executeRemote( sprintf( '''%s''', remotefullname ) );

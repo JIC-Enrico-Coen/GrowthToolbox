@@ -82,6 +82,7 @@ function m = leaf_createStreamlines( m, varargin )
 %     timedFprintf( 'Creating %d tubules.\n', numstreamlines );
     newtubuleinfo = zeros( numstreamlines, 5 );
     newtubuleinfo(:,5) = double(Steps(m)+1);
+
     for i=1:numstreamlines
         streamline(i).id = currentID+i;
         streamline(i).barycoords = ss(i).barycoords;
@@ -113,7 +114,7 @@ function m = leaf_createStreamlines( m, varargin )
             'directionglobal', 'double', ...
             'status', 'struct' );
         streamline(i).status.interactiontime = m.tubules.tubuleparams.branch_interaction_delay;
-        newtubuleinfo(i,1:4) = [ streamline(i).segcellindex, streamline(i).barycoords ];
+        newtubuleinfo(i,1:4) = [ double(streamline(i).segcellindex), streamline(i).barycoords ];
     end
     
     if isempty(m.tubules.tracks)

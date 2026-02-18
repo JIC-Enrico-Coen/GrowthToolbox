@@ -64,6 +64,7 @@ function [m,splitdata] = leaf_subdivide( m, varargin )
             'mode', 'all', ...
             'force', true );
     ok = checkcommandargs( mfilename(), s, 'only', ...
+            'edges', ...
             'levels', ...
             'morphogen', ...
             'min', ...
@@ -103,17 +104,21 @@ function [m,splitdata] = leaf_subdivide( m, varargin )
     
     directionConstraint = isfield( s, 'direction' ) && isfield( s, 'angle' );
     
-    edgesToSplit = 1:getNumberOfEdges(m);
-    splitmap = true( getNumberOfEdges(m), 1 );
     dosplit = false;
     
     if isfield( s, 'edges' )
         dosplit = true;
         if islogical( s.edges )
-            % TO BE CONTINUED
+            edgesToSplit = find( s.edges );
+            splitmap = s.edges;
         else
-            % TO BE CONTINUED
+            edgesToSplit = s.edges;
+            splitmap = false( getNumberOfEdges(m), 1 );
+            splitmap( edgesToSplit ) = true;
         end
+    else
+        edgesToSplit = 1:getNumberOfEdges(m);
+        splitmap = true( getNumberOfEdges(m), 1 );
     end
     
     if full3d

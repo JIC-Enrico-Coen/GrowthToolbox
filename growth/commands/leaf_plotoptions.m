@@ -370,15 +370,15 @@ global gPlotOptionNames gABfields gPlotPriorities gAxisNames
     
     bboxAxisRange = [];
     if hasPicture(m)
-%         bboxAxisRange = getAxBoundingBox( m.pictures(1), ...
-%             'centre', m.plotdefaults.axisbboxcentre, ...
-%             'relmargin', m.plotdefaults.axisbboxrelmargin, ...
-%             'absmargin', m.plotdefaults.axisbboxabsmargin );
         bboxAxisRange = getAxBoundingBox( m.pictures(1), ...
-            'data', 'data', ...
-            'centre', '', ...
-            'relmargin', 0.1, ...
-            'absmargin', 0 );
+            'centre', m.plotdefaults.axisbboxcentre, ...
+            'relmargin', m.plotdefaults.axisbboxrelmargin, ...
+            'absmargin', m.plotdefaults.axisbboxabsmargin );
+%         bboxAxisRange = getAxBoundingBox( m.pictures(1), ...
+%             'data', 'data', ...
+%             'centre', '', ...
+%             'relmargin', 0.1, ...
+%             'absmargin', 0 );
     end
     if isempty( bboxAxisRange )
         bboxAxisRange = meshbbox( m, true, 0.2 );
@@ -536,8 +536,9 @@ end
 function s = defaultMultipleFromStruct( s, d, varargin )
 % If every field of d is either missing or empty in s, then copy all those
 % fields from d to s.
-    for i=1:length(varargin)
-        fn = varargin{i};
+    fns = intersect( varargin, fieldnames(d) );
+    for i=1:length(fns)
+        fn = fns{i};
         if ~isempty( s.(fn) )
             return;
         end
@@ -550,9 +551,10 @@ end
 
 function s = defaultEmptyFromStruct( s, d, varargin )
 % For each field in d, copy it to s if it is either missing or empty in s.
-    for i = 1:length(varargin)
-        fn = varargin{i};
-        if ~isfield( s, fn ) || isempty( s.(fn) )
+    fns = intersect( varargin, fieldnames(d) );
+    for i = 1:length(fns)
+        fn = fns{i};
+        if isfield( d, fn ) && (~isfield( s, fn ) || isempty( s.(fn) ))
             s.(fn) = d.(fn);
         end
     end

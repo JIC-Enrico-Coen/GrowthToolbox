@@ -49,13 +49,18 @@ function perFEvertex = FEToFEvertex( m, perFE, method )
             end
         else
             vxsPerFE = size(m.tricellvxs,2);
-            measurePerFEvertex = sumArray( m.tricellvxs, repmat( m.cellareas, 1, vxsPerFE ) );
-            perFEarea = perFE .* repmat( m.cellareas, 1, valuesPerItem );
 
             % Can this use weightedAverageArray?
-            for j=1:valuesPerItem
-                perFEvertex1(:,j) = cf( m.tricellvxs, repmat( perFEarea(:,j), 1, vxsPerFE ) ) ./ measurePerFEvertex;
-                perFEvertex(:,j) = sumArray( m.tricellvxs, repmat( perFEarea(:,j), 1, vxsPerFE ) ) ./ measurePerFEvertex;
+            if strcmp( method, 'mid' )
+                measurePerFEvertex = sumArray( m.tricellvxs, repmat( m.cellareas, 1, vxsPerFE ) );
+                perFEarea = perFE .* repmat( m.cellareas, 1, valuesPerItem );
+                for j=1:valuesPerItem
+                    perFEvertex(:,j) = sumArray( m.tricellvxs, repmat( perFEarea(:,j), 1, vxsPerFE ) ) ./ measurePerFEvertex;
+                end
+            else
+                for j=1:valuesPerItem
+                    perFEvertex(:,j) = cf( m.tricellvxs, repmat( perFE(:,j), 1, vxsPerFE ) );
+                end
             end
         end
     else

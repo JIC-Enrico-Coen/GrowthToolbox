@@ -1,6 +1,10 @@
 function J3 = rotmat2To3mat( J )
-%J3 = rotmat2To3mat( J )    Convert a 2*2 rotation matrix to 3-matrix form,
-%suitable for rotating elasticity tensors in 3-matrix form.
+%J3 = rotmat2To3mat( J )
+%   Convert a 2*2 rotation matrix to 3-matrix form, suitable for rotating
+%   elasticity tensors in 3-matrix form.
+%
+%   NEVER USED. Does not use symmetrycount, so might be wrong.
+
     if numel(J)==1
         c = cos(J);
         s = sin(J);

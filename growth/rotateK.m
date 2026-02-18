@@ -1,6 +1,8 @@
 function k = rotateK( k, R )
 %k = rotateK( k, R )
 %   Rotate the K matrix by a rotation R in column vector form.
+%
+%   NEVER USED.
 
     for i=3:3:size(k,2)
         range = [i-2,i-1,i];

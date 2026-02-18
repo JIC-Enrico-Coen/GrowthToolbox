@@ -7,6 +7,8 @@ function newcp = setCameraDistance( cp, d )
 %setCameraDistance( ax, s )
 %   For an axes object AX, get the camera params, modify them as for
 %   scaleCameraDistance( cp, s ), and apply the modified parameters to AX.
+%
+%   The new camera params are returned. NEWCP will be empty if CP is empty.
 
     if isempty(cp)
         newcp = [];

@@ -13,6 +13,7 @@ function t = initTubules()
     tubuleparams.prob_free_branch_scaling = 1; % Scaling by 1 = no effect.
     tubuleparams.prob_xover_branch_scaling = 1; % Scaling by 1 = no effect.
     tubuleparams.density_branch_scaling = 1; % Scaling by 1 = no effect.
+    tubuleparams.max_rescue_scaling = Inf; % No cap on how far rescue rate can be scaled up.
     tubuleparams.SCALE_CURVATURE_CAT_BY_DENSITY = false; % This is a boolean, not a number.
     
     emptytrack = newemptystreamline();

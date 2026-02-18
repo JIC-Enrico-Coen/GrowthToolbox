@@ -61,6 +61,9 @@ function paramValues = getTubuleParamsModifiedByMorphogens( m, varargin )
     fns = selectedparams;
     for i=1:length(fns)
         fn = fns{i};
+        if (i==26)
+            xxxx = 1;
+        end
         
         if strcmp( fn, 'linecolormap' )
             % Not really a tubule parameter.
@@ -112,13 +115,13 @@ function paramValues = getTubuleParamsModifiedByMorphogens( m, varargin )
             else
                 switch mgen_interpType
                     case 'min'
-                        paramValuesX.(fn) = min( pervertex( m.tricellvxs( ci, : ) ) );
+                        paramValues.(fn) = min( pervertex( m.tricellvxs( ci, : ) ) );
                     case 'max'
-                        paramValuesX.(fn) = max( pervertex( m.tricellvxs( ci, : ) ) );
+                        paramValues.(fn) = max( pervertex( m.tricellvxs( ci, : ) ) );
                     otherwise
-                        paramValuesX.(fn) = bc * pervertex( m.tricellvxs( ci, : ) );
+                        paramValues.(fn) = bc * pervertex( m.tricellvxs( ci, : ) );
                 end
-                paramValues.(fn) = interpolateOverSimplexes( pervertex, m.tricellvxs( ci, : ), bc, mgen_interpType );
+                paramValuesX.(fn) = interpolateOverSimplexes( pervertex, m.tricellvxs( ci, : ), bc, mgen_interpType );
                 if length( unique( pervertex( m.tricellvxs( ci, : ) ) ) ) > 1
                     xxxx = 1;
                 end
@@ -129,13 +132,13 @@ function paramValues = getTubuleParamsModifiedByMorphogens( m, varargin )
             else
                 switch mgen_interpType
                     case 'min'
-                        paramValuesX.(fn) = min( reshape( pervertex( m.tricellvxs( cis, : ) ), [], 3 ), 2 );
+                        paramValues.(fn) = min( reshape( pervertex( m.tricellvxs( cis, : ) ), [], 3 ), 2 );
                     case 'max'
-                        paramValuesX.(fn) = max( reshape( pervertex( m.tricellvxs( cis, : ) ), [], 3 ), 2 );
+                        paramValues.(fn) = max( reshape( pervertex( m.tricellvxs( cis, : ) ), [], 3 ), 2 );
                     otherwise
-                        paramValuesX.(fn) = sum( reshape( pervertex( m.tricellvxs( cis, : ) ), [], 3 ) .* bcs, 2 );
+                        paramValues.(fn) = sum( reshape( pervertex( m.tricellvxs( cis, : ) ), [], 3 ) .* bcs, 2 );
                 end
-                paramValues.(fn) = interpolateOverSimplexes( pervertex, m.tricellvxs( cis, : ), bcs, mgen_interpType );
+                paramValuesX.(fn) = interpolateOverSimplexes( pervertex, m.tricellvxs( cis, : ), bcs, mgen_interpType );
                 xxxx = 1;
             end
         end

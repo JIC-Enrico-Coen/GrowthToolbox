@@ -43,6 +43,9 @@ global gJacobianMethod
     [cell.gnGlobal,detJ] = computeCellGNGlobal( v, gaussInfo );
     
     columnBases = 3*((1:vxsPerCell)-1);
+    UNIT_NORMALS = false;
+    SQRT_NORMALS = false;
+    APPLY_PRESSURE_BOTH_SIDES = true;
     for i=1:numGaussPoints
         sn = zeros( 6, numDfs );
         for j=1:3
@@ -62,11 +65,18 @@ global gJacobianMethod
         end
         
         if pressure ~= 0
-            nv = trinormal( v(:,1:3)' );
-            nv = nv/norm(nv);
+            nv = trinormal( v(:,1:3)' )/2; % Length of nv equals area of element.
+            if UNIT_NORMALS
+                nv = nv/norm(nv); % Dubious.
+            elseif SQRT_NORMALS
+                nv = nv/sqrt(norm(nv)); % Even more dubious.
+            end
             nv = nv * pressure;
-%             f1(1:9) = f1(1:9) - repmat( nv(:), 3, 1 );
-            f1 = f1 - repmat( nv(:), 6, 1 );
+            if APPLY_PRESSURE_BOTH_SIDES
+                f1 = f1 - repmat( nv(:), 6, 1 );
+            else
+                f1(1:9) = f1(1:9) - repmat( nv(:), 3, 1 );
+            end
         end
         
         k = k + k1;

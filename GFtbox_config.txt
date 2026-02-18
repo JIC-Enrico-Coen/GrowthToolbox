@@ -11,5 +11,6 @@ biovertexsize 1
 Renderer OpenGL
 usegraphicscard false
 catchIFExceptions true
-remotehost ada.uea.ac.uk
+#remotehost ada.uea.ac.uk
+remotehost hali.uea.ac.uk
 remoteuser jrk

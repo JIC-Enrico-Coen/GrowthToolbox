@@ -64,7 +64,9 @@ function bbox = getAxBoundingBox( ax, varargin )
     bbox = unionBbox( axisBbox, dataBbox );
     
     if isfield( s, 'centre' )
-        if isnumeric(s.centre)
+        if isempty( s.centre )
+            bboxCentre = sum(bbox,1)/2;
+        elseif isnumeric(s.centre)
             bboxCentre = s.centre;
         else
             switch s.centre
@@ -78,10 +80,10 @@ function bbox = getAxBoundingBox( ax, varargin )
         end
         bbox1 = bbox - bboxCentre;
         bboxOffset = max(abs(bbox1),[],1);
-        if isfield( s, 'relmargin')
+        if isfield( s, 'relmargin') && ~isempty( s.relmargin )
             bboxOffset = bboxOffset * (1 + s.relmargin);
         end
-        if isfield( s, 'absmargin')
+        if isfield( s, 'absmargin') && ~isempty( s.absmargin )
             bboxOffset = bboxOffset + s.absmargin;
         end
         bbox = bboxCentre + [ -bboxOffset; bboxOffset ];

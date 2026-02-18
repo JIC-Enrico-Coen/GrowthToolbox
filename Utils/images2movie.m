@@ -51,6 +51,8 @@ function ok = images2movie( filename, imagespec, varargin )
 %   The result is a boolean to indicate success or failure. In the case of
 %   failure, a movie file may or may not have been created, and if created,
 %   may be invalid or incomplete.
+%
+%   See also: movie2images
     
     ok = false;
     if ischar(imagespec)

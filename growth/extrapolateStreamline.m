@@ -34,9 +34,6 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
         recursive = false;
     end
 
-    if s.id==678
-        xxxx = 1;
-    end
     if ~validStreamline( m, s )
         BREAKPOINT( 'Invalid streamline.\n' );
     end
@@ -557,6 +554,9 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
         
         % Calculate whether there was a spontaneous stopping or
         % catastrophising before lengthgrown.
+        if s.id==82
+            xxxx = 1;
+        end
         if lengthgrown > 0
             params = getTubuleParamsModifiedByMorphogens( m, s );
             timeused = lengthgrown/params.plus_growthrate;
@@ -603,9 +603,6 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
             % There is also a probability of spontaneous catastrophe per
             % unit time. This is added to the probability of
             % curvature-induced catastrophe per unit time.
-            if isinf( params.prob_plus_catastrophe )
-                xxxx = 1;
-            end
             if m.tubules.tubuleparams.SCALE_CURVATURE_CAT_BY_DENSITY
                 effective_prob_plus_catastrophe_per_time = (params.prob_plus_catastrophe + curvature_cat_prob_per_time) * m.tubules.tubuleparams.plus_catastrophe_scaling;
             else
@@ -617,6 +614,24 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
             % m.tubules.tubuleparams.plus_catastrophe_scaling.
             if ~isnan( params.prob_plus_catastrophe2 ) && (params.prob_plus_catastrophe2 ~= 0)
                 effective_prob_plus_catastrophe_per_time = effective_prob_plus_catastrophe_per_time + params.prob_plus_catastrophe2;
+            end
+            
+            if isinf( effective_prob_plus_catastrophe_per_time )
+                xxxx = 1;
+            end
+            
+%             adsfasdfasdfasdfasdf
+            
+            % Finally we scale effective_prob_plus_catastrophe_per_time by
+            % the catscaling property of the tubule.
+            catscaling = getCatScaling( m, s );
+            if catscaling==0
+                % We have to handle this separately, because when
+                % effective_prob_plus_catastrophe_per_time is Inf,
+                % multiplying by 0 would give NaN, which we don't want.
+                effective_prob_plus_catastrophe_per_time = 0;
+            else
+                effective_prob_plus_catastrophe_per_time = effective_prob_plus_catastrophe_per_time * catscaling;
             end
 
             % Now we sample from this exponential distribution to find the
@@ -638,11 +653,6 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
             if nextstop < Inf
                 xxxx = 1;
             end
-            
-            
-            
-            
-            
             
             [timetoevent,stoppingreason] = min( [edgecat, nextcat, nextstop, timeused], [], 'omitnan' );
             stoppingreasons = 'ecsx';
@@ -1359,6 +1369,51 @@ function [m,s,extended,remaininglength,lengthgrown] = extrapolateStreamline( m, 
         s
         xxxx = 1;
     end
+end
+
+function catscaling = getCatScaling( m, s )
+    % Set catscaling to the neutral value
+    catscaling = 1;
+    
+    curve_length_cat_immunity = getModelOption( m, 'curve_length_cat_immunity' );
+    if isempty( curve_length_cat_immunity ) || isnan( curve_length_cat_immunity )
+        % Option does not exist or is not set.
+        return;
+    end
+    
+    if length(s.vxcellindex) <= 1
+        % Tubule has no segments.
+        return;
+    end
+    
+    vxsInEdgeRegion = m.userdata.geomdata.flatfaceelements( s.vxcellindex )==0;
+    lastNonEdgeRegionVx = find( ~vxsInEdgeRegion, 1, 'last' );
+    if isempty( lastNonEdgeRegionVx )
+        lastNonEdgeRegionVx = 0;
+    end
+    firstEdgeRegionVx = lastNonEdgeRegionVx+1;
+    if firstEdgeRegionVx >= length( s.vxcellindex )
+        % No head segments are in the edge region.
+        return;
+    end
+    globcoords = streamlineGlobalPos( m, s, firstEdgeRegionVx:length(s.vxcellindex) );
+    vecsInEdgeRegion = globcoords( 2:end, : ) - globcoords( 1:(end-1), : );
+    bentendlength = sum(sqrt(sum(vecsInEdgeRegion.^2,2)));
+    if s.id==3
+        xxxx = 1;
+    end
+    if bentendlength <= curve_length_cat_immunity
+        catscaling = 0;
+        if ~all(vxsInEdgeRegion)
+            xxxx = 1;
+        end
+    else
+        catscaling = 1;
+    end
+    if catscaling==0
+        xxxx = 1;
+    end
+    xxxx = 1;
 end
 
 function [m,s,stopped] = stopStreamline( m, s, stoppingreason )

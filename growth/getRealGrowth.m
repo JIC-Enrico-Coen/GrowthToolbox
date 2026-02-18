@@ -4,6 +4,8 @@ function gp = getRealGrowth( m, ci )
 %   displacements of cell ci.
 %   The result is a 6-element vector consisting of major growth, minor
 %   growth, growth angle, major bend, minor bend, and bend angle.
+%
+%   NEVER USED, EXCEPT BY getAllRealGrowth, WHICH IS NEVER USED.
 
     J = getMeshCellFrame( m, ci );
     avStrain = sum( m.celldata(ci).displacementStrain, 2 )/6;

@@ -4,7 +4,12 @@ function r = randints( n, p )
 %   Each integer has a probability p of being chosen; the number of
 %   integers selected will therefore average pn but will vary randomly from
 %   that figure.  At least one integer will always be selected unless n is
-%   zero.  The integers are returned in ascending order.
+%   zero (even if p is zero).  The integers are returned in ascending
+%   order. The integers are all different.
+%
+%   If p > 1, it is treated as 1.
+%
+%   See also: randperm
 
     if n <= 0
         r = [];

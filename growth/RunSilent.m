@@ -8,6 +8,9 @@ function RunSilent(varargin)
         pathToToolshed='DArT_Toolshed/GrowthToolbox';
         addpath(genpath(pathToToolshed));
     end
+    set(0,'DefaultAxesFontName','Bookman');
+    set(0,'DefaultTextFontName','Bookman');
+
     disp('Starting GFtboxCommand');
     GFtboxCommand(varargin{:});
 end

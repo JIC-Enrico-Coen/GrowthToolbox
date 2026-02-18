@@ -1,5 +1,5 @@
 function [gnGlobal,detJ] = computeCellGNGlobal( v, gaussInfo )
-%gnGlobal = computeCellGNGlobal( v, gaussInfo )
+%[gnGlobal,detJ] = computeCellGNGlobal( v, gaussInfo )
 %   Compute the gradients of the shape functions in the global frame, at
 %   every gauss point.  v is the set of vertexes of the cell, gaussInfo is
 %   the globally constant Gauss point information in isoparametric

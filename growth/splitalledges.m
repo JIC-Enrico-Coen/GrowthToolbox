@@ -24,6 +24,8 @@ function [m,splitdata] = splitalledges( m, es, force )
         force = false;
     end
     
+    oldnumcells = getNumberOfFEs( m );
+    
     if ~force
         % Don't split an edge if it would make either a finite element or an angle too
         % small.
@@ -151,19 +153,20 @@ fprintf( 1, '%s 3: build new cells.\n', mfilename() );
     end
     cellsplits = zeros(numcells,3);
     cellsplits(celledgemap) = splits( m.celledges(celledgemap) );
-    numnewcells = sum(celledgemap(:));
-    oldcells = zeros( numnewcells, 1 );
+    numadditionalcells = sum(celledgemap(:));
+    newnumcells = oldnumcells + numadditionalcells;
+    oldcells = zeros( numadditionalcells, 1 );
     newcellsmade = 0;
     
-    newcellvxs = zeros( numnewcells, 3 );
+    newcellvxs = zeros( numadditionalcells, 3 );
     numpol = 1 + m.globalProps.twosidedpolarisation;
-    newpolfreeze = zeros( numnewcells, 3, numpol );
-    newpolfreezebc = zeros( numnewcells, 3, numpol );
-    newpolfrozen = false( numnewcells, numpol );
+    newpolfreeze = zeros( numadditionalcells, 3, numpol );
+    newpolfreezebc = zeros( numadditionalcells, 3, numpol );
+    newpolfrozen = false( numadditionalcells, numpol );
     if size(m.polsetfrozen,1) > 1
-        newpolsetfrozen = false( numnewcells, size(m.polsetfrozen,2) );
+        newpolsetfrozen = false( numadditionalcells, size(m.polsetfrozen,2) );
     end
-    newgaPerFE = zeros( numnewcells, size(m.growthangleperFE,2) );
+    newgaPerFE = zeros( numadditionalcells, size(m.growthangleperFE,2) );
     curnewcell = 0;
     curnewedge = numedges+numsplits;
 
@@ -423,23 +426,23 @@ fprintf( 1, '%s 4: rebuild other data.\n', mfilename() );
     
     % Per-FE values.
     
-    m.gradpolgrowth = extendHeight( m.gradpolgrowth, numnewcells );
-    m.gradpolgrowth( (end-numnewcells+1):end, :, : ) = m.gradpolgrowth( oldcells, :, : );
+    m.gradpolgrowth = extendHeight( m.gradpolgrowth, numadditionalcells );
+    m.gradpolgrowth( (oldnumcells+1):end, :, : ) = m.gradpolgrowth( oldcells, :, : );
     nummgens = size(m.morphogens,2);
     for mi=1:nummgens
         if length(m.conductivity(mi).Dpar)==numcells
-            m.conductivity(mi).Dpar = extendHeight( m.conductivity(mi).Dpar, numnewcells );
+            m.conductivity(mi).Dpar = extendHeight( m.conductivity(mi).Dpar, numadditionalcells );
         end
         if length(m.conductivity(mi).Dper)==numcells
-            m.conductivity(mi).Dper = extendHeight( m.conductivity(mi).Dper, numnewcells );
+            m.conductivity(mi).Dper = extendHeight( m.conductivity(mi).Dper, numadditionalcells );
         end
     end
     if ~isempty( m.growthangleperFE )
         m.growthangleperFE = [ m.growthangleperFE; newgaPerFE ];
     end
-    m.effectiveGrowthTensor = extendHeight( m.effectiveGrowthTensor, curnewcell );
+    m.effectiveGrowthTensor = extendHeight( m.effectiveGrowthTensor, numadditionalcells );
     if ~isempty(m.directGrowthTensors)
-        m.directGrowthTensors = extendHeight( m.directGrowthTensors, curnewcell );
+        m.directGrowthTensors = extendHeight( m.directGrowthTensors, numadditionalcells );
     end
     m = makeAreasAndNormals( m );  % Could just recalculate for the new cells.
     m = makebendangles( m );
@@ -505,21 +508,30 @@ fprintf( 1, '%s 5: update cell info.\n', mfilename() );
         m.cellpoisson(newci) = m.cellpoisson(oldci);
         m.cellstiffness(:,:,newci) = m.cellstiffness(:,:,oldci);
 
-        m = generateCellData( m, (numcells+1):(numcells+curnewcell) );
-        for ci = i:size(splitinfo,1)
-            if splitinfo(ci,4) ~= 0
-                m.celldata(ci1).displacementStrain = m.celldata(ci).displacementStrain;
-                m.celldata(ci1).residualStrain = m.celldata(ci).residualStrain;
-                if splitinfo(ci,5) ~= 0
-                    m.celldata(ci2).displacementStrain = m.celldata(ci).displacementStrain;
-                    m.celldata(ci2).residualStrain = m.celldata(ci).residualStrain;
-                    if splitinfo(ci,6) ~= 0
-                        m.celldata(ci3).displacementStrain = m.celldata(ci).displacementStrain;
-                        m.celldata(ci3).residualStrain = m.celldata(ci).residualStrain;
-                    end
-                end
-            end
-        end
+%         m = generateCellData( m, (numcells+1):(numcells+curnewcell) );
+%         for ci = 1:length(oldcells)
+%             oldcell = oldcells(ci);
+%             newcell = oldnumcells + ci;
+%             m.celldata(newcell).displacementStrain = m.celldata(oldcell).displacementStrain;
+%             m.celldata(newcell).residualStrain = m.celldata(oldcell).residualStrain;
+%         end
+%         for ci = 1:size(splitinfo,1)
+%             if splitinfo(ci,4) ~= 0
+%                 ci1 = splitinfo(ci,4);
+%                 ci2 = splitinfo(ci,5);
+%                 ci3 = splitinfo(ci,6);
+%                 m.celldata(ci1).displacementStrain = m.celldata(ci).displacementStrain;
+%                 m.celldata(ci1).residualStrain = m.celldata(ci).residualStrain;
+%                 if splitinfo(ci,5) ~= 0
+%                     m.celldata(ci2).displacementStrain = m.celldata(ci).displacementStrain;
+%                     m.celldata(ci2).residualStrain = m.celldata(ci).residualStrain;
+%                     if splitinfo(ci,6) ~= 0
+%                         m.celldata(ci3).displacementStrain = m.celldata(ci).displacementStrain;
+%                         m.celldata(ci3).residualStrain = m.celldata(ci).residualStrain;
+%                     end
+%                 end
+%             end
+%         end
     end
     
     m = calculateOutputs( m );

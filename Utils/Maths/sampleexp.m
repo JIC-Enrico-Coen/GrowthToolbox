@@ -6,10 +6,18 @@ function x = sampleexp( rate, sz )
 %   The mean and standard deviation of this distribution are both equal to
 %   1/RATE. Its median is log(2)/(2 * RATE) = 0.3466/RATE.
 %
-%   0, Inf, and NaN are valid values for RATE. Samples will be Inf, 0, or
-%   NaN respectively.
+%   If RATE is negative, the function is equivalent to -sampleexp( -rate, sz ).
 %
-%   If RATE is negative, it is equivalent to -sampleexp( -rate, sz ).
+%   All numeric values for RATE are handled appropriately, including the
+%   following special cases:
+%
+%    RATE    X
+%
+%      0     Inf
+%     -0    -Inf
+%    Inf       0
+%   -Inf      -0
+%    NaN     NaN
 %
 %   SZ defaults to 1. If SZ is a single number the result is an array of
 %   size [SZ 1].

@@ -334,7 +334,8 @@ function [m,ok] = leaf_iterate( m, varargin )
                     fullmodeldir = getModelDir( m );
                     fullrundir = fullfile( fullmodeldir, 'runs', currentrun );
                     if ~exist( fullrundir, 'dir' )
-                        timedFprintf( 'Run directory %s does not exist.\n', fullrundir );
+                        timedFprintf( 'Run directory %s does not exist, cannot save stage.\n', fullrundir );
+                        ok = false;
                     else
                         timedFprintf( 1, 'Saving stage to run directory %s.\n', fullrundir );
                         fullmeshesdir = fullfile( fullrundir, 'meshes' );

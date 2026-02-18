@@ -2,6 +2,9 @@ function m = convert6vectorTo33matrix( v )
 %m = convert6vectorTo33matrix( v )
 %   Convert a tensor in 6-vector form to a symmetric 3x3 matrix.
 %   v may be an N*6 matrix representing N tensors, and m will be 3x3xN.
+%
+%   USED ONLY IN leaf_setstrainpolarisation AND leaf_gettotalstrain, which
+%   have almost never been used.
 
     symmetrycount = 2;
     v(:,4:6) = v(:,4:6)/symmetrycount;

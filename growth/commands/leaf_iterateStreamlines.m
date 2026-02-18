@@ -28,6 +28,9 @@ function [m,ok] = leaf_iterateStreamlines( m )
     
     m.tubules.tubuleparams.plus_catastrophe_scaling = min( m.tubules.tubuleparams.max_plus_catastrophe_scaling, ...
                                                            1/(cos(maxDensityFraction * (pi/2)) ^ m.tubules.tubuleparams.density_max_cat_sharpness) );
+    if m.tubules.tubuleparams.plus_catastrophe_scaling ~= 1
+        xxxx = 1;
+    end
     if isnan( m.tubules.tubuleparams.density_max_branch_sharpness ) || (maxDensityFraction==0)
         m.tubules.tubuleparams.density_branch_scaling = 1;
     else
@@ -431,12 +434,13 @@ function [m,ok] = leaf_iterateStreamlines( m )
                             % Determine when a spontaneous rescue will happen.
                             
                             if isnan( m.tubules.tubuleparams.density_min_rescue_sharpness )
-                                minDensityRescueIncrease = 1;
+                                minDensityRescueScaling = 1;
                             else
-                                minDensityRescueIncrease = 1 + m.tubules.tubuleparams.density_min_rescue_sharpness/max( minDensityFraction - 1, 0 );
+                                minDensityRescueScaling = 1 + m.tubules.tubuleparams.density_min_rescue_sharpness/max( minDensityFraction - 1, 0 );
                             end
+                            minDensityRescueScaling = min( minDensityRescueScaling, m.tubules.tubuleparams.max_rescue_scaling );
                             
-                            spontaneous_rescue_time = sampleexp( params.prob_plus_rescue * minDensityRescueIncrease );
+                            spontaneous_rescue_time = sampleexp( params.prob_plus_rescue * minDensityRescueScaling );
                             spontaneous_rescue_length = spontaneous_rescue_time * params.plus_shrinkrate;
 
                             % Look for crossover rescues.
@@ -523,7 +527,7 @@ function [m,ok] = leaf_iterateStreamlines( m )
                         if haveSpontaneousRescue || haveCrossoverRescue
                             s.status.head = 1;
                             numrescued = numrescued+1;
-                            rescueinfo( numrescued, : ) = [ s.vxcellindex(end), s.barycoords(end,:), Steps(m)+1 ];
+                            rescueinfo( numrescued, : ) = [ double(s.vxcellindex(end)), s.barycoords(end,:), Steps(m)+1 ];
 
                             if isfield( params, 'rescue_angle_mean' ) && ~isempty(params.rescue_angle_mean)
                                 deviation = rescueAngle( params.rescue_angle_mean, params.rescue_angle_spread );
@@ -554,7 +558,7 @@ function [m,ok] = leaf_iterateStreamlines( m )
                             % original direction is maintained.
                             s.status.head = 1;
                             numrescued = numrescued+1;
-                            rescueinfo( numrescued, : ) = [ s.vxcellindex(end), s.barycoords(end,:), Steps(m)+1 ];
+                            rescueinfo( numrescued, : ) = [ double(s.vxcellindex(end)), s.barycoords(end,:), Steps(m)+1 ];
                             timeused = nextrescue;
 
                             if isfield( params, 'rescue_angle_mean' ) && ~isempty(params.rescue_angle_mean)

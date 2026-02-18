@@ -121,6 +121,7 @@ function [m,U,K,F] = totalK( m, useGrowthTensors, useMorphogens )
     timedFprintf( 1, 'Allocated K and F.\n' );
         
     ELIMINATERIGIDMOTION = false;
+    ELIMINATE_UNBALANCED_FORCE = true;
     EXACTINV = false;
     if ELIMINATERIGIDMOTION
         R = zeros( 6, numDFs );
@@ -192,11 +193,10 @@ function [m,U,K,F] = totalK( m, useGrowthTensors, useMorphogens )
 %     TEST_K = zeros(18,18,numcells);
 %     TEST_F = zeros(18,numcells);
     timedFprintf( 1, 'Assembling K and F.\n' );
-    if isfield( m.globalDynamicProps, 'pressure' )
-        pressure = m.globalDynamicProps.pressure;
-    else
+    if ~isfield( m.globalDynamicProps, 'pressure' )
         m.globalDynamicProps.pressure = 0;
     end
+    pressure = m.globalDynamicProps.pressure;
     for ci=1:numcells
         gt1 = zeros(vxsPerCell,cptsPerTensor);
         if useGrowthTensors
@@ -293,6 +293,14 @@ function [m,U,K,F] = totalK( m, useGrowthTensors, useMorphogens )
       % F(selectedDFs) = 0;
       % rKR = rank(K)
     end
+    if ELIMINATE_UNBALANCED_FORCE
+        meanforce = mean( reshape( F, dfsPerNode, numnodes ), 2 );
+        if norm(meanforce) > 0.001
+            timedFprintf( 'Unbalanced force, total [ %g, %g, %g ], magnitude %g.\n', meanforce*numnodes, norm(meanforce)*numnodes );
+        end
+        meanforce = repmat( meanforce, numnodes, 1 );
+        F = F - meanforce;
+    end
     oneFixedNode = [];
     oneFixedDFs = [];
     if ~m.globalProps.flatten
@@ -387,13 +395,13 @@ function [m,U,K,F] = totalK( m, useGrowthTensors, useMorphogens )
     end
     
     cgmaxiter = size(K,1)*10; % size(K,1)*40;
-    if EXACTINV
-        UC = inv(K)*F; %#ok<UNRCH>
+    if all(F==0)
+        UC = zeros(size(F));
         cgflag = 0;
         cgrelres = 0;
         m.globalProps.cgiters = 0;
-    elseif all(F==0)
-        UC = zeros(size(F));
+    elseif strcmp( m.globalProps.solver, 'inv' )
+        UC = K\F;
         cgflag = 0;
         cgrelres = 0;
         m.globalProps.cgiters = 0;
@@ -580,7 +588,7 @@ function [m,U,K,F] = totalK( m, useGrowthTensors, useMorphogens )
     end
     U = reshape(U, dfsPerNode, numnodes )';
     if requireF
-        F = reshape(F, dfsPerNode, numnodes )';
+        F = reshape( F, dfsPerNode, numnodes )';
     end
     if cgflag ~= 0
         timedFprintf( 1, 'cgs error: ' );

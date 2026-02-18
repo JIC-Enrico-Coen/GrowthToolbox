@@ -31,8 +31,7 @@ function [m,ok,splitdata] = onestep( m, useGrowthTensors, useMorphogens )
     
     moved = false;
     growthByFE = false;
-    TURGOR = true;
-    if TURGOR
+    if m.globalDynamicProps.pressure ~= 0
         growthByFE = true;
     end
     if m.globalProps.growthEnabled
@@ -79,6 +78,9 @@ function [m,ok,splitdata] = onestep( m, useGrowthTensors, useMorphogens )
                 growthByFE = true;
             end
         end
+    end
+    if m.globalDynamicProps.pressure ~= 0
+        growthByFE = true;
     end
     
     if growthByFE

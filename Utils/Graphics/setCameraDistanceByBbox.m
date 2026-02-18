@@ -29,9 +29,6 @@ function [cameraParams,axbbox] = setCameraDistanceByBbox( ax, varargin )
 
     cameraParams = [];
     axbbox = [];
-    if ~ishghandle(ax)
-        return;
-    end
     
     [s,ok] = safemakestruct( mfilename(), varargin );
     if ~ok, return; end
@@ -43,6 +40,10 @@ function [cameraParams,axbbox] = setCameraDistanceByBbox( ax, varargin )
         return;
     end
     
+    if isempty(ax) || ~ishghandle(ax)
+        timedFprintf( 'ax must be nonempty.\n' );
+        return;
+    end
     cameraParams = getCameraParams( ax );
     
     if isfield( s, 'distance' )
@@ -51,35 +52,44 @@ function [cameraParams,axbbox] = setCameraDistanceByBbox( ax, varargin )
         if isfield( s, 'bbox' )
             axbbox = s.bbox;
         else
+            if isempty(ax) || ~ishghandle(ax)
+                timedFprintf( 'Either ax or the ''bbox'' option must be nonempty.\m' );
+                return;
+            end
             axbbox = getAxBoundingBox( ax, 'data', s.bboxmode );
         end
-        bboxcorners = axbbox( [1 2 3;1 2 6;1 5 3;1 5 6;4 2 3;4 2 6;4 5 3;4 5 6] );
+%         bboxcorners = axbbox( [1 2 3;1 2 6;1 5 3;1 5 6;4 2 3;4 2 6;4 5 3;4 5 6] );
+        bboxcorners = axbbox( [1 3 5;2 3 5;1 4 5;2 4 5;1 3 6;1 3 6;1 4 6;2 4 6] );
         cornerDistances = sqrt( sum( (bboxcorners - cameraParams.CameraTarget).^2, 2 ) );
-        d = max( cornerDistances );
+        viewHalfWidth = max( cornerDistances );
         if isfield( s, 'relmargin' )
-            d = d * (1 + s.relmargin);
+            viewHalfWidth = viewHalfWidth * (1 + s.relmargin);
+            axbboxcentre = mean(axbbox,1);
+            axbbox = axbboxcentre + (axbbox - axbboxcentre) * (1 + s.relmargin);
         elseif isfield( s, 'absmargin' )
-            d = d + s.absmargin;
+            viewHalfWidth = viewHalfWidth + s.absmargin;
+            axbbox = axbbox + s.absmargin * [-1 -1 -1;1 1 1];
         end
+        viewHalfAngle = (pi/180)*cameraParams.CameraViewAngle/2;
+        d = viewHalfWidth/tan( viewHalfAngle );
     end
 
+    target = cameraParams.CameraTarget;
     if isfield( s, 'at' )
-        newTarget = cameraParams.CameraTarget;
         switch s.at
             case 'origin'
-                newTarget = [0 0 0];
+                target = [0 0 0];
             case { 'centre', 'center' }
-                newTarget = (axbbox(1,:) + axbbox(2,:))/2;
+                target = (axbbox(1,:) + axbbox(2,:))/2;
             otherwise
                 % Ignore.
         end
-        if any( newTarget ~= cameraParams.CameraTarget )
-            vecToCamera = cameraParams.CameraPosition - cameraParams.CameraTarget;
-            cameraParams.CameraTarget = newTarget;
-            cameraParams.CameraPosition = newTarget + vecToCamera;
-            setCameraParams( ax, cameraParams.CameraTarget );
-        end
-            
     end
-    setCameraDistance( ax, d );
+    vecTargetToCamera = cameraParams.CameraPosition - cameraParams.CameraTarget;
+    vecTargetToCamera = vecTargetToCamera * d / norm( vecTargetToCamera );
+    
+    cameraParams.CameraTarget = target;
+    cameraParams.CameraPosition = target + vecTargetToCamera;
+    
+    setCameraParams( ax, cameraParams );
 end

@@ -13,6 +13,8 @@ function J6 = rotmatTo6mat4( J )
 %   In fact, they give identical results when m is any 3*3 matrix, although
 %   the interpretation of m'*s*m as a transformation of a symmetric tensor
 %   no longer applies.
+%
+%   NEVER USED. Does not use symmetrycount, so might be wrong.
 
     topleft = J .* J;
     rot2 = [ 2, 3, 1 ];

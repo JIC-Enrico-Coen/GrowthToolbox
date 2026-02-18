@@ -1,9 +1,9 @@
 function gc = baryToGlobalCoords( cells, bcs, nodes, simplexes )
-%gc = baryToGlobalCoords( cells, bcs, nodes, triangles )
+%gc = baryToGlobalCoords( cells, bcs, nodes, simplexes )
 %   Convert barycentric coordinates to global coordinates.
 %   NODES is an N*D matrix containing the global coordinates of a set of N
 %   points in D dimensions.
-%   TRIANGLES is an M*K matrix containing the indexes of nodes of a set of
+%   SIMPLEXES is an M*K matrix containing the indexes of nodes of a set of
 %   simplexes.  K will typically be 3 (triangles) or 4 (tetrahedra).
 %   CELLS is a C*1 or 1*C vector of indexes of triangles.
 %   BCS is a C*K array of barycentric coordinates.  bcs(i,:) is the

@@ -571,6 +571,7 @@ function setGlobals()
         'max_plus_catastrophe_scaling', ... % dimensionless
         'density_max_branch_sharpness', ... % arbitrary units
         'density_min_rescue_sharpness', ... % arbitrary units
+        'max_rescue_scaling', ... % arbitrary units
         'radius', ... % 1/length^2
         'headradius' }; % length
         

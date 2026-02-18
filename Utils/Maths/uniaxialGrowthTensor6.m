@@ -13,4 +13,9 @@ function gt = uniaxialGrowthTensor6( direction, growthrate )
         a = d(1);  b = d(2);  c = d(3);
         gt = gt + [d.^2 2*b*c 2*c*a 2*a*b];
     end
+    
+    direction.^2, 2*direction(:,2).*direction(:,3), 2*direction(:,3).*direction(:,1), 2*direction(:,1).*direction(:,2)
+    
+    gt33 = direction' * direction;
+    gt1 = [ gt33([1 5 9]), gt33([6 3 2]) + gt33([8 7 4]) ];
 end

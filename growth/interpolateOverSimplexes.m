@@ -1,6 +1,6 @@
 function perPoint = interpolateOverSimplexes( perVertex, elementvxs, bcs, interpMode )
 %values = interpolateOverSimplexes( perVertex, elementvxs, bcs, interpMode )
-%   Interpolate any per-veriex quantity over a mesh, returning its values
+%   Interpolate any per-vertex quantity over a mesh, returning its values
 %   at the points defined by the list of finite element FES, and for each
 %   element, a set of barycentric coordinates BCS. INTERPMODE specifies
 %   whether the interpolation is to be done by taking the minimum ('min'),
