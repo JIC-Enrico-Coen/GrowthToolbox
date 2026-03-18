@@ -5,17 +5,24 @@ function drawThumbnail( handles )
     if isfield(handles,'mesh') && ~isempty(handles.mesh)
         modeldir = getModelDir( handles.mesh );
         if ~isempty( modeldir )
-            thumbfile = fullfile( modeldir, 'GPT_thumbnail.png' );
+            thumbfile = fullfile( modeldir, 'GFT_thumbnail.png' );
             try
                 % fprintf( 1, 'drawThumbnail: looking for thumbnail in %s\n', thumbfile );
                 imagedata = imread( thumbfile );
                 % fprintf( 1, 'drawThumbnail: found project thumbnail\n' );
             catch e %#ok<NASGU>
+                thumbfile = fullfile( modeldir, 'GPT_thumbnail.png' );
+                try
+                    % fprintf( 1, 'drawThumbnail: looking for thumbnail in %s\n', thumbfile );
+                    imagedata = imread( thumbfile );
+                    % fprintf( 1, 'drawThumbnail: found project thumbnail\n' );
+                catch e %#ok<NASGU>
+                end
             end
         end
     end
     if isempty( imagedata )
-        thumbfile = fullfile( GFtboxDir(), 'GPT_defaulticon.png' );
+        thumbfile = fullfile( GFtboxDir(), 'GFT_defaulticon.png' );
         try
             imagedata = imread( thumbfile );
             % fprintf( 1, 'drawThumbnail: using default thumbnail\n' );

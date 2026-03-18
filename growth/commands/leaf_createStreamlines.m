@@ -112,9 +112,40 @@ function m = leaf_createStreamlines( m, varargin )
             'morphogen', 'int32', ...
             'directionbc', 'double', ...
             'directionglobal', 'double', ...
+            'initialelement', 'double', ...
+            'initialglobalcoords', 'double', ...
+            'initialdirectionglobal', 'double', ...
+            'edgefate', 'char', ...
+            'faceedgecode', 'char', ...
+            'edgestarttype', 'char', ...
             'status', 'struct' );
-        streamline(i).status.interactiontime = m.tubules.tubuleparams.branch_interaction_delay;
         newtubuleinfo(i,1:4) = [ double(streamline(i).segcellindex), streamline(i).barycoords ];
+        streamline(i).status.interactiontime = m.tubules.tubuleparams.branch_interaction_delay;
+        
+        if m.userdata.geomdata.edgebandelements( streamline(i).segcellindex(1) )
+            % The tubule has has been created within the edge region.
+            % Determine which edge and record the edge direction.
+            faceedgecode = m.auxdata.faceedgecodes( streamline(i).segcellindex(1), : );
+            if faceedgecode(1)=='M'
+                xxxx = 1;
+            end
+            streamline(i).faceedgecode = faceedgecode;
+            if streamline(i).faceedgecode(2)=='_'
+                % In a corner (or flat face, but it shouldn't be).
+                streamline(i).edgefate = 'x';
+                streamline(i).edgestarttype = 'x';
+            else
+                % In an edge.
+                streamline(i).edgefate = 'i';
+                streamline(i).edgestarttype = 'c';
+            end
+            streamline(i).initialelement = streamline(i).segcellindex(1);
+            streamline(i).initialglobalcoords = streamline(i).globalcoords(1,:);
+            streamline(i).initialdirectionglobal = streamline(i).directionglobal;
+        else
+            streamline(i).edgefate = ' ';
+            streamline(i).edgestarttype = 'x';
+        end
     end
     
     if isempty(m.tubules.tracks)

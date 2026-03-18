@@ -13,7 +13,7 @@ function makeDefaultThumbnail( m )
         return;
     end
 
-    thumbfilename = fullfile( getModelDir(m), 'GPT_thumbnail.png' );
+    thumbfilename = fullfile( getModelDir(m), 'GFT_thumbnail.png' );
     if exist( thumbfilename, 'file' )
         fprintf( 1, 'makeDefaultThumbnail: thumbnail exists.\n' );
         return;

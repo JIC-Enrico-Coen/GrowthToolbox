@@ -1,6 +1,6 @@
 function s = randsubset( n, k )
 % Return a random subset of k of the numbers from 1 to n.
-% s will be an array of booleans the same size as n, with k randonly
+% s will be an array of booleans the same size as n, with k randomly
 % selected elements set to true.
 %
 % This is guaranteed to give exactly k numbers.  If what you need is for

@@ -50,22 +50,25 @@ else
 end
 
 setGlobals();
-global gDYNAMICFIELDS gSTATICFIELDS gHYBRIDFIELDS gUNSAVEDFIELDS gTRANSIENTFIELDS
+global gDYNAMICFIELDS gSTATICFIELDS gHYBRIDFIELDS gUNSAVEDFIELDS gTRANSIENTFIELDS gOPTIONALFIELDS
 global gFOLIATEONLYFIELDS gVOLUMETRICONLYFIELDS
+
 [ok,missingfields,extrafields] = checkFields( m, ...
     [ gDYNAMICFIELDS gSTATICFIELDS gHYBRIDFIELDS gUNSAVEDFIELDS ], ...
-    gTRANSIENTFIELDS);
+    gTRANSIENTFIELDS );
 if full3d
     missingfields = setdiff( missingfields, gFOLIATEONLYFIELDS );
 else
     missingfields = setdiff( missingfields, gVOLUMETRICONLYFIELDS );
 end
+missingfields = setdiff( missingfields, gOPTIONALFIELDS );
 if ~isempty(missingfields)
     complain2( errorseverity(1), 'Mesh has missing fields:' );
     for ci=1:length(missingfields)
         fprintf( 1, '    %s\n', missingfields{ci} );
     end
 end
+extrafields = setdiff( extrafields, gOPTIONALFIELDS );
 if ~isempty(extrafields)
     complain2( errorseverity(1), 'Mesh has extra fields:' );
     for ci=1:length(extrafields)
@@ -438,7 +441,6 @@ end
     
     numIndexedMgens = length(m.mgenIndexToName);
     if numIndexedMgens < numMorphogens
-        % Well, fuck.
         complain2( errorseverity(1), ...
             '%d unnamed morphogens found in mgenIndexToName.', ...
             numMorphogens - numIndexedMgens );

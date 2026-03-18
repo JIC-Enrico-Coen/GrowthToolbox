@@ -153,7 +153,7 @@ function [m,ok,img,imgfilename] = leaf_snapshot( m, varargin )
 %                 snapshotname = m.globalProps.modelname;
 %             end
 %             if thumbnail
-%                 imgfilename = 'GPT_thumbnail.png';
+%                 imgfilename = 'GFT_thumbnail.png';
 %             else
 %                 imgfilename = sprintf( '%s-%s-00.png', ...
 %                     snapshotname, stageTimeToText( m.globalDynamicProps.currenttime ) );

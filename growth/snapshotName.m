@@ -28,7 +28,7 @@ function name = snapshotName( m, t, thumbnail )
         snapshotname = m.globalProps.modelname;
     end
     if thumbnail
-        name = 'GPT_thumbnail.png';
+        name = 'GFT_thumbnail.png';
     else
         name = sprintf( '%s-%s-00.png', ...
             snapshotname, stageTimeToText( t ) );

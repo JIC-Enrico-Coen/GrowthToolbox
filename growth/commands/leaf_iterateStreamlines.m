@@ -180,8 +180,6 @@ function [m,ok] = leaf_iterateStreamlines( m )
                     % Severance.
                     catfronttail = rand(1) < m.tubules.tubuleparams.prob_crossover_cut_fronttailcat;
                     catrearhead = (rand(1) < m.tubules.tubuleparams.prob_crossover_cut_rearheadcat) || (requestMTcreation( m, 1 )==0);
-%                     rescuerearhead = (rand(1) < m.tubules.tubuleparams.prob_crossover_cut_rearheadrescue) && (requestMTcreation( m, 1 )==1);
-%                     catrearhead = ~rescuerearhead;
                     [mtrear,mtfront] = splitMT( m, mt, sevs(sevpi).vertex, catrearhead, catfronttail );
                     if isempty( mtfront )
                         mtrear.status.severance(sevpi) = [];
@@ -191,29 +189,10 @@ function [m,ok] = leaf_iterateStreamlines( m )
                         mtfront.id = m.tubules.maxid;
                         deltasev = length(mtrear.status.severance) + length(mtfront.status.severance) - length(mt.status.severance);
                         m.tubules.tracks(end+1) = mtfront;
-%                         if rescuerearhead
-%                             % Rescue the tail end.
-%                             % Potential problem: will the rescued tubule
-%                             % immediately collide with the other tubule?
-%                             xxxx = 1;
-%                             [m,mtrear] = rescueTubuleAtHead( m, mtrear );
-%                             xxxx = 1;
-%                         end
                         m.tubules.tracks(si) = mtrear;
                         
-%                         m.tubules.statistics.severings = m.tubules.statistics.severings+1;
-                        % severinginfo
                         numsevered = numsevered+1;
                         severinginfo( numsevered, : ) = [ sevs(sevpi).FE, sevs(sevpi).bc, Steps(m)+1 ];
-%     pendingEvent = struct( ...
-%             'time', m.globalDynamicProps.currenttime + delay, ...
-%             'vertex', vx, ...
-%             'FE', splitmt.vxcellindex(vx), ...
-%             'bc', splitmt.barycoords(vx,:), ...
-%             ... % 'globalpos', splitmt.globalcoords(vx,:), ...
-%             'eventtype', eventType ...
-%         );
-
                     end
                     mt = mtrear;
                     newnumsevs = getNumberOfSeverances( m );
@@ -545,6 +524,28 @@ function [m,ok] = leaf_iterateStreamlines( m )
                                     m.tubules.statistics.rescueangles = [];
                                 end
                                 m.tubules.statistics.rescueangles(end+1) = deviation;
+                            end
+                            
+                            % Set the edgefate-related fields, if the rescue is within the edge region.
+                            if m.userdata.geomdata.edgebandelements( s.segcellindex(end) )
+                                % The tubule has has been created within the edge region.
+                                % Determine which edge and record the edge direction.
+                                s.faceedgecode = m.auxdata.faceedgecodes( s.segcellindex(end), : );
+                                if s.faceedgecode(2)=='_'
+                                    % In a corner (or flat face, but it
+                                    % shoudln't be).
+                                    s.edgefate = 'x';
+                                    s.edgestarttype = 'x';
+                                else
+                                    % In an edge.
+                                    s.edgefate = 'i';
+                                    s.edgestarttype = 'r';
+                                end
+                                s.initialelement = s.segcellindex(end);
+                                s.initialglobalcoords = s.globalcoords(end,:);
+                                s.initialdirectionglobal = s.directionglobal;
+                            else
+                                s.edgefate = ' ';
                             end
                         else
                             s.status.head = -1;

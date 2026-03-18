@@ -99,7 +99,7 @@ function m = doTubuleBranching( m, dt )
 
             ns = length( track.segmentlengths );
             range = (ai+1):(ai+ns);
-            % The reshape is necessary because Matlab arrays are fucked.
+            % The reshape is necessary because Matlab arrays are badly designed.
             allvxprobs( [range, ai+ns+1] ) = sum( reshape( branchPerVertex( m.tricellvxs( vxci, : ) ), [], 3 ) .* vxbcs, 2 );
             alllengths( range ) = track.segmentlengths;
             allfreebranchingtubules( range ) = ii;
@@ -279,10 +279,6 @@ function m = doTubuleBranching( m, dt )
     % selected tubules.
 %     branchAngles1 = getTubuleParamsModifiedByMorphogens( m, selBranchElements, selBranchBcs, paramsNeeded );
 
-    
-    
-    
-    
     if numtailbranches > 0
         xxxx = 1;
     end
@@ -294,6 +290,5 @@ function m = doTubuleBranching( m, dt )
         m.tubules.statistics.spontbranchinfo( :, (oldStatsWidth+1):newStatsWidth ) = NaN;
     end
     m.tubules.statistics.spontbranchinfo = [ m.tubules.statistics.spontbranchinfo; newbranchinfo ];
-
 end
 

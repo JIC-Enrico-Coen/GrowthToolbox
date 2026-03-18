@@ -142,9 +142,9 @@ function [m,ok] = leaf_copyproject( m, projectname, projectsdir, varargin )
     
 %     % If there is a thumbnail file, copy it across.
 %     if ~isempty( oldprojectfulldir )
-%         oldthumbname = fullfile( oldprojectfulldir, 'GPT_thumbnail.png' );
+%         oldthumbname = fullfile( oldprojectfulldir, 'GFT_thumbnail.png' );
 %         if exist( oldthumbname, 'file' )
-%             newthumbname = fullfile( projectfulldir, 'GPT_thumbnail.png' );
+%             newthumbname = fullfile( projectfulldir, 'GFT_thumbnail.png' );
 %             if ~strcmpi( oldthumbname, newthumbname )
 %                 fprintf( 1, '%s: copying thumbnail file %s\n    to %s\n', ...
 %                     mfilename(), oldthumbname, newthumbname );

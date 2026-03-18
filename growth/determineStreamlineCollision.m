@@ -163,8 +163,7 @@ function [collidedwith,collidedseg,collidedsegbc,collidersegbc,collisiontype,col
         xxxx = 1;
     end
     
-    % Force the vectors to be column vectors because Matlab one-dimensional
-    % arrays are fucked.
+    % Force the vectors to be column vectors because Matlab.
     collidedwith = collidedwith(:);
     collidedseg = collidedseg(:);
     collisiontype = collisiontype(:);

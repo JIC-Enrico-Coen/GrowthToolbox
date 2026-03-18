@@ -8,7 +8,7 @@ figure {
     hgroup {
         innermargin 0
         halign center
-        edit { string "GPT_" teststring "0GPT_" tag prefix halign right }
+        edit { string "GFT_" teststring "0GFT_" tag prefix halign right }
         edit { string "" teststring "0000000000000000" tag basename halign fill focus true }
         edit { string "_00001122" tag suffix halign let }
     }

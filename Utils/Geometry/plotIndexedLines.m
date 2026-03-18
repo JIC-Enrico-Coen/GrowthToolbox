@@ -1,4 +1,5 @@
-function h = plotIndexedLines( edges, v1, v2, varargin )
+function h = plotIndexedLines( varargin )
+% function h = plotIndexedLines( edges, v1, v2, varargin )
 %h = plotlines( edges, v1, v2, ... )
 %   EDGES is an N*2 array.
 %   V1 is an A*3 array
@@ -8,6 +9,30 @@ function h = plotIndexedLines( edges, v1, v2, varargin )
 %   The result is a single line handle.
 %   The remaining arguments after v2 specify plotting options which are the
 %   same for all the lines to be plotted.
+
+    if nargin < 3
+        timedFprintf( 'At least 3 arguments required.\n' );
+        return;
+    end
+    
+    a1 = varargin{1};
+    if (numel(a1)==1) && ishghandle( a1 )
+        ax = a1;
+        varargin(1) = [];
+        if nargin < 3
+            timedFprintf( 'At least 3 arguments required.\n' );
+            return;
+        end
+    else
+        ax = gca();
+    end
+    
+    edges = varargin{1};
+    v1 = varargin{2};
+    v2 = varargin{3};
+    varargin(1:3) = [];
+    
+    
 
     if length(varargin)==1
         options = varargin{1};
@@ -34,7 +59,8 @@ function h = plotIndexedLines( edges, v1, v2, varargin )
         zz = [v1(edges(:,1),3)'; v2(edges(:,2),3)'; nan(1,numlines)];
         zz1 = [v1(edges(:,1),3)'; v2(edges(:,2),3)'];
 
-        h = lineMulticolor( xx1, ...
+        h = lineMulticolor( ax, ...
+              xx1, ...
               yy1, ...
               zz1, ...
               varargin{:} );

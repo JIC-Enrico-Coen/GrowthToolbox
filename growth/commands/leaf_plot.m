@@ -820,6 +820,8 @@ function varargout = leaf_plot( m, varargin )
 %             setaxis( m.pictures(i), visibleBbox( m.pictures(i) ) );
 %         end
 %     end
+
+    
     
     if m.globalProps.newcallbacks
         m = invokeIFcallback( m, 'Postplot', theaxes );

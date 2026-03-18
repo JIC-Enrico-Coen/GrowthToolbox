@@ -1,7 +1,7 @@
 function len = ellipseArcLength( xsemidiam, ysemidiam, theta1, theta2 )
 %len = ellipseArcLength( xsemidiam, ysemidiam, theta1, theta2 )
 %   Calculate the length of an elliptical arc. The semi-axes are xsemidiam
-%   and ysemidiam. theta1 and theta2 are the angles specifyin ghte
+%   and ysemidiam. theta1 and theta2 are the angles specifying the
 %   endpoints of the ellipse, if the ellipse were stretched to a circle.
 %   That is, the point specified by an angle theta is
 %   [ xsemidiam*cos(theta), ysemidiam*theta) ]. The result is a signed real
@@ -32,8 +32,12 @@ function len = ellipseArcLength( xsemidiam, ysemidiam, theta1, theta2 )
     
     xsemidiam = abs(xsemidiam);
     ysemidiam = abs(ysemidiam);
-    xsemidiam = xsemidiam + zeros( size( ysemidiam ) );
-    ysemidiam = ysemidiam + zeros( size( xsemidiam ) );
+%     xsemidiam = xsemidiam + zeros( size( ysemidiam ) );
+%     ysemidiam = ysemidiam + zeros( size( xsemidiam ) );
+
+    % The call of ellipticE requires that ysemidiam be no larger than
+    % xsemidiam. Therefore we swap them where necessary, and modify the
+    % angles theta1 and theta2 correspondingly.
     swapxy = ysemidiam > xsemidiam;
     if any(swapxy(:))
         temp = xsemidiam(swapxy);
@@ -60,6 +64,8 @@ function len = ellipseArcLength( xsemidiam, ysemidiam, theta1, theta2 )
 %         diff12 = lenR1-lenR2
     xxxx = 1;
     
+    % If both axes are zero their ratio is NaN, giving NaN as the arc
+    % length when it should be zero.
     len( (xsemidiam==0) & (ysemidiam==0) ) = 0;
 end
 

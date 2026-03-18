@@ -12,17 +12,21 @@ function varargout = countreps( x )
 %   but a different shape).
 
     if isempty(x)
-        y = zeros(0,3);
+        values = zeros(0,1);
+        reps = zeros(0,1);
+        first = zeros(0,1);
     else
         x = x(:);
         steps = find( x(1:(end-1)) ~= x(2:end) );
         starts = [ 0; steps ];
         ends = [ steps; length(x) ];
-        y = [ x(ends), ends-starts, starts+1 ];
+        values = x(ends);
+        reps = ends-starts;
+        first = starts+1;
     end
     if nargout==3
-        varargout = {y(:,1),y(:,2),y(:,3)};
+        varargout = {values,reps,first};
     else
-        varargout = {y};
+        varargout = {[values,reps,first]};
     end
 end

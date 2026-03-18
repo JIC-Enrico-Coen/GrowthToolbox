@@ -12,7 +12,7 @@ function [ok,handles,m,savedstate] = prepareForGUIInteraction( m, allowRunning )
 %   simulation is currently running.  If false, then in that situation OK
 %   will be returned as false. The default for ALLOWRUNNING is false.
 %
-%   OK is returned as false it either M==0 but there is no active mesh, or
+%   OK is returned as false if either M==0 but there is no active mesh, or
 %   if the active mesh is to be operated on, ALLOWRUNNING is false, and
 %   GFtbox is currently busy.
 %

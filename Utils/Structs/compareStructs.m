@@ -1,9 +1,11 @@
 function result = compareStructs( s1, s2, varargin )
 %result = compareStructs( s1, s2, ... )
-%   Compare two structs, reporting which fields in either are not in the
-%   other, and for common fields, whether their contents differ.
+%   Compare two structs or handles, reporting which fields in either are
+%   not in the other, and for common fields, whether their contents differ.
 %
-%   s1 and s2 are the two structs.
+%   s1 and s2 are the two structs or handles. Handles of different classes
+%   will always compare as different, without inspection of their fields,
+%   as will a handle and a struct.
 %
 %   The remaining arguments are option names and option values.  Possible
 %   options are:
@@ -30,15 +32,9 @@ function result = compareStructs( s1, s2, varargin )
 %   comparison to.  This is a single field name or a sequence of them
 %   joined by a dot.
 %
-%   The result is true if the structs are compatible, false otherwise.  The
-%   result will also be false if there are other errors, e.g. the output
-%   file cannot be created, or misspelled options.
-%
-%   Compatibility is not identity.  Two sorts of difference are allowed.
-%   One is numerical differences no larger than the tolerance. The other is
-%   type differences.  An integer field in one corresponding to a double
-%   field in the other will be reported, but (if the values are otherwise
-%   equal) will not cause a false result to be returned.
+%   The result is true if the structs match throughout, false otherwise.
+%   The result will also be false if there are other errors, e.g. the
+%   output file cannot be created, or misspelled options.
 
     result = false;
     [s,ok] = safemakestruct( mfilename(), varargin );
