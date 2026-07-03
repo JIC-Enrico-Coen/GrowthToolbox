@@ -40,7 +40,7 @@ classdef VRMLWriter < handle
             if ~ok
                 return;
             end
-            [~,centre] = getAxesBbox( ax );
+            [~,centre] = getAxesDataBbox( ax );
             cameraparams = getCameraParams( theaxes );
 %             scaleParams = struct( 'sizescale', 1, 'thicknessscale', 1, 'allthickness', [], 'thickmin', 0 );
             

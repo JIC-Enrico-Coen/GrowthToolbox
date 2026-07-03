@@ -44,5 +44,4 @@ title Generation of Leaf Shape through Early Patterns of Growth and Tissue Polar
 author Erika E. Kuchen and Samantha Fox and Pierre Barbier de Reuille and Richard Kennaway and Sandra Bensmihen and Jerome Avondo and Grant M. Calder and Paul Southam and Sarah Robinson and Andrew Bangham and Enrico Coen
 journal Science
 year 2012
-note (In press.)
 

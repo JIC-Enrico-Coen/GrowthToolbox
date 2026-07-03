@@ -14,7 +14,7 @@ function [m,ok,stageid] = loadLastValidStage( runsdir, runname, projectbasename,
 %   INCLUDESTATIC specifies whether to load the static file for the
 %       project. Default is true.
 %
-%   LASTVALID is true of the last stage file is guaranteed to be valid.
+%   LASTVALID is true if the last stage file is guaranteed to be valid.
 %       Default is false.
 
     m = [];
@@ -95,37 +95,6 @@ function [m,ok,stageid] = loadLastValidStage( runsdir, runname, projectbasename,
         m = [];
         ok = false;
     end
-    
-    
-    
-    
-    
-%     for si=(length(sfnames)-lastvalid):-1:1
-%         stagefilename = sfnames{si};
-%         zz = regexp( stagefilename, '(_s[0-9]+)\.mat$', 'tokens' );
-%         if isempty(zz) || isempty( zz{1} )
-%             continue;
-%         end
-%         stageid = zz{1}{1};
-%         if e
-%             continue;
-%         end
-%         stagefullname = fullfile( meshesdir, stagefilename );
-%         try
-%             if includeStatic
-%                 [m,ok] = leaf_load( [], stagefullname, 'checkvalidity', false );
-%             else
-%                 m = load( stagefullname );
-%                 ok = true;
-%             end
-%         catch e %#ok<NASGU>
-%             m = [];
-%             ok = false;
-%         end
-%         if ok
-%             break;
-%         end
-%     end
     
     if ~ok
         timedFprintf( 'Could not find any valid stage file in %s\n', meshesdir );

@@ -119,6 +119,11 @@ function [projectfullpath,status] = findGFtboxProject( projectname, create, crea
         for i=1:length( gftboxConfig.projectsdir )
             dirname = gftboxConfig.projectsdir{i};
             testpath = fullfile( dirname, projectname );
+            [fn,fns] = normaliseFilenameCase( testpath );
+            if isempty(fn) || (length(fns) ~= 1)
+                status = sprintf( 'Project %s full path could not be normalised', testpath );
+                return;
+            end
             if exist( testpath, 'dir' ) == 7
                 if isGFtboxProjectDir( testpath )
                     projectfullpath = testpath;

@@ -45,6 +45,13 @@ function m = leaf_createStreamlines( m, varargin )
         'startpos', 'elementindex', 'barycoords', 'length', 'downstream', 'morphogen', 'directionbc', 'directionglobal', 'creationtimes' );
     if ~ok, return; end
     
+    if isempty( s.creationtimes )
+        xxxx = 1;
+    end
+    if any( mod( s.creationtimes, m.globalProps.timestep )==0 )
+        xxxx = 1;
+    end
+    
     s.morphogen = FindMorphogenIndex( m, s.morphogen );
     numstreamlines = size(s.barycoords,1);
     if numstreamlines==0
@@ -122,7 +129,9 @@ function m = leaf_createStreamlines( m, varargin )
         newtubuleinfo(i,1:4) = [ double(streamline(i).segcellindex), streamline(i).barycoords ];
         streamline(i).status.interactiontime = m.tubules.tubuleparams.branch_interaction_delay;
         
-        if m.userdata.geomdata.edgebandelements( streamline(i).segcellindex(1) )
+        if isfield( m.userdata.geomdata, 'edgebandelements' ) && m.userdata.geomdata.edgebandelements( streamline(i).segcellindex(1) )
+            % WARNING: model-specific code accessing m.userdata.
+            
             % The tubule has has been created within the edge region.
             % Determine which edge and record the edge direction.
             faceedgecode = m.auxdata.faceedgecodes( streamline(i).segcellindex(1), : );

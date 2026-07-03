@@ -1,7 +1,9 @@
-function [m,s,lengthgrown] = extendStreamline( m, s, lengthToGrow, noncolliders )
+function [m,s,lengthgrown] = extendStreamline( m, s, lengthToGrow, noncolliders, currentSimTime )
 %[m,s,lengthgrown] = extendStreamline( m, s, lengthToGrow, noncolliders )
 %   Extend the streamline s of m by a distance len, or until unable to
 %   go further.
+%
+%   currentSimTime is the current absolute simulation time.
 
 % fprintf( 1, 'Extending streamline %d by %f.\n', si, len );
 
@@ -42,7 +44,7 @@ function [m,s,lengthgrown] = extendStreamline( m, s, lengthToGrow, noncolliders 
 %     fprintf( 1, 'Growing streamline by %f.\n', remaininglength );
     while remaininglength > CLOSE
 %         s1 = s;
-        [m,s,extended,remaininglength,lengthgrown1] = extrapolateStreamline( m, s, remaininglength, noncolliders );
+        [m,s,extended,remaininglength,lengthgrown1] = extrapolateStreamline( m, s, currentSimTime, remaininglength, noncolliders );
         if any( abs( sum(s.barycoords,2) - 1 ) > 1e-4 ) || (abs(sum(s.directionbc)) > 1e-4)
             xxxx = 1;
         end
@@ -51,6 +53,7 @@ function [m,s,lengthgrown] = extendStreamline( m, s, lengthToGrow, noncolliders 
         end
         alllengthgrown(end+1) = lengthgrown1;
         lengthgrown = lengthgrown + lengthgrown1;
+%         currentSimTime = currentSimTime + lengthgrown1/params.plus_growthrate
         if extended
             if numiters >= MAXITERS
                 ok = false;

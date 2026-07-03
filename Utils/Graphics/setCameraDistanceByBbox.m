@@ -32,9 +32,9 @@ function [cameraParams,axbbox] = setCameraDistanceByBbox( ax, varargin )
     
     [s,ok] = safemakestruct( mfilename(), varargin );
     if ~ok, return; end
-    s = defaultfields( s, 'bboxmode', '', 'setaxislimits', false );
+    s = defaultfields( s, 'bboxmode', '', 'setaxislimits', false, 'symmetric', false, 'centre', [] );
     ok = checkcommandargs( mfilename(), s, 'only', ...
-        'bbox', 'distance', 'relmargin', 'absmargin', 'at', 'bboxmode', 'setaxislimits' );
+        'bbox', 'distance', 'relmargin', 'absmargin', 'at', 'bboxmode', 'setaxislimits', 'viewangle', 'symmetric', 'centre' );
     if ~ok, return; end
     if isempty(s) || isempty(fieldnames(s))
         return;
@@ -45,6 +45,9 @@ function [cameraParams,axbbox] = setCameraDistanceByBbox( ax, varargin )
         return;
     end
     cameraParams = getCameraParams( ax );
+    if isfield( s, 'viewangle' ) && (s.viewangle > 0)
+        cameraParams.CameraViewAngle = s.viewangle;
+    end
     
     if isfield( s, 'distance' )
         d = s.distance;
@@ -56,7 +59,7 @@ function [cameraParams,axbbox] = setCameraDistanceByBbox( ax, varargin )
                 timedFprintf( 'Either ax or the ''bbox'' option must be nonempty.\m' );
                 return;
             end
-            axbbox = getAxBoundingBox( ax, 'data', s.bboxmode );
+            axbbox = getAxBoundingBox( ax, 'data', s.bboxmode, 'symmetric', s.symmetric, 'centre', s.centre );
         end
 %         bboxcorners = axbbox( [1 2 3;1 2 6;1 5 3;1 5 6;4 2 3;4 2 6;4 5 3;4 5 6] );
         bboxcorners = axbbox( [1 3 5;2 3 5;1 4 5;2 4 5;1 3 6;1 3 6;1 4 6;2 4 6] );

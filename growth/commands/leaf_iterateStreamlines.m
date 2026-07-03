@@ -302,7 +302,8 @@ function [m,ok] = leaf_iterateStreamlines( m )
             end
         end
         
-        simstarttime = max( m.globalDynamicProps.currenttime, s.starttime );  
+        simstarttime = max( m.globalDynamicProps.currenttime, s.starttime ); 
+        currentSimTime = simstarttime;
         
         % Start the tail shrinking if it was delayed and the delay has
         % expired.
@@ -378,7 +379,6 @@ function [m,ok] = leaf_iterateStreamlines( m )
                         % Record the exact place where the maximum shrink ends.
                         % This is how far the tubule will shrink in the
                         % period of remaining time if there is no rescue.
-                        % 
                         maxshrinkextseg = find( cumextseglengths > maxshrink, 1 );
                         if isempty(maxshrinkextseg)
                             % The tubule will shrink down to nothing (if no
@@ -497,7 +497,11 @@ function [m,ok] = leaf_iterateStreamlines( m )
                         if isempty(shrink_bc)
                             xxxx = 1;
                         else
+                            slen = sum( s.segmentlengths );
                             s = shrinkStreamlineTo( m, s, shrink_vx, shrink_bc(2), true );
+                            if isemptystreamline( s )
+                                s.endtime = currentSimTime + slen/params.plus_shrinkrate;
+                            end
                         end
                         if isemptystreamline( s )
                             m.tubules.tracks(si) = s;
@@ -527,7 +531,7 @@ function [m,ok] = leaf_iterateStreamlines( m )
                             end
                             
                             % Set the edgefate-related fields, if the rescue is within the edge region.
-                            if m.userdata.geomdata.edgebandelements( s.segcellindex(end) )
+                            if isfield( m.userdata.geomdata, 'edgebandelements' ) && m.userdata.geomdata.edgebandelements( s.segcellindex(end) )
                                 % The tubule has has been created within the edge region.
                                 % Determine which edge and record the edge direction.
                                 s.faceedgecode = m.auxdata.faceedgecodes( s.segcellindex(end), : );
@@ -604,7 +608,7 @@ function [m,ok] = leaf_iterateStreamlines( m )
     
             if headgrowth > 0
 %                 s1 = s;
-                [m,s,lengthgrown] = extendStreamline( m, s, headgrowth, si );
+                [m,s,lengthgrown] = extendStreamline( m, s, headgrowth, si, currentSimTime );
                 if sum( s.segmentlengths ) < 0.001
                     xxxx = 1;
                 end
@@ -622,6 +626,7 @@ function [m,ok] = leaf_iterateStreamlines( m )
             
             slen = sum( s.segmentlengths );
             if slen > 0
+                % Do tail shrinkage.
                 if s.status.catshrinktail
                     tailshrinkrate = params.minus_catshrinkrate;
                 else
@@ -630,16 +635,17 @@ function [m,ok] = leaf_iterateStreamlines( m )
                 tailshrink = tailshrinkrate * timeused;
                 if tailshrink > 0
                     s = shrinkStreamlineBy( m, s, tailshrink, false );
+                    if isemptystreamline(s)
+                        s.endtime = currentSimTime + slen/tailshrinkrate;
+                    end
                 end
             end
             
             remainingtime = remainingtime - timeused;
+            currentSimTime1 = currentSimTime;
+            currentSimTime = currentSimTime + timeused;
             
             if isemptystreamline(s)
-                s.endtime = simstarttime + timeused;
-                if s.endtime > m.globalDynamicProps.currenttime + m.globalProps.timestep
-                    xxxx = 1;
-                end
                 break;
             end
             

@@ -27,7 +27,7 @@ function m = doTubuleCreation( m, dt )
     creationtimes = creationtimes( randsubset( requestednum, grantednum ) );
     
     % Place the new microtubules randomly.
-    [elementindexes,bcs] = randPointsOnSurface( m.nodes, m.tricellvxs, creationPerFECorner, [], [], [], [], [], grantednum );
+    [elementindexes,bcs,globalpts] = randPointsOnSurface( m.nodes, m.tricellvxs, creationPerFECorner, [], [], [], [], [], grantednum );
     dirbc = zeros( grantednum, 3 );
     useDirectionField = getModelOption( m, 'edgecreaterate_perareasecond' ) > 0;
     spread = getModelOption( m, 'edgecreation_anglespread' );

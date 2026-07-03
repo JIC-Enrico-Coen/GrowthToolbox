@@ -105,7 +105,7 @@ function [m,ok] = leaf_reload( m, varargin )
         loadfiles = dir( loadfilepattern );
         loadfile = '';
         for i=1:length(loadfiles)
-            [stagespec,ok1] = removeStringPrefix( loadfiles(i).name, [ modelname, gMISC_GLOBALS.stageprefix ] );
+            [stagespec,ok1] = removeStringPrefix( loadfiles(i).name, [ modelname, gMISC_GLOBALS.stageprefix ], true );
             if ~ok1, continue; end
             if ~isempty( regexp( stagespec, [ '^', stagesuffixpattern, '\.mat$' ], 'once' ) )
                 loadfile = loadfiles(i).name;

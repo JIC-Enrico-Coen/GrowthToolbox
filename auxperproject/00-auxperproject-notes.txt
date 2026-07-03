@@ -1,0 +1,1 @@
+This directory contains functions that are specific to particular GFtbox projects.

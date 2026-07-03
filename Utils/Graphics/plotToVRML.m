@@ -19,7 +19,7 @@ function ok = plotToVRML( ax, filename )
     end
     
     cameraparams = getCameraParams( theaxes );
-    [~,centre] = getAxesBbox( ax );
+    [~,centre] = getAxesDataBbox( ax );
 
     writeVRMLpreamble( fid );
     writeVRMLViewpoints( fid, cameraparams, 1, centre )

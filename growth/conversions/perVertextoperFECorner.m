@@ -1,5 +1,5 @@
 function perFECorner = perVertextoperFECorner( m, perVx, method, fes )
-%perVx = perVertextoperFECorner( m, perVx, method, fes )
+%perFECorner = perVertextoperFECorner( m, perVx, method, fes )
 %   Given a quantity that is defined for each vertex, calculate an
 %   equivalent quantity per corner of each finite element.
 %
@@ -31,15 +31,17 @@ function perFECorner = perVertextoperFECorner( m, perVx, method, fes )
         perFECorner = perVx( m.tricellvxs( fes, : ) );
     end
     
+    numdims = size( perFECorner, 2 );
+    
     switch method
         case { 'mid', 'ave' }
             % Nothing.
         case 'min'
-            perFECorner = repmat( min( perFECorner, [], 2 ), 1, size( perFECorner, 2 ) );
+            perFECorner = repmat( min( perFECorner, [], 2 ), 1, numdims );
         case 'max'
-            perFECorner = repmat( max( perFECorner, [], 2 ), 1, size( perFECorner, 2 ) );
+            perFECorner = repmat( max( perFECorner, [], 2 ), 1, numdims );
         case 'sum'
-            perFECorner = repmat( sum( perFECorner, [], 2 ), 1, size( perFECorner, 2 ) );
+            perFECorner = repmat( sum( perFECorner, [], 2 ), 1, numdims );
         case ''
             % Simple replication, no interpolation.
             perFECorner = reshape( perFECorner', [], 1 );

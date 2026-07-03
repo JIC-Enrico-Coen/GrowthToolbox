@@ -1,5 +1,5 @@
-function aa = movingAverage( a, dim, width )
-%aa = movingAverage( a, dim, width )
+function a = movingAverage( a, dim, width )
+%a = movingAverage( a, dim, width )
 %   Take a moving average of A along dimension DIM.
 %   A is assumed to be padded with enough zeros at its left-hand end so
 %   that the final values of AA are the average of the last WIDTH values of
@@ -35,22 +35,47 @@ function aa = movingAverage( a, dim, width )
     len = sz(dim);
     a = reshape( a, sz1, len, sz2 );
     
-    % Pad A with zeros for its first HALFWIDTH places.
-    halfwidth = floor( width/2 );
-    a( end, len+halfwidth, end ) = 0;
-    a = a( :, [(len+1):end, 1:len], : );
+    f = ones(1,width)/width;
     
-    % Apply the averaging filter.
-    aa = imfilter( a, ones(1,width)/width );
+    for i1 = 1:sz1
+        for i2=1:sz2
+            a(i1,:,i2) = movingAverage1( a(i1,:,i2), f );
+        end
+    end
     
-    % Trim A to its original size.
-    aa = aa(:,1:len,:);
+    a = reshape( a, sz );
     
-    % Correct for the zero padding.
-    w = min( width, len+1 );
-    aa(:,1:(w-1),:) = aa(:,1:(w-1),:) .* (width ./ (1:(w-1)));
-    
-    % Reshape A to its original shape.
-    aa = reshape( aa, sz );
+%     return;
+% 
+%     if false
+%     
+%     % Pad A with zeros for its first HALFWIDTH places.
+%     halfwidth = floor( width/2 );
+%     a( end, len+halfwidth, end ) = 0;
+%     a = a( :, [(len+1):end, 1:len], : );
+%     
+%     % Apply the averaging filter.
+%     aa = imfilter( a, ones(1,width)/width );
+%     
+%     % Trim A to its original size.
+%     aa = aa(:,1:len,:);
+%     
+%     % Correct for the zero padding.
+%     w = min( width, len+1 );
+%     aa(:,1:(w-1),:) = aa(:,1:(w-1),:) .* (width ./ (1:(w-1)));
+%     
+%     end
+%     
+%     % Reshape A to its original shape.
+%     aa = reshape( aa, sz );
+end
+
+function a = movingAverage1( a, f )
+    [starts,ends,vs] = runends( isnan(a) );
+    for vi=1:length(starts)
+        if ~isnan( vs(vi) )
+            a( starts(vi):ends(vi) ) = imfilter( a( starts(vi):ends(vi) ), f, 'replicate' );
+        end
+    end
 end
 

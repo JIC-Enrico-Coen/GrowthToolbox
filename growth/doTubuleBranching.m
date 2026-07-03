@@ -222,7 +222,7 @@ function m = doTubuleBranching( m, dt )
     
     tailBsegindexes = ones( numtailbranches, 1 );
     tailBranchSegbc = [ ones( numtailbranches, 1 ), zeros( numtailbranches, 1 ) ];
-    tailBranchTimes = rand( numtailbranches, 1 );
+    tailBranchTimes = rand( numtailbranches, 1 ) * dt;
 
     bsegindexes = [ freeBlocalsegindexes; tailBsegindexes ];
     branchSegbc = [ freeBranchSegbc; tailBranchSegbc ];

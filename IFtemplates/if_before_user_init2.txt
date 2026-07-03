@@ -7,7 +7,6 @@
 
     setGlobals();
     
-    % Handle new-style callbacks.
     if nargin > 1
         if exist('ifCallbackHandler','file')==2
             [m,result] = ifCallbackHandler( m, varargin{:} );

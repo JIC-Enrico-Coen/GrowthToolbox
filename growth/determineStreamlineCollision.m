@@ -1,5 +1,6 @@
-function [collidedwith,collidedseg,collidedsegbc,collidersegbc,collisiontype,collisionangle,iscross,collisionparallel] = determineStreamlineCollision( m, ci, p01, radius, noncolliders )
-%[collidedwith,collidedseg,collidedsegbc,collidersegbc,collisiontype,collisionangle,iscross,collisionparallel] = determineStreamlineCollision( m, ci, p01, radius, noncolliders )
+function collisionData = determineStreamlineCollision( m, ci, p01, radius, noncolliders )
+%collisionData = determineStreamlineCollision( m, ci, p01, radius, noncolliders )
+%[collidedwith,collidedseg,collidedsegbc,collidersegbc,collisiontype,collisionangle,iscrossing,collisionparallel] = determineStreamlineCollision( m, ci, p01, radius, noncolliders )
 %
 %   Arguments:
 %
@@ -53,8 +54,9 @@ function [collidedwith,collidedseg,collidedsegbc,collidersegbc,collisiontype,col
     collisiontype = cell(1,INITSIZE);
     collisionangle = zeros(1,INITSIZE);
     collisionparallel = false(1,INITSIZE);
-    iscross = false(1,INITSIZE);
-
+    iscrossing = false(1,INITSIZE);
+    collisionDistanceInSegment = zeros(1,INITSIZE);
+    
     colliders = setdiff( 1:length( m.tubules.tracks ), noncolliders );
     
     elementNormal = m.unitcellnormals(ci,:);
@@ -122,7 +124,7 @@ function [collidedwith,collidedseg,collidedsegbc,collidersegbc,collisiontype,col
             collisiontype{numcollisions} = ctype;
             collisionangle(numcollisions) = cangle;
             collisionparallel(numcollisions) = ispar;
-            iscross(numcollisions) = false;
+            iscrossing(numcollisions) = false;
         end
         if ~any(isnan(pbcx)) && ~any(isnan(qbcx))
             numcollisions = numcollisions+1;
@@ -133,7 +135,7 @@ function [collidedwith,collidedseg,collidedsegbc,collidersegbc,collisiontype,col
             collisiontype{numcollisions} = ctype;
             collisionangle(numcollisions) = cangle;
             collisionparallel(numcollisions) = ispar;
-            iscross(numcollisions) = true;
+            iscrossing(numcollisions) = true;
         end
     end
     
@@ -144,7 +146,7 @@ function [collidedwith,collidedseg,collidedsegbc,collidersegbc,collisiontype,col
     collisiontype( (numcollisions+1):end ) = [];
     collisionangle( (numcollisions+1):end ) = [];
     collisionparallel( (numcollisions+1):end ) = [];
-    iscross( (numcollisions+1):end ) = [];
+    iscrossing( (numcollisions+1):end ) = [];
     
     if numcollisions > 1
         [~,collideperm] = sort( collidersegbc(:,2) );
@@ -155,9 +157,10 @@ function [collidedwith,collidedseg,collidedsegbc,collidersegbc,collisiontype,col
         collisiontype = collisiontype(collideperm);
         collisionangle = collisionangle(collideperm);
         collisionparallel = collisionparallel(collideperm);
-        iscross = iscross(collideperm);
+        iscrossing = iscrossing(collideperm);
         xxxx = 1;
     end
+    collisionDistanceInSegment = collidersegbc(:,2) .* sqrt(sum((p01(2,:)-p01(1,:)).^2));
     
     if all(collidersegbc(:) ~= 0) && any(collidersegbc(:) < 1e-8)
         xxxx = 1;
@@ -169,5 +172,17 @@ function [collidedwith,collidedseg,collidedsegbc,collidersegbc,collisiontype,col
     collisiontype = collisiontype(:);
     collisionangle = collisionangle(:);
     collisionparallel = collisionparallel(:);
-    iscross = iscross(:);
+    iscrossing = iscrossing(:);
+    collisionDistanceInSegment = collisionDistanceInSegment(:);
+    
+    collisionData = safemakestruct( mfilename(), ...
+        'collidedwith', collidedwith, ...
+        'collidedseg', collidedseg, ...
+        'collidedsegbc', collidedsegbc, ...
+        'collidersegbc', collidersegbc, ...
+        'collisiontype', collisiontype, ...
+        'collisionangle', collisionangle, ...
+        'collisionparallel', collisionparallel, ...
+        'iscrossing', iscrossing, ...
+        'collisionDistanceInSegment', collisionDistanceInSegment );
 end

@@ -27,6 +27,7 @@ function [ok,commandoutput] = attemptExternalCommand( externalcommand, commandou
     if nargin < 3
         maxattempts = 5;
     end
+    pausetime = 15; % seconds
     statuses = [];
     commandoutputs = {};
     shouldRetry = true;
@@ -40,7 +41,7 @@ function [ok,commandoutput] = attemptExternalCommand( externalcommand, commandou
             commandoutputs{numattempts+1} = commandoutput; %#ok<AGROW>
         end
         if numattempts < maxattempts
-            pause( 2 );
+            pause( pausetime );
         end
         [status, commandoutput] = system(externalcommand);
         ok = status==0;

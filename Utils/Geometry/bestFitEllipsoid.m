@@ -59,9 +59,6 @@ function [principalAxes,eigs,centre] = bestFitEllipsoid( vxs, wts, origin )
         % eigenvalues can result in them being very slightly negative. We
         % therefore replace such values by zero.
         eigs = max( eigs, 0 );
-        if any(eigs < 0)
-            xxxx = 1;
-        end
         [eigs,perm] = sort(eigs);
         principalAxes = principalAxes(:,perm);
     end

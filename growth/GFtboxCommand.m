@@ -72,6 +72,8 @@ function bareExptID = GFtboxCommand( varargin )
     reseedRng( 'uuid' );
     timedFprintf( 2, 'Random seed = %d\n', rng().Seed );
     
+    setGlobals();
+    
     bareExptID = NaN;
 
     global ProjectName ...
@@ -82,7 +84,8 @@ function bareExptID = GFtboxCommand( varargin )
            RemoteScriptDirectory ...
            DryRun ...
            MatlabModule ...
-           RemoteDirectoriesCreated
+           RemoteDirectoriesCreated ...
+           UsedRunIDs
 
     ProjectName = '';
     LocalProjectFullPath = '';
@@ -93,6 +96,7 @@ function bareExptID = GFtboxCommand( varargin )
     DryRun = false;
     MatlabModule = 'matlab';
     RemoteDirectoriesCreated = {};
+    UsedRunIDs = getUsedRunIDs();
     
     experimentID = '';
     experimentUserID = '';
@@ -293,8 +297,9 @@ function bareExptID = GFtboxCommand( varargin )
 %         experimentID = [ ProjectName, '-', datestr(now,'yyyymmdd_HHMMSS') ];
 %     end
     if isempty( experimentID )
-        experimentIndex = 100000 + floor(900000*rand());
-        experimentID = sprintf('%06d',experimentIndex);
+        [experimentID,experimentIndex] = chooseRunID();
+%         experimentIndex = 100000 + floor(900000*rand());
+%         experimentID = sprintf('%06d',experimentIndex);
     else
         experimentIndex = sscanf( experimentID, '%d' );
     end
@@ -427,6 +432,7 @@ function bareExptID = GFtboxCommand( varargin )
             send_ok = send_ok && writefile( localProjectInfoFile, [LocalProjectFullPath newline] );
             send_ok = send_ok && copyFileLocalRemote( localProjectInfoFile, remoteProjectInfoFile, '>', true );
             send_ok = send_ok && copyProjectFile( [makeIFname(ProjectName),'.m'] );
+            send_ok = send_ok && copyFileLocalRemote( fullfile( LocalProjectFullPath, '*.m' ), RemoteProjectFullPath', '>', false, false );
             send_ok = send_ok && copyProjectFile( [ProjectName,'.mat'] );
             send_ok = send_ok && copyProjectFile( [ProjectName,'_static.mat'] );
             if ~isempty(startStage) && (startStage > 0)
@@ -1100,6 +1106,33 @@ function [m,fig] = plotMesh( m )
     hh.colornamelo.Visible = 'off';
     hh.legend.Position(1) = 10;
 end
+
+function runIDs = getUsedRunIDs()
+    historyFile = '/Users/rk/Documents/WORK/Microtubules/AllOptions.txt';
+    [status,result] = system( [ 'cut -f 1 ', historyFile, ' | grep ''^[0-9][0-9]*$'' | sort | uniq' ] );
+    if status==0
+        runIDs = split( strtrim( result ) );
+    else
+        timedFprintf( 'Could not read history file %s, so cannot guarantee uniqueness of run IDs.\n', historyFile );
+        runIDs = {};
+    end
+end
+
+function [runID,runIndex] = chooseRunID()
+    global UsedRunIDs
+    while true
+        runIndex = 100000 + floor(900000*rand());
+        runID = sprintf('%06d',runIndex);
+        
+        if ~any( strcmp( UsedRunIDs, runID ) )
+            UsedRunIDs(end+1) = {runID}; %#ok<AGROW>
+            break;
+        end
+        
+        timedFprintf( 'RunID %s already used, trying again.\n', runID );
+    end
+end
+
 
 % function m = closemovie( m )
 %     if movieInProgress( m )

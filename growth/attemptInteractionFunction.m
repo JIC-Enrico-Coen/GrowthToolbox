@@ -36,7 +36,14 @@ function [m,ok] = attemptInteractionFunction( m )
             indicateInteractionValidity( guidata(m.pictures(1)), ok );
             updateGUIFromMesh( m );
         end
-        if ~isempty(olddir), cd( olddir ); end
+        if ~isempty(olddir)
+            try
+                % This will fail if the old directory has in the mean time
+                % been deleted.
+                cd( olddir );
+            catch
+            end
+        end
     elseif isa(m.globalProps.mgen_interaction,'function_handle')
         timedFprintf( 1, 'Interaction function disabled.\n' );
     else

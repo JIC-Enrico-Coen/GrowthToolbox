@@ -8,7 +8,8 @@ function ca = circularAverage( angles, weights, cyclelength )
     end
     [angles,perm] = sort(angles);
     weights = weights(perm);
-    xangles = [ angles, angles(1)+cyclelength ];
+    xangles = angles;
+    xangles(end+1) = angles(1)+cyclelength;
     da = xangles(2:end) - angles;
     [~,ai] = max( da );
     voidval = (xangles(ai)+xangles(ai+1))/2;
