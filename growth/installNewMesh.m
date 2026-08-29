@@ -9,7 +9,7 @@ function handles = installNewMesh( handles, m )
 
     if isempty( m ), return; end
     if isempty( handles ), return; end
-    handles = stopMovie( handles );
+%     handles = stopMovie( handles );
     setVisualRunMode( handles, 'idle' );
     cla( handles.picture );
   % resetView( handles.picture );

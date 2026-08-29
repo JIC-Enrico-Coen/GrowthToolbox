@@ -41,8 +41,8 @@ function mgenIndex = FindMorphogenIndex2( m, mgen, complain )
             mgenIndex = 0;
         end
     elseif iscell(mgen)
-        mgenIndex = zeros(1,length(mgen));
-        for i=1:length(mgen)
+        mgenIndex = zeros(size(mgen));
+        for i=1:numel(mgen)
             mi = FindMorphogenIndex2( m, mgen{i}, complain );
             if ~isempty(mi)
                 mgenIndex(i) = mi;

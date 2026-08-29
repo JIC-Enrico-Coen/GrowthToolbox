@@ -15,7 +15,7 @@ function results = findGFtboxProjectFile( varargin )
 %       the set of all subdirectories of the runs directory.
 %
 %   'file'  This specifies which file to retrieve. It can be 'if' (the
-%       interaction function), 'initial' (the initial mesh of the project),
+%       interaction function), 'init' (the initial mesh of the project),
 %       'static' (the static file), 'last' (the last existing stage file),
 %       or a stage time (as a number). It can also be the complete base
 %       name of a file.

@@ -1,7 +1,7 @@
-function [m,s,lengthgrown] = extendStreamline( m, s, lengthToGrow, noncolliders, currentSimTime )
+function [m,s,timeGrown] = extendStreamline( m, s, timeToGrow, noncolliders, currentSimTime )
 %[m,s,lengthgrown] = extendStreamline( m, s, lengthToGrow, noncolliders )
-%   Extend the streamline s of m by a distance len, or until unable to
-%   go further.
+%   Extend the streamline s of m by a distance lengthToGrow, or until
+%   unable to go further.
 %
 %   currentSimTime is the current absolute simulation time.
 
@@ -12,27 +12,27 @@ function [m,s,lengthgrown] = extendStreamline( m, s, lengthToGrow, noncolliders,
 %         BREAKPOINT( 'Invalid streamline.\n' );
     end
     
+    params = getTubuleParamsModifiedByMorphogens( m, s, { 'plus_growthrate' } );
+    lengthToGrow = params.plus_growthrate * timeToGrow;
+    
+    timeGrown = 0;
     lengthgrown = 0;
     
     if isemptystreamline(s)
         return;
     end
 
-    if lengthToGrow <= 0
-        return;
-    end
-    
     if length(s.vxcellindex)==1
         xxxx = 1;
     end
     
-    CLOSE = 1e-5;
+    CLOSE = 1e-5 * m.globalProps.timestep;
     
-    remaininglength = lengthToGrow;
-    
-    if remaininglength <= CLOSE
+    if timeToGrow < CLOSE
         return;
     end
+    
+    remainingtime = timeToGrow;
     
     if any( abs( sum(s.barycoords,2) - 1 ) > 1e-4 ) || (abs(sum(s.directionbc)) > 1e-4)
         xxxx = 1;
@@ -41,10 +41,10 @@ function [m,s,lengthgrown] = extendStreamline( m, s, lengthToGrow, noncolliders,
     numiters = 0;
     ok = true;
     alllengthgrown = [];
-%     fprintf( 1, 'Growing streamline by %f.\n', remaininglength );
-    while remaininglength > CLOSE
+%     fprintf( 1, 'Growing streamline for %f seconds.\n', remainingtime );
+    while remainingtime > CLOSE
 %         s1 = s;
-        [m,s,extended,remaininglength,lengthgrown1] = extrapolateStreamline( m, s, currentSimTime, remaininglength, noncolliders );
+        [m,s,extended,remainingtime,lengthgrown1] = extrapolateStreamline( m, s, currentSimTime, remainingtime, noncolliders );
         if any( abs( sum(s.barycoords,2) - 1 ) > 1e-4 ) || (abs(sum(s.directionbc)) > 1e-4)
             xxxx = 1;
         end
@@ -60,7 +60,7 @@ function [m,s,lengthgrown] = extendStreamline( m, s, lengthToGrow, noncolliders,
                 break;
             end
             numiters = numiters+1;
-%             fprintf( 1, 'After %d steps, grew by %f, total %f, remaining %f.\n', numiters, lengthgrown1, lengthgrown, remaininglength );
+%             fprintf( 1, 'After %d steps, grew by %f, total %f, remaining time %f.\n', numiters, lengthgrown1, lengthgrown, remainingtime );
             continue;
         else
             if numiters==0
@@ -70,20 +70,14 @@ function [m,s,lengthgrown] = extendStreamline( m, s, lengthToGrow, noncolliders,
         end
     end
     if ~ok
-        fprintf( 1, 'Failed to conclude streamline growth after %d iterations, grew %f, remaining %f.\n', ...
-            numiters, lengthgrown, remaininglength );
+        fprintf( 1, 'Failed to conclude streamline growth after %d iterations, grew %f, remaining time %f.\n', ...
+            numiters, lengthgrown, remainingtime );
         alllengthgrown
         xxxx = 1;
     end    
     validStreamline( m, s );
     
-    if lengthgrown > lengthToGrow * 1.000001
-        xxxx = 1;
-    end
-    
-    if lengthgrown < 1e-3
-        xxxx = 1;
-    end
+    timeGrown = timeToGrow - remainingtime; % lengthgrown/params.plus_growthrate;
 end
 
 % function checkvalidstreamlinepoint( m, s, si )

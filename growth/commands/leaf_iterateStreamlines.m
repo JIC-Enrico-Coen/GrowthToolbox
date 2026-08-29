@@ -262,9 +262,6 @@ function [m,ok] = leaf_iterateStreamlines( m )
     numsteps = 0;
     numdots = 0;
     
-%     npsafter = getNumberOfSeverances( m );
-    % May want to report oldnumsevs and npsafter.
-    xxxx = 1;
     if interrupted
         ok = false;
         m = invokeIFcallback( m, 'PostTubules' );
@@ -304,6 +301,7 @@ function [m,ok] = leaf_iterateStreamlines( m )
         
         simstarttime = max( m.globalDynamicProps.currenttime, s.starttime ); 
         currentSimTime = simstarttime;
+        remainingtime = dt - (simstarttime - m.globalDynamicProps.currenttime);
         
         % Start the tail shrinking if it was delayed and the delay has
         % expired.
@@ -316,12 +314,9 @@ function [m,ok] = leaf_iterateStreamlines( m )
     
         MAXITERS = 51;
         numiters = 0;
-        remainingtime = dt - (simstarttime - m.globalDynamicProps.currenttime);
         ok1 = true;
-        if s.id==215
-            xxxx = 1;
-        end
         while ok1 && (remainingtime > dt * 1e-5) && ~isemptystreamline( s )
+            currentRemainingTime = remainingtime;
             numsteps = numsteps+1;
             if mod(numsteps,1)==0
                 fwrite( 1, '.' );
@@ -348,255 +343,211 @@ function [m,ok] = leaf_iterateStreamlines( m )
                              'minus_shrinkrate' };
             params = getTubuleParamsModifiedByMorphogens( m, s, paramsneeded );
             oldheadstatus = s.status.head;
-            switch oldheadstatus
-                case 1
-                    % Is growing. Might continue, stop or start shrinking,
-                    % but that will be handled by extendStreamline().
-                    timeused = remainingtime;
-                case 0
-                    % Is stopped. Never changes from this state.
-                    timeused = remainingtime;
-                case -1
-                    % Is shrinking. Might continue or be rescued.
+            if oldheadstatus==-1
+                % Tubule is shrinking. It might be rescued.
                     
-                    NEW_RESCUE = true;
-                    if NEW_RESCUE
-                        % Rescuing always requires creating a new growing head.
-                        % See if we would get one.
-                        no_Rescue = requestMTcreation( m, 1 )==0;
+                % Rescuing always requires creating a new growing head.
+                % See if we would get one.
+                no_Rescue = requestMTcreation( m, 1 )==0;
 
-                        % Determine the distance it will shrink in the
-                        % remaining time if no rescue happens.
-                        maxshrink = remainingtime * params.plus_shrinkrate;
+                % Determine the distance it will shrink in the
+                % remaining time if no rescue happens.
+                maxshrink = remainingtime * params.plus_shrinkrate;
 
-                        % Find the cumulative lengths of the segments from the
-                        % head back to the tail, and the corresponding vertex
-                        % indexes.
-                        cumextseglengths = [ 0 cumsum( s.segmentlengths(end:-1:1) ) ];
-                        segindexes = length(s.segmentlengths):-1:1;
+                % Find the cumulative lengths of the segments from the
+                % head back to the tail, and the corresponding vertex
+                % indexes.
+                cumextseglengths = [ 0 cumsum( s.segmentlengths(end:-1:1) ) ];
+                segindexes = length(s.segmentlengths):-1:1;
 
 
-                        % Record the exact place where the maximum shrink ends.
-                        % This is how far the tubule will shrink in the
-                        % period of remaining time if there is no rescue.
-                        maxshrinkextseg = find( cumextseglengths > maxshrink, 1 );
-                        if isempty(maxshrinkextseg)
-                            % The tubule will shrink down to nothing (if no
-                            % rescue).
-                            norescue_vx = 1;
-                            norescue_bc = [1 0];
-                            norescue_length = cumextseglengths(end);
-                        elseif maxshrinkextseg==1
-                            xxxx = 1; % Should be impossible.
-                        else
-                            % The tubule will shrink back to a certain
-                            % point (if no rescue). Trim cumseglengths and
-                            % vxindexes to end at the  vertex at the start
-                            % of the segment where shrinking ends.
-                            maxshrinkseg = maxshrinkextseg-1;
-                            norescue_vx = segindexes( maxshrinkseg );
-                            norescue_frac_retained = (cumextseglengths(maxshrinkextseg) - maxshrink)/s.segmentlengths( norescue_vx );
-                            norescue_bc = [ 1 - norescue_frac_retained, norescue_frac_retained ];
-                            norescue_length = maxshrink;
+                % Record the exact place where the maximum shrink ends.
+                % This is how far the tubule will shrink in the
+                % period of remaining time if there is no rescue.
+                maxshrinkextseg = find( cumextseglengths > maxshrink, 1 );
+                if isempty(maxshrinkextseg)
+                    % The tubule will shrink down to nothing (if no
+                    % rescue).
+                    norescue_vx = 1;
+                    norescue_bc = [1 0];
+                    norescue_length = cumextseglengths(end);
+                elseif maxshrinkextseg==1
+                    xxxx = 1; % Should be impossible.
+                else
+                    % The tubule will shrink back to a certain
+                    % point (if no rescue). Trim cumseglengths and
+                    % vxindexes to end at the  vertex at the start
+                    % of the segment where shrinking ends.
+                    maxshrinkseg = maxshrinkextseg-1;
+                    norescue_vx = segindexes( maxshrinkseg );
+                    norescue_frac_retained = (cumextseglengths(maxshrinkextseg) - maxshrink)/s.segmentlengths( norescue_vx );
+                    norescue_bc = [ 1 - norescue_frac_retained, norescue_frac_retained ];
+                    norescue_length = maxshrink;
 %                             norescue_length1 = cumextseglengths( maxshrinkseg ) + (1-norescue_frac_retained)*s.segmentlengths( norescue_vx );
 %                             norescue_length2 = dot( cumextseglengths( [ maxshrinkextseg maxshrinkseg ] ), norescue_bc );
-                            cumextseglengths((maxshrinkextseg+1):end) = [];
-                            segindexes((maxshrinkseg+1):end) = [];
-                        end
-                        norescue_time = norescue_length / params.plus_shrinkrate;
+                    cumextseglengths((maxshrinkextseg+1):end) = [];
+                    segindexes((maxshrinkseg+1):end) = [];
+                end
+                norescue_time = norescue_length / params.plus_shrinkrate;
 
-                        if no_Rescue
-                            haveSpontaneousRescue = false;
-                            haveCrossoverRescue = false;
-                            timeused = norescue_time;
-                        else
-                            % Determine when a spontaneous rescue will happen.
-                            
-                            if isnan( m.tubules.tubuleparams.density_min_rescue_sharpness )
-                                minDensityRescueScaling = 1;
-                            else
-                                minDensityRescueScaling = 1 + m.tubules.tubuleparams.density_min_rescue_sharpness/max( minDensityFraction - 1, 0 );
-                            end
-                            minDensityRescueScaling = min( minDensityRescueScaling, m.tubules.tubuleparams.max_rescue_scaling );
-                            
-                            spontaneous_rescue_time = sampleexp( params.prob_plus_rescue * minDensityRescueScaling );
-                            spontaneous_rescue_length = spontaneous_rescue_time * params.plus_shrinkrate;
+                if no_Rescue
+                    haveSpontaneousRescue = false;
+                    haveCrossoverRescue = false;
+                    timeSpentShrinking = norescue_time;
+                else
+                    % Determine when a spontaneous rescue will happen.
 
-                            % Look for crossover rescues.
-                            % Find which of the vertexes are crossover vertexes.
-                            if isempty( s.status.severance )
-                                crossover_rescue_time = Inf;
-                            else
-                                foo = [s.status.severance.eventtype];
-                                crossoverevents = foo=='c';
-                                crossoverdescriptions = s.status.severance(crossoverevents);
-                                crossoververtexes = [ crossoverdescriptions.vertex ];
-                                isshallow = abs( [crossoverdescriptions.angleoffset] ) < m.tubules.tubuleparams.min_angle_crossover_rescue;
-                                if any(isshallow)
-                                    timedFprintf( 'Crossover rescue: %d of %d crossovers excluded as shallow.\n', sum(isshallow), length(crossoverdescriptions) );
-                                    crossoververtexes( isshallow ) = [];
-                                end
-                                iscrossoververtex = false( 1, length( s.vxcellindex ) );
-                                iscrossoververtex( crossoververtexes ) = true;
-
-                                % Only keep those ones.
-                                foo = iscrossoververtex(segindexes(1:(end-1)));
-                                crossover_rescue_lengths = cumextseglengths(foo);
-                                crossover_vxindexes = segindexes(foo);
-
-                                % Find the first that causes a rescue, if any.
-                                crossover_rescue_i = find( rand( length(crossover_rescue_lengths), 1 ) < params.prob_crossover_rescue, 1 );
-                                if ~isempty(crossover_rescue_i)
-                                    crossover_rescue_length = crossover_rescue_lengths( crossover_rescue_i );
-                                    crossover_rescue_vx = crossover_vxindexes( crossover_rescue_i );
-                                    crossover_rescue_time = crossover_rescue_length/params.plus_shrinkrate;
-                                    xxxx = 1;
-                                else
-                                    crossover_rescue_time = Inf;
-                                end
-                            end
-
-                            [timeused, rescuetype] = min( [ spontaneous_rescue_time, crossover_rescue_time, norescue_time ] );
-
-                            haveSpontaneousRescue = rescuetype==1;
-                            haveCrossoverRescue = rescuetype==2;
-                            no_Rescue = rescuetype==3;
-                        end
-                        
-                        if haveSpontaneousRescue
-                            if spontaneous_rescue_length==0
-                                xxxx = 1;
-                            end
-                            if cumextseglengths(end) <= spontaneous_rescue_length
-                                % 2023 Oct 17 This should never happen, but
-                                % somehow on rare occasions, shrink_bc ends up
-                                % set to []. This will happen if the above
-                                % holds.
-                                timedFprintf( 'Abnormal condition:\n    cumextseglengths(end) <= spontaneous_rescue_length\n' );
-                                xxxx = 1;
-                            end
-                            rescue_revextseg = find( cumextseglengths > spontaneous_rescue_length, 1 );
-                            rescue_revseg = rescue_revextseg-1;
-                            rescue_length = cumextseglengths(rescue_revextseg);
-                            shrink_vx = segindexes( rescue_revseg );
-                            segment_length_retained = rescue_length - spontaneous_rescue_length;
-                            shrink_frac_retained = segment_length_retained/s.segmentlengths( shrink_vx );
-                            shrink_bc = [ 1 - shrink_frac_retained, shrink_frac_retained ];
-                            xxxx = 1;
-                        elseif haveCrossoverRescue
-                            shrink_vx = crossover_rescue_vx;
-                            shrink_bc = [1 0];
-                            xxxx = 1;
-                        elseif no_Rescue
-                            shrink_vx = norescue_vx;
-                            shrink_bc = norescue_bc;
-                        else
-                            xxxx = 1;
-                        end
-                        xxxx = 1;
-                        if isempty(shrink_bc)
-                            xxxx = 1;
-                        else
-                            slen = sum( s.segmentlengths );
-                            s = shrinkStreamlineTo( m, s, shrink_vx, shrink_bc(2), true );
-                            if isemptystreamline( s )
-                                s.endtime = currentSimTime + slen/params.plus_shrinkrate;
-                            end
-                        end
-                        if isemptystreamline( s )
-                            m.tubules.tracks(si) = s;
-                            continue;
-                        end
-                        if haveSpontaneousRescue || haveCrossoverRescue
-                            s.status.head = 1;
-                            numrescued = numrescued+1;
-                            rescueinfo( numrescued, : ) = [ double(s.vxcellindex(end)), s.barycoords(end,:), Steps(m)+1 ];
-
-                            if isfield( params, 'rescue_angle_mean' ) && ~isempty(params.rescue_angle_mean)
-                                deviation = rescueAngle( params.rescue_angle_mean, params.rescue_angle_spread );
-%                                 deviation = modreflective( params.rescue_angle_mean + params.rescue_angle_spread * randn( 1 ), pi ) * randSign( 1 );
-                                currentDirection = s.directionglobal;
-                                currentElement = s.vxcellindex(end);
-                                elementNormal = m.cellFrames(:,3,currentElement)';
-                                elementVxs = m.nodes( m.tricellvxs( currentElement, : ), : );
-                                newDirection = rotateVecAboutVec( currentDirection, elementNormal, deviation );
-                                [theDirBcs,dbc_err] = baryDirCoords( elementVxs, elementNormal, newDirection );
-                                xxxx = 1;
-                                s.directionglobal = newDirection;
-                                s.directionbc = theDirBcs;
-                                if ~isfield( m.tubules.statistics, 'rescueangles' )
-                                    m.tubules.statistics.rescueangles = [];
-                                end
-                                m.tubules.statistics.rescueangles(end+1) = deviation;
-                            end
-                            
-                            % Set the edgefate-related fields, if the rescue is within the edge region.
-                            if isfield( m.userdata.geomdata, 'edgebandelements' ) && m.userdata.geomdata.edgebandelements( s.segcellindex(end) )
-                                % The tubule has has been created within the edge region.
-                                % Determine which edge and record the edge direction.
-                                s.faceedgecode = m.auxdata.faceedgecodes( s.segcellindex(end), : );
-                                if s.faceedgecode(2)=='_'
-                                    % In a corner (or flat face, but it
-                                    % shoudln't be).
-                                    s.edgefate = 'x';
-                                    s.edgestarttype = 'x';
-                                else
-                                    % In an edge.
-                                    s.edgefate = 'i';
-                                    s.edgestarttype = 'r';
-                                end
-                                s.initialelement = s.segcellindex(end);
-                                s.initialglobalcoords = s.globalcoords(end,:);
-                                s.initialdirectionglobal = s.directionglobal;
-                            else
-                                s.edgefate = ' ';
-                            end
-                        else
-                            s.status.head = -1;
-                        end
+                    if isnan( m.tubules.tubuleparams.density_min_rescue_sharpness )
+                        minDensityRescueScaling = 1;
                     else
-                        nextrescue = sampleexp( params.prob_plus_rescue );
-                        if (nextrescue < remainingtime) && (requestMTcreation( m, 1 )==1)
-                            % A rescued tubule may change its direction,
-                            % according to the parameters rescue_angle_mean and
-                            % rescue_angle_spread, if present; otherwise the
-                            % original direction is maintained.
-                            s.status.head = 1;
-                            numrescued = numrescued+1;
-                            rescueinfo( numrescued, : ) = [ double(s.vxcellindex(end)), s.barycoords(end,:), Steps(m)+1 ];
-                            timeused = nextrescue;
+                        minDensityRescueScaling = 1 + m.tubules.tubuleparams.density_min_rescue_sharpness/max( minDensityFraction - 1, 0 );
+                    end
+                    minDensityRescueScaling = min( minDensityRescueScaling, m.tubules.tubuleparams.max_rescue_scaling );
 
-                            if isfield( params, 'rescue_angle_mean' ) && ~isempty(params.rescue_angle_mean)
-                                deviation = rescueAngle( params.rescue_angle_mean, params.rescue_angle_spread );
-%                                 deviation = modreflective( params.rescue_angle_mean + params.rescue_angle_spread * randn( 1 ), pi ) * randSign( 1 );
-                                currentDirection = s.directionglobal;
-                                currentElement = s.vxcellindex(end);
-                                elementNormal = m.cellFrames(:,3,currentElement)';
-                                elementVxs = m.nodes( m.tricellvxs( currentElement, : ), : );
-                                newDirection = rotateVecAboutVec( currentDirection, elementNormal, deviation );
-                                [theDirBcs,dbc_err] = baryDirCoords( elementVxs, elementNormal, newDirection );
-                                xxxx = 1;
-                                s.directionglobal = newDirection;
-                                s.directionbc = theDirBcs;
-                                if ~isfield( m.tubules.statistics, 'rescueangles' )
-                                    m.tubules.statistics.rescueangles = [];
-                                end
-                                m.tubules.statistics.rescueangles(end+1) = deviation;
-                            end
+                    spontaneous_rescue_time = sampleexp( params.prob_plus_rescue * minDensityRescueScaling );
+                    spontaneous_rescue_length = spontaneous_rescue_time * params.plus_shrinkrate;
+
+                    % Look for crossover rescues.
+                    % Find which of the vertexes are crossover vertexes.
+                    if isempty( s.status.severance )
+                        crossover_rescue_time = Inf;
+                    else
+                        foo = [s.status.severance.eventtype];
+                        crossoverevents = foo=='c';
+                        crossoverdescriptions = s.status.severance(crossoverevents);
+                        crossoververtexes = [ crossoverdescriptions.vertex ];
+                        isshallow = abs( [crossoverdescriptions.angleoffset] ) < m.tubules.tubuleparams.min_angle_crossover_rescue;
+                        if any(isshallow)
+                            timedFprintf( 'Crossover rescue: %d of %d crossovers excluded as shallow.\n', sum(isshallow), length(crossoverdescriptions) );
+                            crossoververtexes( isshallow ) = [];
+                        end
+                        iscrossoververtex = false( 1, length( s.vxcellindex ) );
+                        iscrossoververtex( crossoververtexes ) = true;
+
+                        % Only keep those ones.
+                        foo = iscrossoververtex(segindexes(1:(end-1)));
+                        crossover_rescue_lengths = cumextseglengths(foo);
+                        crossover_vxindexes = segindexes(foo);
+
+                        % Find the first that causes a rescue, if any.
+                        crossover_rescue_i = find( rand( length(crossover_rescue_lengths), 1 ) < params.prob_crossover_rescue, 1 );
+                        if ~isempty(crossover_rescue_i)
+                            crossover_rescue_length = crossover_rescue_lengths( crossover_rescue_i );
+                            crossover_rescue_vx = crossover_vxindexes( crossover_rescue_i );
+                            crossover_rescue_time = crossover_rescue_length/params.plus_shrinkrate;
+                            xxxx = 1;
                         else
-                            s.status.head = -1;
-                            timeused = remainingtime;
+                            crossover_rescue_time = Inf;
                         end
                     end
-            end
 
+                    [timeSpentShrinking, rescuetype] = min( [ spontaneous_rescue_time, crossover_rescue_time, norescue_time ] );
+
+                    haveSpontaneousRescue = rescuetype==1;
+                    haveCrossoverRescue = rescuetype==2;
+                    no_Rescue = rescuetype==3;
+                end
+
+                if haveSpontaneousRescue
+                    if spontaneous_rescue_length==0
+                        xxxx = 1;
+                    end
+                    if cumextseglengths(end) <= spontaneous_rescue_length
+                        % 2023 Oct 17 This should never happen, but
+                        % somehow on rare occasions, shrink_bc ends up
+                        % set to []. This will happen if the above
+                        % holds.
+                        timedFprintf( 'Abnormal condition:\n    cumextseglengths(end) <= spontaneous_rescue_length\n' );
+                        xxxx = 1;
+                    end
+                    rescue_revextseg = find( cumextseglengths > spontaneous_rescue_length, 1 );
+                    rescue_revseg = rescue_revextseg-1;
+                    rescue_length = cumextseglengths(rescue_revextseg);
+                    shrink_vx = segindexes( rescue_revseg );
+                    segment_length_retained = rescue_length - spontaneous_rescue_length;
+                    shrink_frac_retained = segment_length_retained/s.segmentlengths( shrink_vx );
+                    shrink_bc = [ 1 - shrink_frac_retained, shrink_frac_retained ];
+                    xxxx = 1;
+                elseif haveCrossoverRescue
+                    shrink_vx = crossover_rescue_vx;
+                    shrink_bc = [1 0];
+                    xxxx = 1;
+                elseif no_Rescue
+                    shrink_vx = norescue_vx;
+                    shrink_bc = norescue_bc;
+                else
+                    xxxx = 1;
+                end
+                xxxx = 1;
+                if isempty(shrink_bc)
+                    xxxx = 1;
+                else
+                    slen = sum( s.segmentlengths );
+                    s = shrinkStreamlineTo( m, s, shrink_vx, shrink_bc(2), true );
+                    if isemptystreamline( s )
+                        s.endtime = currentSimTime + slen/params.plus_shrinkrate;
+                    end
+                end
+                if isemptystreamline( s )
+                    m.tubules.tracks(si) = s;
+                    continue;
+                end
+                if haveSpontaneousRescue || haveCrossoverRescue
+                    s.status.head = 1; % Tubule head starts growing.
+                    numrescued = numrescued+1;
+                    rescueinfo( numrescued, : ) = [ double(s.vxcellindex(end)), s.barycoords(end,:), Steps(m)+1 ];
+
+                    if isfield( params, 'rescue_angle_mean' ) && ~isempty(params.rescue_angle_mean)
+                        deviation = rescueAngle( params.rescue_angle_mean, params.rescue_angle_spread );
+                        currentDirection = s.directionglobal;
+                        currentElement = s.vxcellindex(end);
+                        elementNormal = m.cellFrames(:,3,currentElement)';
+                        elementVxs = m.nodes( m.tricellvxs( currentElement, : ), : );
+                        newDirection = rotateVecAboutVec( currentDirection, elementNormal, deviation );
+                        [theDirBcs,dbc_err] = baryDirCoords( elementVxs, elementNormal, newDirection );
+                        xxxx = 1;
+                        s.directionglobal = newDirection;
+                        s.directionbc = theDirBcs;
+                        if ~isfield( m.tubules.statistics, 'rescueangles' )
+                            m.tubules.statistics.rescueangles = [];
+                        end
+                        m.tubules.statistics.rescueangles(end+1) = deviation;
+                    end
+
+                    % Set the edgefate-related fields, if the rescue is within the edge region.
+                    if isfield( m.userdata.geomdata, 'edgebandelements' ) && m.userdata.geomdata.edgebandelements( s.segcellindex(end) )
+                        % The tubule has has been created within the edge region.
+                        % Determine which edge and record the edge direction.
+                        s.faceedgecode = m.auxdata.faceedgecodes( s.segcellindex(end), : );
+                        if s.faceedgecode(2)=='_'
+                            % In a corner (or flat face, but it
+                            % shoudln't be).
+                            s.edgefate = 'x';
+                            s.edgestarttype = 'x';
+                        else
+                            % In an edge.
+                            s.edgefate = 'i';
+                            s.edgestarttype = 'r';
+                        end
+                        s.initialelement = s.segcellindex(end);
+                        s.initialglobalcoords = s.globalcoords(end,:);
+                        s.initialdirectionglobal = s.directionglobal;
+                    else
+                        s.edgefate = ' ';
+                    end
+                else
+                    s.status.head = -1;
+                end
+                remainingtime = remainingtime - timeSpentShrinking;
+            end
+            
             switch s.status.head
                 case 1
-                    headgrowth = params.plus_growthrate * timeused;
+                    headgrowth = params.plus_growthrate * remainingtime;
                 case 0
                     headgrowth = 0;
                 case -1
-                    headgrowth = -params.plus_shrinkrate * timeused;
+                    headgrowth = -params.plus_shrinkrate * remainingtime;
             end
 
 
@@ -607,43 +558,44 @@ function [m,ok] = leaf_iterateStreamlines( m )
             end
     
             if headgrowth > 0
-%                 s1 = s;
-                [m,s,lengthgrown] = extendStreamline( m, s, headgrowth, si, currentSimTime );
+%                 [m,s,lengthgrown] = extendStreamline( m, s, headgrowth, si, currentSimTime );
+                [m,s,timeGrown] = extendStreamline( m, s, remainingtime, si, currentSimTime );
+                % extendStreamline simulates head growth up until an event
+                % such as catastrophe or collision
+                remainingtime = remainingtime - timeGrown;
                 if sum( s.segmentlengths ) < 0.001
                     xxxx = 1;
                 end
                 if length(s.vxcellindex)==1
                     xxxx = 1;
                 end
-                timeused = lengthgrown/params.plus_growthrate;
-            elseif headgrowth < 0
-                % Head shrinkage already performed above.
-%                 slen = sum( s.segmentlengths );
-%                 s = shrinkStreamlineBy( m, s, -headgrowth, true );
-%                 slen2 = sum( s.segmentlengths );
-%                 timeused = (slen - slen2)/params.plus_shrinkrate;
             end
+            
+            % Now we implement tail shrinkage for the sim time elapsed so far.
             
             slen = sum( s.segmentlengths );
             if slen > 0
-                % Do tail shrinkage.
+                % Do tail shrinkage. This happens for
                 if s.status.catshrinktail
                     tailshrinkrate = params.minus_catshrinkrate;
                 else
                     tailshrinkrate = params.minus_shrinkrate;
                 end
-                tailshrink = tailshrinkrate * timeused;
-                if tailshrink > 0
-                    s = shrinkStreamlineBy( m, s, tailshrink, false );
+                timeUsedSoFar = currentRemainingTime - remainingtime;
+                lengthToShrinkTail = tailshrinkrate * timeUsedSoFar;
+                if lengthToShrinkTail > 0
+                    [s,lengthShrunk] = shrinkStreamlineBy( m, s, lengthToShrinkTail, false );
+                    timeSpentTailShrinking = lengthShrunk/tailshrinkrate;
                     if isemptystreamline(s)
-                        s.endtime = currentSimTime + slen/tailshrinkrate;
+                        timeErr = timeSpentTailShrinking - slen/tailshrinkrate;
+                        s.endtime = currentSimTime + timeSpentTailShrinking;
                     end
                 end
             end
             
-            remainingtime = remainingtime - timeused;
             currentSimTime1 = currentSimTime;
-            currentSimTime = currentSimTime + timeused;
+            timeUsed = currentRemainingTime - remainingtime;
+            currentSimTime = currentSimTime + timeUsed;
             
             if isemptystreamline(s)
                 break;
@@ -653,7 +605,7 @@ function [m,ok] = leaf_iterateStreamlines( m )
                 xxxx = 1;
             end
             
-            if timeused==0
+            if timeUsed==0
                 % No progress, stop. remainingtime should be negligible.
                 if (oldheadstatus==1) && (remainingtime > 1e-4)
                     xxxx = 1;
@@ -662,11 +614,8 @@ function [m,ok] = leaf_iterateStreamlines( m )
                 end
             end
         
-%             m_tubules_statistics = m.tubules.statistics
             xxxx = 1;
         end
-        
-%         numiters
         
         if any( abs( sum(s.barycoords,2) - 1 ) > 1e-4 ) || (abs(sum(s.directionbc)) > 1e-4)
             xxxx = 1;

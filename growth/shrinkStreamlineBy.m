@@ -1,4 +1,4 @@
-function s = shrinkStreamlineBy( m, s, amount, fromhead )
+function [s,lengthShrunk] = shrinkStreamlineBy( m, s, lengthToShrink, fromhead )
 %s = shrinkStreamline( m, s, amount, fromhead )
 %   Cut off a length AMOUNT from the tubule S, from the head if FROMHEAD is
 %   true, otherwise from the tail.
@@ -7,7 +7,9 @@ function s = shrinkStreamlineBy( m, s, amount, fromhead )
 %   certain tolerance) the whole streamline is zeroed. (It will be removed
 %   from M later.)
 
-    if amount <= 0
+    lengthShrunk = 0;
+
+    if lengthToShrink <= 0
         return;
     end
     
@@ -24,12 +26,15 @@ function s = shrinkStreamlineBy( m, s, amount, fromhead )
     end
 
     TOLERANCE = 1e-5;
-    if amount <= TOLERANCE
+    if lengthToShrink <= TOLERANCE
         return;
     end
+    
+    oldlength = sum( s.segmentlengths );
 
-    if amount >= sum( s.segmentlengths ) - TOLERANCE
+    if lengthToShrink >= oldlength - TOLERANCE
         s = zerostreamline( s );
+        lengthShrunk = oldlength;
         return;
     end
     if fromhead
@@ -37,17 +42,14 @@ function s = shrinkStreamlineBy( m, s, amount, fromhead )
     else
         cumlengths = cumsum( s.segmentlengths );
     end
-    segindex = find( cumlengths > amount, 1 );
-    delta = cumlengths(segindex) - amount;
+    segindex = find( cumlengths > lengthToShrink, 1 );
+    delta = cumlengths(segindex) - lengthToShrink;
     if fromhead
         segindex = length(s.segmentlengths) + 1 - segindex;
     end
-    fractionToKeep = delta/s.segmentlengths(segindex);
-    ss = shrinkStreamlineTo( m, s, segindex, fractionToKeep, fromhead );
+    finalSegmentFractionToKeep = delta/s.segmentlengths(segindex);
+    ss = shrinkStreamlineTo( m, s, segindex, finalSegmentFractionToKeep, fromhead );
     
-    
-    
-    oldlength = sum( s.segmentlengths );
     totlen = 0;
     if fromhead
         segi = length(s.segmentlengths);
@@ -60,7 +62,7 @@ function s = shrinkStreamlineBy( m, s, amount, fromhead )
     end
     while segi ~= segi_stop
         totlen = totlen + s.segmentlengths(segi);
-        if totlen >= amount - TOLERANCE
+        if totlen >= lengthToShrink - TOLERANCE
             break;
         end
         segi = segi + segi_incr;
@@ -68,24 +70,24 @@ function s = shrinkStreamlineBy( m, s, amount, fromhead )
     if segi==segi_stop
         BREAKPOINT( '%s: streamline is shorter than amount to shrink, but this was not initially detected.\n', mfilename() );
     end
-    excess = totlen - amount;
+    excess = totlen - lengthToShrink;
     if abs(excess) < TOLERANCE
         excess = 0;
     end
     vxstart = segi;
     vxend = segi+1;
-    fractionToKeep = trimnumber( 0, excess/s.segmentlengths(segi), 1, TOLERANCE );
+    finalSegmentFractionToKeep = trimnumber( 0, excess/s.segmentlengths(segi), 1, TOLERANCE );
     if fromhead
-        if fractionToKeep==1
+        if finalSegmentFractionToKeep==1
             vxstart = segi+1;
             vxend = segi+2;
-            fractionToKeep = 0;
+            finalSegmentFractionToKeep = 0;
             if vxend > length(s.vxcellindex)
                 vxend = length(s.vxcellindex);
                 xxxx = 1;
             end
         end
-        if fractionToKeep > 0
+        if finalSegmentFractionToKeep > 0
             % Move the segend point to be that fraction of the way from the
             % segstart to the segend point.
             ci1 = s.vxcellindex(vxstart);
@@ -93,7 +95,7 @@ function s = shrinkStreamlineBy( m, s, amount, fromhead )
             ci2 = s.vxcellindex(vxend);
             bc2 = s.barycoords(vxend,:);
             [ci, bc1, bc2] = referToSameTriangle( m, ci1, bc1, ci2, bc2 );
-            s.barycoords( vxend, : ) = bc1*fractionToKeep + bc2*(1-fractionToKeep);
+            s.barycoords( vxend, : ) = bc1*finalSegmentFractionToKeep + bc2*(1-finalSegmentFractionToKeep);
             if ~checkZeroBcsInStreamline( s )
                 xxxx = 1;
             end
@@ -103,16 +105,16 @@ function s = shrinkStreamlineBy( m, s, amount, fromhead )
             s.vxcellindex(vxend) = ci;
             s.segcellindex(vxend) = ci;
             s.globalcoords( vxend, : ) = streamlineGlobalPos( m, s, vxend );
-            s.segmentlengths(segi) = fractionToKeep * s.segmentlengths(segi);
+            s.segmentlengths(segi) = finalSegmentFractionToKeep * s.segmentlengths(segi);
         end
-        if fractionToKeep == 0
+        if finalSegmentFractionToKeep == 0
             discardvx = vxend;
         else
             discardvx = vxend+1;
         end
         if ~isempty( s.status.severance )
             sevvxs = [s.status.severance.vertex];
-            if fractionToKeep > 0
+            if finalSegmentFractionToKeep > 0
                 dropped = sevvxs >= discardvx;
             else
                 dropped = sevvxs >= discardvx-1;
@@ -131,13 +133,13 @@ function s = shrinkStreamlineBy( m, s, amount, fromhead )
             xxxx = 1;
         end
     else
-        if fractionToKeep == 0
+        if finalSegmentFractionToKeep == 0
             vxstart = vxstart+1;
             vxend = vxend+1;
-            fractionToKeep = 1;
+            finalSegmentFractionToKeep = 1;
         end
         discardvx = vxstart-1;
-        if fractionToKeep < 1
+        if finalSegmentFractionToKeep < 1
             % Move the segstart point to be that fraction of the way from
             % the segstart to the segend point.
             if vxend > length(s.vxcellindex)
@@ -152,18 +154,18 @@ function s = shrinkStreamlineBy( m, s, amount, fromhead )
                 fprintf( 1, '%s: referToSameTriangle fails.\n', mfilename() );
                 xxxx = 1;
             end
-            s.barycoords( vxstart, : ) = bc1*fractionToKeep + bc2*(1-fractionToKeep);
+            s.barycoords( vxstart, : ) = bc1*finalSegmentFractionToKeep + bc2*(1-finalSegmentFractionToKeep);
             if ~checkZeroBcsInStreamline( s )
                 xxxx = 1;
             end
             s.vxcellindex(vxstart) = ci;
             s.segcellindex(vxstart) = ci;
             s.globalcoords( vxstart, : ) = streamlineGlobalPos( m, s, vxstart );
-            s.segmentlengths(segi) = fractionToKeep * s.segmentlengths(segi);
+            s.segmentlengths(segi) = finalSegmentFractionToKeep * s.segmentlengths(segi);
         end
         if ~isempty( s.status.severance )
             sevvxs = [s.status.severance.vertex];
-            if fractionToKeep == 0
+            if finalSegmentFractionToKeep == 0
                 dropped = sevvxs <= discardvx+1;
             else
                 dropped = sevvxs <= discardvx;
@@ -202,7 +204,8 @@ function s = shrinkStreamlineBy( m, s, amount, fromhead )
     end
     
     newlength = sum( s.segmentlengths );
-    shrinktest = oldlength - newlength - amount;
+    lengthShrunk = oldlength - newlength;
+    shrinktest = lengthShrunk - lengthToShrink;
     if shrinktest > 1e-5
         BREAKPOINT( 'shrinktest fail %g\n', shrinktest );
     end

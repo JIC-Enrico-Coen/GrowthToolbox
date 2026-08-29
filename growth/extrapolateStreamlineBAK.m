@@ -1,5 +1,4 @@
-function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s, currentSimTime, timeToGrow, noncolliders, recursive )
-% function [m,s,extended,remaininglength,lengthGrown] = extrapolateStreamline( m, s, currentSimTime, lengthToGrow, noncolliders, recursive )
+function [m,s,extended,remaininglength,lengthGrown] = extrapolateStreamline( m, s, currentSimTime, lengthToGrow, noncolliders, recursive )
 %[m,s,extended,remaininglength,lengthGrown] = extrapolateStreamline( m, s, currentSimTime, lengthToGrow, noncolliders, recursive )
 %   Extrapolate the streamline s in the direction it is currently going in
 %   until it hits an edge of an FE containing its head. (If its head is on
@@ -44,71 +43,37 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
     
     extended = false;
     
+    params = getTubuleParamsModifiedByMorphogens( m, s,{ 'plus_growthrate' }  ); % Not needed when we finish conversion to time-in and time-out.
+    timeToGrow = lengthToGrow / params.plus_growthrate;
     
-    % Determine the tubule parameters at the head of the tubule.
-    params = getTubuleParamsModifiedByMorphogens( m, s );
-    
-    
-    % Get some of the model parameters.
-    % This is a bad thing to do. GFtbox code should never refer to the
-    % model options nor to m.userdata. But there has never been any time to
-    % find a way to do this better.
-    edge_alignment = getModelOption( m, 'edge_alignment' );
-    edge_alignment_power = getModelOption( m, 'edge_alignment_power' );
-    if isempty(edge_alignment_power)
-        edge_alignment_power = 3; % Value chosen from physical principles when attempting
-                                  % to minimise the bending energy of the growing head.
-    end
-    field_alignment = getModelOption( m, 'field_alignment' );
-    field_alignment2 = getModelOption( m, 'field_alignment2' );
-    field_alignment_power = getModelOption( m, 'field_alignment_power' );
-    stressGrowthScale = getModelOption( m, 'stressGrowthScale' );
-    stressGrowthAngle = getModelOption( m, 'stressGrowthAngle' );
-    
-    
-    % remainingtime will count down as the tubule is grown. when this
-    % procedure finishes, the value of remainingtime is returned.
     remainingtime = timeToGrow;
+    remaininglength = lengthToGrow;
     
-%     if any( abs( sum(s.barycoords,2) - 1 ) > 1e-4 ) || (abs(sum(s.directionbc)) > 1e-4)
-%         xxxx = 1; %#ok<NASGU>
-%     end
+    if any( abs( sum(s.barycoords,2) - 1 ) > 1e-4 ) || (abs(sum(s.directionbc)) > 1e-4)
+        xxxx = 1; %#ok<NASGU>
+    end
     
     ci = s.vxcellindex(end);
+%     bc = trimbc( s.barycoords(end,:) );
     bc = normaliseBaryCoords( s.barycoords(end,:) );
     dirbc = s.directionbc;
-    % Validity checks for bc (no NaN values) and dbc (should add to 0).
     if any(isnan(dirbc))
-        % Should never happen.
         warning( 'NaN found in s.directionbc [%f %f %f]', dirbc(1), dirbc(2), dirbc(3) );
         timedFprintf( 2, '%s', formattedDisplayText( s ) );
         dbstack
         xxxx = 1; %#ok<NASGU>
     end
     if abs(sum(dirbc)) > 0.1
-        % Should never happen.
-        warning( 'Invalid dbc [%f %f %f]', dirbc(1), dirbc(2), dirbc(3) );
+        warning( 'invalid direction [%f %f %f]', dirbc(1), dirbc(2), dirbc(3) );
         xxxx = 1; %#ok<NASGU>
     end
     
-    % Determine the global direction in which the microtubule is growing.
+    % Determine the direction in which the microtubule is growing.
     if isempty(dirbc)
-        % The tubule has no defined direction. There is no reason I can
-        % think of that this would ever happen. If so, this branch is
-        % superfluous.
-        warning( 'dirbc is empty' );
-        timedFprintf( 2, '%s', formattedDisplayText( s ) );
-        dbstack
-        xxxx = 1; %#ok<NASGU>
         % Get direction from polariser.
         dirglobal = normalisedGradient( m, ci, s.downstream );
         if all(dirglobal==0)
             % No direction.  Streamline cannot be continued.
-            warning( 'Streamline direction cannot be determined' );
-            timedFprintf( 2, '%s', formattedDisplayText( s ) );
-            dbstack
-            xxxx = 1; %#ok<NASGU>
-            lengthGrown = 0;
             return;
         end
         % Convert dirglobal to bary coords
@@ -124,15 +89,27 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
         end
         dirglobal = s.directionglobal;
     end
-
     
-    % We record the old global direction only for a validity check near the
-    % end of this procedure.
     olddirglobal = dirglobal;
     
+    % If the microtubule is curved, modify the direction accordingly.
     MAXANGLEPERSTEP = 0.1;
     
-    % Calculate the curvature caused by being in the edge region.
+    % This code is not good. GFtbox code should never refer to the
+    % model options nor to m.userdata. But I was in a hurry and there
+    % was not the time to do this right.
+    edge_alignment = getModelOption( m, 'edge_alignment' );
+    edge_alignment_power = getModelOption( m, 'edge_alignment_power' );
+    if isempty(edge_alignment_power)
+        edge_alignment_power = 3; % Value chosen from physical principles when attempting
+                                  % to minimise the bending energy of the growing head.
+    end
+    field_alignment = getModelOption( m, 'field_alignment' );
+    field_alignment2 = getModelOption( m, 'field_alignment2' );
+    field_alignment_power = getModelOption( m, 'field_alignment_power' );
+    stressGrowthScale = getModelOption( m, 'stressGrowthScale' );
+    stressGrowthScaleParameter = getModelOption( m, 'stressGrowthScaleParameter' );
+    
     curvatureFromEdge = 0;
     if m.tubules.tubuleparams.curvature ~= 0
         curvatureFromEdge = m.tubules.tubuleparams.curvature;
@@ -165,56 +142,67 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
                     incidenceEffect = incidenceEffect / max_incidenceEffect;
                 end
                 curvatureFromEdge = -edge_alignment * localCurvature * incidenceEffect;
-                % I don't know what the following code was for. This is the
-                % only place that the parameter 'alignment_bifurcation_angle'
-                % is used. My daily notes show it being used only for a few
-                % days in March 2024. In the i.f. it is set to NaN, so by
-                % default does nothing.
-%                 bifurcationAngle = getModelOption( m, 'alignment_bifurcation_angle' );
-%                 if ~isempty( bifurcationAngle ) && ~isnan( bifurcationAngle )
-% %                     sign1 = sign(cos( 2*edgeIncidenceAngle ));
-%                     sign2 = 2 * (abs( abs(edgeIncidenceAngle) - pi/2 ) > bifurcationAngle) - 1;
-% %                     if (sign1 ~= sign2)
-% %                         xxxx = 1;
-% %                     end
-%                     curvatureFromEdge = curvatureFromEdge * -sign2;
-%                 end
+                bifurcationAngle = getModelOption( m, 'alignment_bifurcation_angle' );
+                if ~isempty( bifurcationAngle ) && ~isnan( bifurcationAngle )
+%                     sign1 = sign(cos( 2*edgeIncidenceAngle ));
+                    sign2 = 2 * (abs( abs(edgeIncidenceAngle) - pi/2 ) > bifurcationAngle) - 1;
+%                     if (sign1 ~= sign2)
+%                         xxxx = 1;
+%                     end
+                    curvatureFromEdge = curvatureFromEdge * -sign2;
+                end
                 
                 xxxx = 1; %#ok<NASGU>
             end
         end
     end
     
-    headFE = s.vxcellindex(end);
+    curvatureFromField = 0;
+    haveFirstField = ~isempty( field_alignment ) && (field_alignment ~= 0);
+    haveSecondField = ~isempty( field_alignment2 ) && (field_alignment2 ~= 0);
     
-    haveFlow1 = isfield( m.auxdata, 'flow' ) ...
-                && ~isempty( m.auxdata.flow ) ...
-                && ~all( m.auxdata.flow(headFE,:)==0 );
-    haveFlow2 = isfield( m.auxdata, 'flow2' ) ...
-                && ~isempty( m.auxdata.flow2 ) ...
-                && ~all( m.auxdata.flow2(headFE,:)==0 );
-    haveCurvatureEffect1 = haveFlow1 && ~isempty( field_alignment ) && ~isnan( field_alignment ) && (field_alignment ~= 0);
-    haveCurvatureEffect2 = haveFlow2 && ~isempty( field_alignment2 ) && ~isnan( field_alignment2 ) && (field_alignment2 ~= 0);
-    haveCurvatureEffect = haveCurvatureEffect1 || haveCurvatureEffect2;
-    haveStressAcceleration = haveFlow1 ...
-                             && ~isempty( stressGrowthScale ) && ~isnan( stressGrowthScale ) && (stressGrowthScale ~= 1) ...
-                             && ~isempty( stressGrowthAngle ) && ~isnan( stressGrowthAngle ) && (stressGrowthAngle ~= 0);
+    % We need to calculate the incidence angle if the variant requires
+    % either
+    % (1) curvature towards the field, or
+    % (2) growth accelerated when near parallel to the field.
+    % The first is true if either haveFirstField or haveSecondField is
+    % true, field_alignment_power is defined, and the flow field
+    % m.auxdata.flow is defined.
+    % The second is true if haveFirstField is true, stressGrowthScale is
+    % defined and not 1, and the flow field
+    % m.auxdata.flow is defined.
+    
+    haveCurvatureEffect = (haveFirstField || haveSecondField) ...
+                         && (numel(field_alignment_power)==1) ...
+                         && ~isnan( field_alignment_power ) ...
+                         && isfield( m.auxdata, 'flow' ) ...
+                         && ~isempty( m.auxdata.flow );
 
-                         
-    % Calculate the angle between the tubule direction and the stress field, if we need to.
-    % We need this value if either haveCurvatureEffect or haveStressAcceleration is true.
+    haveAccelerationEffect = haveFirstField ...
+                         && (numel(stressGrowthScale)==1) ...
+                         && ~isnan(stressGrowthScale) ...
+                         && (stressGrowthScale ~= 1) ...
+                         && isfield( m.auxdata, 'flow' ) ...
+                         && ~isempty( m.auxdata.flow );
+                     
+    needIncidenceAngle = haveCurvatureEffect || haveAccelerationEffect;
     flowIncidenceAngle = NaN;
-    needIncidenceAngle = haveCurvatureEffect || haveStressAcceleration;
     if needIncidenceAngle
-        surfaceNormal = m.cellFrames( :, 3, headFE )';
-        if haveFlow1
-            flowdir = m.auxdata.flow( headFE, : );
-            local_field_alignment = field_alignment;
-        elseif haveFlow2
-            flowdir = m.auxdata.flow2( headFE, : );
-            local_field_alignment = field_alignment2;
-        end
+        % Code for finding the angle between the tubule direction of growth
+        % and the flow field defined by a morphogen gradient.
+        surfaceNormal = m.cellFrames( :, 3, s.vxcellindex(end) )';
+        flowdir = m.auxdata.flow( s.vxcellindex(end), : );
         flowperp = cross( flowdir, surfaceNormal );
+%         flowdir2 = m.auxdata.flow2( s.vxcellindex(end), : );
+%         flowperp2 = cross( flowdir2, surfaceNormal );
+
+        if all( flowperp==0 )
+            % Use the other field alignment parameter.
+            flowdir = m.auxdata.flow2( s.vxcellindex(end), : );
+            flowperp = cross( flowdir, surfaceNormal );
+            field_alignment = field_alignment2;
+            xxxx = 1; %#ok<NASGU>
+        end
 
         if any( flowperp ~= 0 )
             [flowIncidenceAngle,~,~] = vecangle( flowdir, s.directionglobal, surfaceNormal );
@@ -223,9 +211,6 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
         end
     end
     
-    
-    % Calculate the curvature caused by the stress field.
-    curvatureFromField = 0;
     if haveCurvatureEffect && ~isnan(flowIncidenceAngle)
         sinIE = sin(flowIncidenceAngle);
         cosIE = cos(flowIncidenceAngle);
@@ -237,53 +222,37 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
             % Normalise incidenceEffect to have maximum value 1.
             incidenceEffect = incidenceEffect / max_incidenceEffect;
         end
-        curvatureFromField = local_field_alignment * incidenceEffect;
+        curvatureFromField = field_alignment * incidenceEffect;
         xxxx = 1; %#ok<NASGU>
     end
     
-    
-    % Modify the tubule direction to account for all curvature effects. The
-    % tubule is not grown at this point, only its direction is changed.
     curvature = curvatureFromEdge + curvatureFromField;
+    curvelengthbound = MAXANGLEPERSTEP/abs(curvature);
+    lengthToGrow = min( lengthToGrow, curvelengthbound, 'omitnan' );
     if (curvature ~= 0) && ~isempty( s.segmentlengths )
         % Correct dirglobal by curvature. The turning angle is limited to avoid numerical errors.
         % The length of the previous segment, from which the turning angle
         % is calculated, should have been short enough that MAXANGLEPERSTEP
         % is not exceeded, but we use the bound here just to make sure.
-        
         angle = curvature * s.segmentlengths(end);
         if abs(angle) > MAXANGLEPERSTEP
             xxxx = 1; %#ok<NASGU>
             angle = sign(angle) * min( abs(angle), MAXANGLEPERSTEP, 'omitnan' );
         end
-        trivxs = m.tricellvxs( headFE, : );
+        trivxs = m.tricellvxs( s.vxcellindex(end), : );
         pointnormal = s.barycoords(end,:) * m.vertexnormals( trivxs, : );
         r = axisAngle2RotMat( pointnormal, angle );
         dirglobal1 = dirglobal*r;
         % Force dirglobal to lie within the element
+%         facenormal = trinormal( m.nodes( trivxs, : ) );
         dirglobal2 = dirglobal1 - pointnormal * dot(dirglobal1,pointnormal)/norm(pointnormal);
+%         deflection = dirglobal2 - dirglobal
         dirglobal = dirglobal2;
         dirbc = vec2bc( dirglobal, m.nodes( trivxs, : ) );
         s.directionbc = dirbc/norm(dirbc);
         s.directionglobal = streamlineGlobalDirection( m, s );
         xxxx = 1; %#ok<NASGU>
     end
-    
-    
-    % Calculate the effect of the stress field on growth rate.
-    if haveStressAcceleration && ~isnan( flowIncidenceAngle )
-        undirectedIncidence = pi/2 - abs( (abs(flowIncidenceAngle) - pi/2) );
-        % undirectedIncidence is in the range 0..pi/2.
-        % 0 = parallel to the field, pi/2 = perpendicular.
-        scalebyAngle = double( undirectedIncidence < stressGrowthAngle );
-        if scalebyAngle==1
-            xxxx = 1;
-        end
-        stressGrowthScaleThisTubule = 1 + scalebyAngle * (stressGrowthScale - 1);
-    else
-        stressGrowthScaleThisTubule = 1;
-    end
-    plus_growthrate = params.plus_growthrate  * stressGrowthScaleThisTubule;
     
     if any( abs( sum(s.barycoords,2) - 1 ) > 1e-4 ) || (abs(sum(s.directionbc)) > 1e-4)
         xxxx = 1; %#ok<NASGU>
@@ -295,8 +264,6 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
     s.directionbc = dirbc;
     
     
-    % Determine whether the tubule head is on the boundary of its finite
-    % element and pointing out from it.
     pointsOut3 = ((bc <= 0) & (dirbc < 0)) | ((bc >= 1) & (dirbc > 0));
     pointsOut = any( pointsOut3 );
     whichvertex = find( bc >= 1, 1 );
@@ -306,21 +273,20 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
         whichedge = [];
     end
     
-    
     if pointsOut
-        % The tubule is about to cross over into another finite element.
+        % We will do no growth in this call of extrapolateStreamline.
         % The possibilities are:
         % * The tubule catastrophises immediately.
         % * The tubule is paused.
         % * The tubule continues its growth.
         %
-        % To pause a tubule, we set its pauseuntil to the pause duration
+        % To pause a tubule, we set its pauseuntil to the pauseduration
         % plus the time at which it hit the edge. If this is less than the
-        % remaining time of this step then there is no more to do.
+        % remaining time of this step ...
         %
-        % If the tubule is to continue its growth, we transfer its
-        % endpoint to the element it is about to move into, then call
-        % extrapolateStreamline recursively to continue the growth.
+        % In the last case we transfer its  endpoint to the element it is
+        % about to move into, then call extrapolateStreamline recursively
+        % to continue the growth.
         lengthGrown = 0;
         
         % Determine whether the mt should catastrophise, according to the
@@ -330,14 +296,10 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
         % into a vertex, the value for that vertex is the probability of
         % catastrophe. If it has run into an edge, the probability is the
         % minimum probability of either end. If the resulting probability
-        % is NaN, this is equivalent to zero (i.e. it will not
-        % catastrophize).
+        % is NaN, this is equivalent to zero.
         
         does_edge_cat = false;
         
-        % Determine if the tubule has run into a catastrophe-causing
-        % barrier, and whether this causes a catastrophe. For a barrier,
-        % this depends on the angle at which it hits the barrier.
         s_barrier_incidence_i = FindMorphogenIndex( m, 's_edge_barrier' );
         s_barrier_incidence_perFEvertex = m.morphogens( m.tricellvxs( ci, : ), s_barrier_incidence_i )';
         collisionbarrieredges = [];
@@ -385,8 +347,6 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
         end
         
         
-        % Determine if the tubule has run into a non-direction-sensitive
-        % catastrophe-causing barrier.
         if ~does_edge_cat
             edge_plus_catastrophe = getModelOptionModifiedByMorphogens( m, 'edge_plus_catastrophe' );
             if all( edge_plus_catastrophe==edge_plus_catastrophe(1) )
@@ -416,13 +376,12 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
             does_edge_cat = rand(1) < prob_edge_catastrophe;
         end
         
-        
-        % If a catastrophe happened, we're done.
         if does_edge_cat
             % Catastrophise now.
             stoppingData = struct();
             [m,s,~] = stopStreamline( m, s, 'e', stoppingData );
             remainingtime = 0;
+            remaininglength = 0;
         else
             % Cross over to the next element, then call this procedure again.
 
@@ -443,8 +402,7 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
                 cis = m.edgecells(ei,:);
                 newci = cis(cis ~= ci);
                 if newci==0
-                    % We hit a border of the mesh. There is nothing on the
-                    % other side of the edge. No more to do.
+                    % We hit a border. No more to do.
         %             timedFprintf( 1, 'hit border edge\n' );
                 else
                     % Transfer the direction and the final point to the element on
@@ -500,7 +458,7 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
                         timedFprintf( 'Two or more levels of recursion in extrapolateStreamline.\n' );
                         xxxx = 1;
                     end
-                    [m1,s1,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s, currentSimTime, timeToGrow, noncolliders, true );
+                    [m1,s1,extended,remaininglength,lengthGrown] = extrapolateStreamline( m, s, currentSimTime, lengthToGrow, noncolliders, true );
 %                     if any( abs( sum(s.barycoords,2) - 1 ) > 1e-4 ) || (abs(sum(s.directionbc)) > 1e-4)
 %                         xxxx = 1; %#ok<NASGU>
 %                     end
@@ -594,21 +552,18 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
                         timedFprintf( 'Two or more levels of recursion in extrapolateStreamline.\n' );
                         xxxx = 1;
                     end
-                    [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s, currentSimTime, timeToGrow, noncolliders, true );
+                    [m,s,extended,remaininglength,lengthGrown] = extrapolateStreamline( m, s, currentSimTime, lengthToGrow, noncolliders, true );
                 end
             end
         end
-        % pointsOut
     else
-        % ~pointsOut
-        
         % The growth direction points within the element. Extrapolate it
         % until an "event" happens. "Events" are:
         % * The amount of growth to be done is completed.
         % * If there is curvature, the angular deviation over the length
         %   grown reaches MAXANGLEPERSTEP
-        % * It continues unobstructed to the edge of the element. It may at
-        %   the edge have an edge-induced catastrophe.
+        % * It continues unobstructed to the edge. It may at the edge have
+        %   an edge-induced catastrophe.
         % * It has a spontaneous catastrophe.
         % * It spontaneously stops.
         % That is the furthest point to which it can be grown. We then
@@ -618,15 +573,15 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
         if ~validStreamline( m, s )
             xxxx = 1; %#ok<NASGU>
         end
-        
 
         k = -bc(dirbc<0)./dirbc(dirbc<0);
         k(isnan(k) | (k<0)) = Inf;
         k1 = min(k);
         % k1 must be > 0.
-        % The tubule hits the boundary of the finite element at barycentric
-        % coordinates bc + k1*dirbc. We (temporarily) add this point to the
-        % streamline.
+        % New point has bcs bc+k1*dirbc.
+        if recursive
+            xxxx = 1; %#ok<NASGU>
+        end
         s.segcellindex(end+1) = ci;
         s.vxcellindex(end+1) = ci;
         s.iscrossovervx(end+1) = false;
@@ -634,16 +589,15 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
         if ~checkZeroBcsInStreamline( s )
             xxxx = 1; %#ok<NASGU>
         end
+        if (s.globalcoords(end,2) < -4.5) && (s.globalcoords(end,3) > 4.5)
+            xxxx = 1; %#ok<NASGU>
+        end
         vx1 = streamlineGlobalPos( m, s, length(s.vxcellindex)-1 );
         vx2 = streamlineGlobalPos( m, s, length(s.vxcellindex) );
         lengthGrown = norm(vx2-vx1);
-        lengthToGrow = timeToGrow * plus_growthrate;
+%         hitedge = lengthgrown >= maxlength;
         if lengthGrown > lengthToGrow
-            % The time step will run out before the tubule reaches the
-            % border of the finite element. Trim the fimal point back to
-            % where the time runs out.
-            growthFraction = lengthToGrow/lengthGrown;
-            k1 = k1 * growthFraction;
+            dirbc = dirbc*lengthToGrow/lengthGrown;
             s.barycoords(end,:) = trimbc( bc + k1*dirbc );
             if ~checkZeroBcsInStreamline( s )
                 xxxx = 1; %#ok<NASGU>
@@ -651,26 +605,51 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
             lengthGrown = lengthToGrow;
         end
         TOLERANCE = 1e-6;
-
-        doedgecat = false;
+%         whichreledges = s.barycoords(end,:) <= TOLERANCE;
+%         whichabsedges = m.celledges( ci, whichreledges );
+%         if isfield( m.auxdata, 'edgecatprob' ) && ~isempty( m.auxdata.edgecatprob )
+%             if numel( m.auxdata.edgecatprob )==1
+%                 edge_cat_prob = m.auxdata.edgecatprob;
+%             else
+%                 edge_cat_prob = max( m.auxdata.edgecatprob( whichabsedges ) );
+%             end
+%         else
+%             edge_cat_prob = 0;
+%         end
+%         doedgecat = any( whichreledges ) && (rand(1) < edge_cat_prob);
+%         if doedgecat
+%             xxxx = 1; %#ok<NASGU>
+%         end
+        doedgecat = false; % Edge catastrophe is not handled here, but in
+            % the recursive call that attempts to cross an edge, starting
+            % at line 183.
         
         % Calculate whether there was a spontaneous stopping or
         % catastrophising before lengthgrown.
-        endgrowthtime = lengthGrown/plus_growthrate;
-        timetoevent = endgrowthtime;
         if lengthGrown > 0
             stoppingData = struct();
+            params = getTubuleParamsModifiedByMorphogens( m, s );
+            if haveAccelerationEffect && ~isnan(flowIncidenceAngle  )
+                undirectedIncidence = pi/2 - abs( (abs(flowIncidenceAngle) - pi/2) );
+                % undirectedIncidence is in the range 0..pi/2.
+                % 0 = parallel to the field, pi/2 = perpendicular.
+                undirectedIncidenceNormalised = undirectedIncidence*(2/pi); % In the range 0..1. 0 = parallel to the field, 1 = perpendicular.
+                scalebyAngle = double( undirectedIncidenceNormalised < stressGrowthScaleParameter );
+                if scalebyAngle==1
+                    xxxx = 1;
+                end
+                stressGrowthScaleThisTubule = 1 + scalebyAngle * (stressGrowthScale - 1);
+            else
+                stressGrowthScaleThisTubule = 1;
+            end
+            plus_growthrate = params.plus_growthrate  * stressGrowthScaleThisTubule;
+            timeused = lengthGrown/plus_growthrate;
             tubuleCurvatureAtHead = directionalCurvature( m, s.vxcellindex(end), s.barycoords(end,:), s.directionglobal, 'min' );
             if m.tubules.tubuleparams.curvature_power==0
                 curvature_effect = double( tubuleCurvatureAtHead ~= 0 );
             else
                 curvature_effect = tubuleCurvatureAtHead^m.tubules.tubuleparams.curvature_power;
             end
-            
-            
-            % THIS COMMENT IS UNACCOMPANIED BY ANY RELEVANT CODE. It deals
-            % with curvature-induced catastrophe. Did we discard that idea?
-            %
             % params.plus_curvature_cat is the probability of catastrophe
             % per unit distance of growth at a curvature of 1.
             %
@@ -691,17 +670,10 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
             % A similar calculation gives the probability per unit time of
             % growth stopping.
             
-            
-            
             % Find out if the growing head is in the edge region, and
             % edge_redirect_prob_per_time is defined and nonzero.
-            if isfield( m.auxdata, 'faceedgeaxes' )
-                edgeaxis = m.auxdata.faceedgeaxes( s.vxcellindex(end), : );
-            else
-                edgeaxis = [];
-            end
+            edgeaxis = m.auxdata.faceedgeaxes( s.vxcellindex(end), : );
             edge_redirect_prob_per_time = getModelOption( m, 'edge_redirect_prob_per_time' ); % params.edge_redirect_prob_per_time * plus_growthrate;
-            edgeredirecttime = Inf;
             tryEdgeRedirection = (sum(edgeaxis)==1) && ~isempty( edge_redirect_prob_per_time ) && ~isnan( edge_redirect_prob_per_time ) && (edge_redirect_prob_per_time > 0);
             if tryEdgeRedirection
                 % Find angle with edge.
@@ -709,15 +681,18 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
                 shortestAngleWithEdge = pi/2 - abs( angleWithEdge - pi/2 ); % In range [0,pi/2].
                 edge_redirect_max_angle = getModelOption( m, 'edge_redirect_max_angle' );
                 edge_redirect_min_angle = getModelOption( m, 'edge_redirect_min_angle' );
-                stillTryEdgeRedirection = (shortestAngleWithEdge < edge_redirect_max_angle) && (shortestAngleWithEdge >= edge_redirect_min_angle);
-                if stillTryEdgeRedirection
-                    edgeredirecttime = sampleexp( edge_redirect_prob_per_time );
-                    stoppingData.newdirection = edgeaxis;
-                    if angleWithEdge > pi/2
-                        stoppingData.newdirection = -stoppingData.newdirection;
-                    end
-                    stoppingData.angleWithEdge = angleWithEdge;
+                tryEdgeRedirection = tryEdgeRedirection && (shortestAngleWithEdge < edge_redirect_max_angle) && (shortestAngleWithEdge >= edge_redirect_min_angle);
+            end
+            if tryEdgeRedirection
+                edgeredirecttime = sampleexp( edge_redirect_prob_per_time );
+                stoppingData.newdirection = edgeaxis;
+                if angleWithEdge > pi/2
+                    stoppingData.newdirection = -stoppingData.newdirection;
                 end
+                stoppingData.angleWithEdge = angleWithEdge;
+                xxxx = 1;
+            else
+                edgeredirecttime = Inf;
             end
 
             if isinf( params.plus_curvature_cat )
@@ -726,6 +701,13 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
             curvature_cat_prob_per_time = params.plus_curvature_cat * curvature_effect * plus_growthrate;
             curve_stop_per_time = params.curve_stop_per_dist * curvature_effect * plus_growthrate;
             nextstoptime = sampleexp( params.prob_plus_stop + curve_stop_per_time );
+            
+            if tubuleCurvatureAtHead > 0
+                if abs(s.globalcoords(end,3)) < 3
+                    xxxx = 1; %#ok<NASGU>
+                end
+                xxxx = 1; %#ok<NASGU>
+            end
             
 
             % There is also a probability of spontaneous catastrophe per
@@ -737,10 +719,20 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
                 effective_prob_plus_catastrophe_per_time = params.prob_plus_catastrophe * m.tubules.tubuleparams.plus_catastrophe_scaling + curvature_cat_prob_per_time;
             end
             
+            % Extra for testing purposes: we also use
+            % prob_plus_catastrophe2, but not scaled by
+            % m.tubules.tubuleparams.plus_catastrophe_scaling.
+            if ~isnan( params.prob_plus_catastrophe2 ) && (params.prob_plus_catastrophe2 ~= 0)
+                effective_prob_plus_catastrophe_per_time = effective_prob_plus_catastrophe_per_time + params.prob_plus_catastrophe2;
+            end
+            
+            if isinf( effective_prob_plus_catastrophe_per_time )
+                xxxx = 1; %#ok<NASGU>
+            end
+            
             % Finally we adjust effective_prob_plus_catastrophe_per_time
             % according to whether the head of the tubule is in the edge
-            % region, and according to whethe it has some degree of
-            % immunity from catastrophe.
+            % region.
             cat_immune_scaling = getModelOption( m, 'cat_immune_scaling' );
             
             isimmune = getCatImmunity( m, s );
@@ -766,7 +758,7 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
             end
             
             if doedgecat
-                edgecattime = endgrowthtime; %#ok<UNRCH>
+                edgecattime = timeused; %#ok<UNRCH>
             else
                 edgecattime = Inf;
             end
@@ -778,21 +770,16 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
                 xxxx = 1; %#ok<NASGU>
             end
             
-            
-            % We have now detected all the possible events relating only to
-            % the tubule and the mesh that might occur within the current
-            % finite element. We find the first of these that does occur,
-            % and trim the growth back to that event.
-            [timetoevent,stoppingreason] = min( max( 0, [edgecattime, nextcattime, edgeredirecttime, nextstoptime, endgrowthtime] ), [], 'omitnan' );
+            [timetoevent,stoppingreason] = min( max( 0, [edgecattime, nextcattime, edgeredirecttime, nextstoptime, timeused] ), [], 'omitnan' );
             stoppingreasons = 'ecrsx';
             stoppingreason = stoppingreasons(stoppingreason);
             % stoppingreason is 'x' if no reason to stop, 's' if stop, 'c' if cat, 'e' if edge cat, 'r' if edge redirection.
-            if timetoevent < endgrowthtime
+            if timetoevent < timeused
                 % Adjust the final point of s.
-                frac = timetoevent/endgrowthtime;
-                endgrowthtime = timetoevent;
+                frac = timetoevent/timeused;
+                timeused = timetoevent;
                 if frac <= 0
-                    % Stop right here. Undo adding the last vertex.
+                    % Stop right here, undo adding the last vertex.
                     s.segcellindex(end) = [];
                     s.vxcellindex(end) = [];
                     s.iscrossovervx(end) = [];
@@ -806,34 +793,13 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
         else
             stoppingreason = 'x';
         end
-        timeGrown1 = lengthGrown / plus_growthrate;
-        timeGrown = endgrowthtime;
-        % Should endgrowthtime be identical to timetoevent and timeGrown1?
-        if abs(timeGrown1 - timeGrown) > 1e-7
-            xxxx = 1;
-        end
-%         remainingtime = timeToGrow - timetoevent;
+        timeGrown = lengthGrown / timeused;
+        remainingtime = timeToGrow - timeGrown;
+        remaininglength = lengthToGrow - lengthGrown;
         
-        % We now know how far this tubule will grow in the current
-        % simulation sub-step, ignoring any interactions with other
-        % tubules. Its growth was terminated by one of the following
-        % events:
-        %   Hitting an edge of the current finite element.
-        %   Running out of time in the current simulation step.
-        %   Spontaneously catastrophising.
-        %   Running into a barrier that made it catastrophise.
-        %   Spontaneously stopping.
-        %   Redirecting to run along an edge.
-        %
-        % Next we calculate its interactions with any tubules it crossed
-        % during that step. This may truncate its growth further.
-        
-        % Look at the event that terminated growth and log it.
         if stoppingreason=='c'
             % Catastrophe: record tubule fate. We do not here handle the
-            % catastrophe itself. That will be done when we return from
-            % here and back up to leaf_iteratestreamline, which will then
-            % continue the simulation.
+            % catastrophe itself.
             if s.edgefate=='i'
                 endfaceedgecode = m.auxdata.faceedgecodes( s.segcellindex(end), : );
                 sameEdge = all( endfaceedgecode == s.faceedgecode ) || all( endfaceedgecode([2 1]) == s.faceedgecode );
@@ -847,8 +813,11 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
                 end
             end
         end
-
+        
         previousEvent = false;
+        
+%         timedFprintf( 1, 'direction points inward, remaining length %g\n', remaininglength );
+        MINLENGTHGROWN = 1e-5;
         if lengthGrown <= 0
             collisionData = struct( [] );
             collidedwith = [];
@@ -863,18 +832,26 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
 %             numevents = 0;
             [m,s,~] = stopStreamline( m, s, stoppingreason, stoppingData );
             remainingtime = 0;
+            remaininglength = 0;
         else
+            % We now have the growth of the tubule up to the first of these
+            % events that happens:
+            %   Hitting an edge of the current finite element.
+            %   Running out of time in the current simulation step.
+            %   Spontaneously catastrophising.
+            %   Spontaneously stopping.
+            %   Redirecting to run along an edge.
+            % Now we need to find all collisions of the new segment with
+            % other tubule segments in the same finite element, and
+            % determine their outcomes.
+            
             xxxx = 1; %#ok<NASGU>
 
-            % Up to this point we have not needed the global coordinates of
-            % the head of the tubule or the length of the final segment. We
-            % calculate them now.
             s.globalcoords( length(s.vxcellindex), : ) = streamlineGlobalPos( m, s, length(s.vxcellindex) );
             s.segmentlengths( length(s.vxcellindex)-1 ) = lengthGrown;
-            
             extended = true;
             lengthgrown1 = s.segmentlengths(end);
-            if abs(lengthgrown1 - lengthGrown) > 1e-9
+            if abs(lengthgrown1 - lengthgrown1) > 1e-9
                 xxxx = 1; %#ok<NASGU>
             end
             
@@ -882,7 +859,8 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
                 xxxx = 1; %#ok<NASGU>
             end
 
-            % These are the possible results of a collision:
+            % These are the possible results of a
+            % collision:
             % 1. Catastrophe. The colliding microtubule stops at the collision
             %    and then shrinks from its head.
             % 2. Zippering. If the angle between the two mts is sufficiently
@@ -914,6 +892,14 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
             iscrossing = collisionData.iscrossing;
             collisionparallel = collisionData.collisionparallel;
             collisionDistanceInSegment = collisionData.collisionDistanceInSegment;
+%             xcollidedwith = collidedwith;
+%             xcollidedseg = collidedseg;
+%             xcollidedsegbc = collidedsegbc;
+%             xcollidersegbc = collidersegbc;
+%             xcollisiontype = collisiontype;
+%             xcollisionangle = collisionangle;
+%             xiscrossing = iscrossing;
+%             xcollisionparallel = collisionparallel;
             
             initialevents = collidersegbc(:,2)==0;
             if any(initialevents)
@@ -934,11 +920,11 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
                 xxxx = 1; %#ok<NASGU>
             end
             
-            lastSegmentBeforeThisElement = find( s.segcellindex ~= s.segcellindex(end), 1, 'last' );
-            if isempty(lastSegmentBeforeThisElement)
-                lastSegmentBeforeThisElement = 0;
+            beforeThisElement = find( s.segcellindex ~= s.segcellindex(end), 1, 'last' );
+            if isempty(beforeThisElement)
+                beforeThisElement = 0;
             end
-            excludeSelf = (collidedwith==noncolliders) & (collidedseg > lastSegmentBeforeThisElement);
+            excludeSelf = (collidedwith==noncolliders) & (collidedseg > beforeThisElement);
             if any( excludeSelf )
                 collisionData = selectFromStructOfArrays( collisionData, ~excludeSelf );
                 collidedwith( excludeSelf, : ) = [];
@@ -1374,6 +1360,7 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
                     end
                     s.status.head = -1;
                     remainingtime = 0;
+                    remaininglength = 0;
                 end
 
                 if any(crossbranch)
@@ -1561,17 +1548,13 @@ function [m,s,extended,remainingtime,lengthGrown] = extrapolateStreamline( m, s,
             end
         end
         
-        timeused = lengthGrown/plus_growthrate;
-        remainingtime = remainingtime - timeused;
-        
         if ~previousEvent
             [m,s,stopped] = stopStreamline( m, s, stoppingreason, stoppingData );
             if stopped
                 remainingtime = 0;
+                remaininglength = 0;
             end
         end
-        
-        % ~pointsOut
     end
     
     validStreamline( m, s );
@@ -1605,42 +1588,85 @@ function isimmune = getCatImmunity( m, s )
         return;
     end
 
+    cat_immunity_from_start = getModelOption( m, 'cat_immunity_from_start' );
     
-    % cat_immunity_from_start is now obsolete. Treat as always true.
-%     cat_immunity_from_start = getModelOption( m, 'cat_immunity_from_start' );
-    
-%     if cat_immunity_from_start
+    if cat_immunity_from_start
         immunityLength = max( 0, cat_immunity_length - sum( s.segmentlengths ) );
         isimmune = immunityLength > 0;
-%     else
-        % OBSOLETE.
-%         vxsInEdgeRegion = m.userdata.geomdata.flatfaceelements( s.vxcellindex )==0;
-%         lastNonEdgeRegionVx = find( ~vxsInEdgeRegion, 1, 'last' );
-%         if isempty( lastNonEdgeRegionVx )
-%             lastNonEdgeRegionVx = 0;
-%         end
-%         firstEdgeRegionVx = lastNonEdgeRegionVx+1;
-%         if firstEdgeRegionVx >= length( s.vxcellindex )
-%             % No head segments are in the edge region.
-%             return;
-%         end
-%         globcoords = streamlineGlobalPos( m, s, firstEdgeRegionVx:length(s.vxcellindex) );
-%         vecsInEdgeRegion = globcoords( 2:end, : ) - globcoords( 1:(end-1), : );
-%         bentendlength = sum(sqrt(sum(vecsInEdgeRegion.^2,2)));
-%         if s.id==3
-%             xxxx = 1; %#ok<NASGU>
-%         end
-%         if bentendlength <= cat_immunity_length
-%             isimmune = true;
-%             if ~all(vxsInEdgeRegion)
-%                 xxxx = 1; %#ok<NASGU>
-%             end
-%         else
-%             isimmune = false;
-%         end
-%     end
+    else
+        vxsInEdgeRegion = m.userdata.geomdata.flatfaceelements( s.vxcellindex )==0;
+        lastNonEdgeRegionVx = find( ~vxsInEdgeRegion, 1, 'last' );
+        if isempty( lastNonEdgeRegionVx )
+            lastNonEdgeRegionVx = 0;
+        end
+        firstEdgeRegionVx = lastNonEdgeRegionVx+1;
+        if firstEdgeRegionVx >= length( s.vxcellindex )
+            % No head segments are in the edge region.
+            return;
+        end
+        globcoords = streamlineGlobalPos( m, s, firstEdgeRegionVx:length(s.vxcellindex) );
+        vecsInEdgeRegion = globcoords( 2:end, : ) - globcoords( 1:(end-1), : );
+        bentendlength = sum(sqrt(sum(vecsInEdgeRegion.^2,2)));
+        if s.id==3
+            xxxx = 1; %#ok<NASGU>
+        end
+        if bentendlength <= cat_immunity_length
+            isimmune = true;
+            if ~all(vxsInEdgeRegion)
+                xxxx = 1; %#ok<NASGU>
+            end
+        else
+            isimmune = false;
+        end
+    end
     xxxx = 1; %#ok<NASGU>
 end
+
+% function catscaling = getCatScaling( m, s )
+%     % Set catscaling to the neutral value
+%     catscaling = 1;
+%     
+%     cat_immunity_length = getModelOption( m, 'cat_immunity_length' );
+%     cat_per_edge_while_immune = getModelOption( m, 'cat_per_edge_while_immune' );
+%     if isempty( cat_immunity_length ) || isnan( cat_immunity_length )
+%         % Option does not exist or is not set.
+%         return;
+%     end
+%     
+%     if length(s.vxcellindex) <= 1
+%         % Tubule has no segments.
+%         return;
+%     end
+%     
+%     vxsInEdgeRegion = m.userdata.geomdata.flatfaceelements( s.vxcellindex )==0;
+%     lastNonEdgeRegionVx = find( ~vxsInEdgeRegion, 1, 'last' );
+%     if isempty( lastNonEdgeRegionVx )
+%         lastNonEdgeRegionVx = 0;
+%     end
+%     firstEdgeRegionVx = lastNonEdgeRegionVx+1;
+%     if firstEdgeRegionVx >= length( s.vxcellindex )
+%         % No head segments are in the edge region.
+%         return;
+%     end
+%     globcoords = streamlineGlobalPos( m, s, firstEdgeRegionVx:length(s.vxcellindex) );
+%     vecsInEdgeRegion = globcoords( 2:end, : ) - globcoords( 1:(end-1), : );
+%     bentendlength = sum(sqrt(sum(vecsInEdgeRegion.^2,2)));
+%     if s.id==3
+%         xxxx = 1; %#ok<NASGU>
+%     end
+%     if bentendlength <= cat_immunity_length
+%         catscaling = 0;
+%         if ~all(vxsInEdgeRegion)
+%             xxxx = 1; %#ok<NASGU>
+%         end
+%     else
+%         catscaling = 1;
+%     end
+%     if catscaling==0
+%         xxxx = 1; %#ok<NASGU>
+%     end
+%     xxxx = 1; %#ok<NASGU>
+% end
 
 function [m,s,stopped] = stopStreamline( m, s, stoppingreason, stoppingData )
     switch stoppingreason

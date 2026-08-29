@@ -1061,6 +1061,7 @@ function [m,mov,nextMovieFrame] = savemovieframe( m, mov, nextMovieFrame, movief
         % Matlab on the cluster cannot print uicontrols, incuding the text
         % legend.
         print( fig, '-dpng', '-noui', '-r100', tempimgname );
+%         exportgraphics( m.pictures(1), tempimgname );
         saveas( fig, tempfigname );
         img = imread( tempimgname );
 %         m = recordframe( m, img );
